@@ -1,0 +1,900 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body style="margin:0">
+<title>ASH Front Plate Builder</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: tool shell — header bar, left palette, centre plate editor, right inspector (checks, 3D, export). Stacks to one column on phones. */
+:root{
+  --bg:#E9ECEF; --panel:#FFFFFF; --panel-2:#F4F6F8; --ink:#14181D; --muted:#5D6672; --line:#D2D7DD;
+  --accent:#D9480F; --accent-ink:#FFFFFF; --accent-soft:#FBE3D6;
+  --plate:#2E343A; --plate-ink:#C7CDD3; --grid:rgba(255,255,255,.07); --grid-strong:rgba(255,255,255,.14);
+  --zone:#8FA0B0; --ko:#F2A27A; --ko-fill:rgba(242,162,122,.10); --hole:#E9ECEF; --hole-edge:#11151A;
+  --ok:#2B8A3E; --ok-soft:#DDF1E1; --err:#C92A2A; --err-soft:#FBE0E0; --warn:#B35C00; --warn-soft:#FCEBD5;
+  --f-display:"Saira Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:6px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111417; --panel:#191D21; --panel-2:#1F2429; --ink:#E5E8EB; --muted:#8D97A2; --line:#2C3238;
+  --accent:#FF6A2B; --accent-ink:#140A04; --accent-soft:#3A2116;
+  --plate:#353C44; --plate-ink:#B8C0C8; --grid:rgba(255,255,255,.06); --grid-strong:rgba(255,255,255,.12);
+  --zone:#7D8C9B; --ko:#FF9A6B; --ko-fill:rgba(255,154,107,.10); --hole:#111417; --hole-edge:#0A0C0E;
+  --ok:#5CC977; --ok-soft:#173222; --err:#FF6B6B; --err-soft:#3A1A1A; --warn:#F0A04B; --warn-soft:#38270F;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111417; --panel:#191D21; --panel-2:#1F2429; --ink:#E5E8EB; --muted:#8D97A2; --line:#2C3238;
+  --accent:#FF6A2B; --accent-ink:#140A04; --accent-soft:#3A2116;
+  --plate:#353C44; --plate-ink:#B8C0C8; --grid:rgba(255,255,255,.06); --grid-strong:rgba(255,255,255,.12);
+  --zone:#7D8C9B; --ko:#FF9A6B; --ko-fill:rgba(255,154,107,.10); --hole:#111417; --hole-edge:#0A0C0E;
+  --ok:#5CC977; --ok-soft:#173222; --err:#FF6B6B; --err-soft:#3A1A1A; --warn:#F0A04B; --warn-soft:#38270F;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45}
+button,input,select{font:inherit;color:inherit}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 24px;max-width:1600px;margin:0 auto}
+header.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.01em;margin:0;text-wrap:balance}
+.brand h1 span{color:var(--accent)}
+.brand small{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.bar .spacer{flex:1}
+.status{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase;padding:5px 10px;border-radius:99px}
+.status::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.status.ok{background:var(--ok-soft);color:var(--ok)}
+.status.err{background:var(--err-soft);color:var(--err)}
+.status.warn{background:var(--warn-soft);color:var(--warn)}
+
+.grid{display:grid;gap:14px;grid-template-columns:260px minmax(0,1fr) 340px;grid-template-areas:"side editor right";align-items:start}
+.side{grid-area:side;display:flex;flex-direction:column;gap:14px;min-width:0}
+.editor{grid-area:editor;min-width:0}
+.right{grid-area:right;display:flex;flex-direction:column;gap:14px;min-width:0}
+@media (max-width:1180px){.grid{grid-template-columns:250px minmax(0,1fr);grid-template-areas:"side editor" "right right"}.right{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start}}
+@media (max-width:760px){.grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"editor" "side" "right"}}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);min-width:0}
+.card > h2{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0;padding:10px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.card > h2 .grow{flex:1}
+.card .body{padding:12px;display:flex;flex-direction:column;gap:10px}
+
+label.field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.row > *{flex:1 1 0;min-width:0}
+input[type=number],input[type=text],select{background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:6px 8px;width:100%;color:var(--ink)}
+input[type=number]{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);cursor:pointer}
+.check input{accent-color:var(--accent);width:16px;height:16px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--panel-2);border-radius:4px;padding:7px 10px;cursor:pointer;font-weight:500;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.danger{color:var(--err)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:4px 8px;font-size:12px}
+
+.palette{display:flex;flex-direction:column;gap:12px}
+.pgroup h3{font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.pitems{display:grid;grid-template-columns:1fr;gap:6px}
+@media (max-width:760px){.pitems{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
+.pitem{display:grid;grid-template-columns:34px 1fr;gap:8px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--panel-2);border-radius:4px;padding:6px 8px;cursor:pointer}
+.pitem:hover{border-color:var(--accent)}
+.pitem svg{width:34px;height:34px}
+.pitem b{display:block;font-weight:500;font-size:13px;line-height:1.2}
+.pitem i{display:block;font-style:normal;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.note{font-size:12px;color:var(--muted);margin:0}
+
+.editor .card{display:flex;flex-direction:column}
+.etools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--line)}
+.etools .readout{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;margin-left:auto}
+.stage{display:flex;justify-content:center;padding:12px;background:var(--panel-2);border-radius:0 0 var(--r) var(--r)}
+#plate{width:min(100%, calc(100vh - 170px));min-width:0;max-width:100%;aspect-ratio:1;touch-action:none;user-select:none;-webkit-user-select:none;display:block}
+@media (max-width:760px){#plate{width:100%}}
+#plate .plate{fill:var(--plate)}
+#plate .gl{stroke:var(--grid);stroke-width:.2}
+#plate .gl.s{stroke:var(--grid-strong);stroke-width:.3}
+#plate .zone{fill:none;stroke:var(--zone);stroke-width:.4;stroke-dasharray:2 1.5}
+#plate .ko{fill:var(--ko-fill);stroke:var(--ko);stroke-width:.35;stroke-dasharray:1.2 .9}
+#plate .cut{fill:var(--hole);stroke:var(--hole-edge);stroke-width:.3}
+#plate .mko{fill:none;stroke:var(--zone);stroke-width:.3;stroke-dasharray:1 1}
+#plate .lbl{fill:var(--plate-ink);font-family:var(--f-mono);font-size:3.2px;text-anchor:middle;pointer-events:none}
+#plate .part{cursor:grab}
+#plate .part:active{cursor:grabbing}
+#plate .part.sel .ko{stroke:var(--accent);stroke-width:.6;stroke-dasharray:none;fill:var(--accent-soft);fill-opacity:.25}
+#plate .part.err .ko{stroke:var(--err);fill:var(--err);fill-opacity:.22;stroke-dasharray:none;stroke-width:.6}
+#plate .part.warn .ko{stroke:var(--warn)}
+#plate.hide-ko .part:not(.sel):not(.err) .ko{opacity:0}
+#plate .dim{fill:var(--muted);font-family:var(--f-mono);font-size:3.4px;text-anchor:middle}
+#plate .dimline{stroke:var(--muted);stroke-width:.25}
+
+.props .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px}
+.props .kv dt{color:var(--muted)}
+.props .kv dd{margin:0;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.empty{font-size:13px;color:var(--muted);margin:0}
+
+.issues{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.issues li button{width:100%;text-align:left;display:grid;grid-template-columns:4px 1fr;gap:10px;align-items:stretch;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:0;cursor:pointer;overflow:hidden}
+.issues li button::before{content:"";background:var(--err)}
+.issues li.warn button::before{background:var(--warn)}
+.issues li button span{padding:7px 10px 7px 0;font-size:13px}
+.okmsg{font-size:13px;color:var(--ok);margin:0}
+
+#view3d{height:280px;border-radius:4px;background:var(--panel-2);position:relative;overflow:hidden;touch-action:none}
+#view3d canvas{display:block;width:100%!important;height:100%!important}
+#view3d .fallback{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:13px;padding:16px;text-align:center}
+.exports{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.exports .btn{justify-content:flex-start}
+.exports .btn em{font-style:normal;font-family:var(--f-mono);font-size:11px;color:inherit;opacity:.7;margin-left:auto}
+.exports .wide{grid-column:1/-1}
+
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:4px;font-size:13px;z-index:20;max-width:calc(100% - 32px)}
+kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:3px;padding:0 4px;background:var(--panel-2)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="bar">
+    <div class="brand"><h1>ASH <span>Front Plate</span> Builder</h1><small id="plateTag"></small></div>
+    <div class="spacer"></div>
+    <span id="status" class="status ok">Ready</span>
+    <button class="btn sm" id="undoBtn" title="Undo (Ctrl+Z)">Undo</button>
+    <button class="btn sm" id="redoBtn" title="Redo (Ctrl+Y)">Redo</button>
+  </header>
+
+  <div class="grid">
+    <aside class="side">
+      <section class="card">
+        <h2>Back plate</h2>
+        <div class="body">
+          <label class="field">Model<select id="plateSel"></select></label>
+          <div class="row">
+            <label class="field">Front plate thickness (mm)<input type="number" id="thick" min="2" max="10" step="0.5"></label>
+          </div>
+          <p class="note" id="plateNote"></p>
+        </div>
+      </section>
+      <section class="card">
+        <h2>Add part</h2>
+        <div class="body"><div class="palette" id="palette"></div>
+          <p class="note">Cutout sizes are typical values. Check them against your parts' datasheets before printing.</p>
+        </div>
+      </section>
+    </aside>
+
+    <main class="editor">
+      <section class="card">
+        <div class="etools">
+          <label class="field" style="flex-direction:row;align-items:center;gap:6px">Snap
+            <select id="snapSel" style="width:auto"><option value="0">Off</option><option value="0.5">0.5 mm</option><option value="1">1 mm</option><option value="2.5">2.5 mm</option><option value="5">5 mm</option></select>
+          </label>
+          <label class="check"><input type="checkbox" id="koChk" checked> Keep-out zones</label>
+          <button class="btn sm ghost" id="resetBtn">Load example</button>
+          <button class="btn sm ghost danger" id="clearBtn">Clear parts</button>
+          <span class="readout" id="readout">x — y —</span>
+        </div>
+        <div class="stage"><svg id="plate" xmlns="http://www.w3.org/2000/svg" aria-label="Front plate layout editor"></svg></div>
+      </section>
+    </main>
+
+    <aside class="right">
+      <section class="card props">
+        <h2><span class="grow">Selected part</span><span id="selCount" style="font-family:var(--f-mono);letter-spacing:0;text-transform:none"></span></h2>
+        <div class="body" id="props"></div>
+      </section>
+      <section class="card">
+        <h2>Checks</h2>
+        <div class="body" id="issuesBox"></div>
+      </section>
+      <section class="card">
+        <h2><span class="grow">3D preview</span><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="partsChk" checked> Parts</label></h2>
+        <div class="body"><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
+          <p class="note">Drag to orbit, scroll or pinch to zoom. Translucent bodies show depth behind the plate; the lower slab is the back plate.</p></div>
+      </section>
+      <section class="card">
+        <h2>Export</h2>
+        <div class="body">
+          <div class="exports">
+            <button class="btn primary wide" id="exAll">Download everything <em>.zip</em></button>
+            <button class="btn" id="exStl">Front plate <em>.stl</em></button>
+            <button class="btn" id="exDxf">Cut outline <em>.dxf</em></button>
+            <button class="btn" id="exSvg">Cut outline <em>.svg</em></button>
+            <button class="btn" id="exBom">Parts list <em>.csv</em></button>
+            <button class="btn" id="exJson">Save layout <em>.json</em></button>
+            <button class="btn" id="imJson">Open layout <em>.json</em></button>
+          </div>
+          <input type="file" id="fileIn" accept=".json,application/json" hidden>
+          <p class="note" id="exNote"></p>
+          <p class="note"><kbd>Del</kbd> remove · <kbd>R</kbd> rotate · <kbd>M</kbd> mirror copy · arrows nudge · <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo</p>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(() => {
+'use strict';
+
+/* ---------------- Data: back plates & component library ----------------
+   Replace PLATES with the real back plate outlines later. All units mm, origin = plate centre, +Y up. */
+function squarePlate(id, size){
+  const m = size/2 - 12;
+  return { id, name:`Square ${size} mm`, size, inset:5, maxDepth:35,
+    holes:[[-m,-m],[m,-m],[m,m],[-m,m]].map(([x,y])=>({x,y,d:3.4,ko:9})) };
+}
+const PLATES = [squarePlate('sq160',160), squarePlate('sq200',200), squarePlate('sq240',240)];
+
+const TYPES = {
+  btn7:  {group:'Buttons', name:'Push button 7 mm',  short:'BTN', cut:{c:'circle',d:7},   ko:{c:'circle',d:12}, depth:15, body:{c:'circle',d:9},  cap:{d:9, h:4, kind:'cap'}},
+  btn12: {group:'Buttons', name:'Push button 12 mm', short:'BTN', cut:{c:'circle',d:12},  ko:{c:'circle',d:18}, depth:20, body:{c:'circle',d:13}, cap:{d:14,h:5, kind:'cap'}},
+  btn16: {group:'Buttons', name:'Push button 16 mm', short:'BTN', cut:{c:'circle',d:16},  ko:{c:'circle',d:22}, depth:24, body:{c:'circle',d:17}, cap:{d:18,h:6, kind:'cap'}},
+  enc:   {group:'Encoders & switches', name:'Encoder EC11', short:'ENC', cut:{c:'circle',d:7.2}, ko:{c:'circle',d:24}, depth:20, body:{c:'rect',w:12,h:13}, cap:{d:20,h:15,kind:'knob'}, rotatable:true},
+  rot:   {group:'Encoders & switches', name:'Rotary switch 12-pos', short:'ROT', cut:{c:'circle',d:9.5}, ko:{c:'circle',d:32}, depth:30, body:{c:'circle',d:26}, cap:{d:28,h:16,kind:'knob'}},
+  tgl:   {group:'Encoders & switches', name:'Toggle switch M6', short:'TGL', cut:{c:'circle',d:6.2}, ko:{c:'circle',d:16}, depth:25, body:{c:'rect',w:8,h:13}, cap:{d:3,h:11,kind:'lever'}, rotatable:true},
+  led5:  {group:'Indicators & displays', name:'LED 5 mm', short:'LED', cut:{c:'circle',d:5.1}, ko:{c:'circle',d:8}, depth:10, body:{c:'circle',d:5}, cap:{d:5,h:4,kind:'led'}},
+  led3:  {group:'Indicators & displays', name:'LED 3 mm', short:'LED', cut:{c:'circle',d:3.1}, ko:{c:'circle',d:5}, depth:10, body:{c:'circle',d:3}, cap:{d:3,h:3,kind:'led'}},
+  oled:  {group:'Indicators & displays', name:'OLED 0.96″ window', short:'OLED', cut:{c:'rect',w:25,h:14,r:1}, ko:{c:'rect',w:30,h:30}, depth:8, body:{c:'rect',w:27,h:28}, cap:null, screen:true, rotatable:true},
+};
+
+function exampleParts(){
+  const P = [];
+  for (let i=0;i<8;i++) P.push({type:'led3', x:-42+i*12, y:82});
+  P.push({type:'oled', x:0, y:62});
+  P.push({type:'enc', x:-60, y:50},{type:'enc', x:60, y:50});
+  for (const x of [-60,-30,30,60]) for (const y of [15,-15]) P.push({type:'btn16', x, y});
+  P.push({type:'btn12', x:0, y:15},{type:'btn12', x:0, y:-15});
+  P.push({type:'rot', x:0, y:-55});
+  P.push({type:'tgl', x:-30, y:-55},{type:'tgl', x:30, y:-55});
+  P.push({type:'btn12', x:-60, y:-55},{type:'btn12', x:60, y:-55});
+  return P;
+}
+
+/* ---------------- State ---------------- */
+const STORE_KEY = 'ash-front-plate-v1';
+let state = null;
+let nextId = 1;
+let selected = null;
+let issues = [], errIds = new Set(), warnIds = new Set();
+let undoStack = [], redoStack = [];
+let showKO = true, show3dParts = true;
+
+const $ = id => document.getElementById(id);
+const plate = () => PLATES.find(p => p.id === state.plateId) || PLATES[1];
+
+function newPart(o){
+  const t = TYPES[o.type];
+  const part = { id: 'p' + (nextId++), type:o.type, x:o.x||0, y:o.y||0, rot:o.rot||0, label:o.label||'' };
+  if (!part.label) part.label = autoLabel(t.short, o.__list || state.parts);
+  return part;
+}
+function autoLabel(short, list){
+  let n = 1; const used = new Set(list.map(p=>p.label));
+  while (used.has(short + n)) n++;
+  return short + n;
+}
+function makeExample(){
+  const s = { plateId:'sq200', thickness:4, snap:1, parts:[] };
+  const prev = state; state = s;
+  for (const o of exampleParts()) s.parts.push(newPart({...o, __list:s.parts}));
+  state = prev;
+  return s;
+}
+const serialize = () => JSON.stringify(state);
+function loadState(json){
+  const s = typeof json === 'string' ? JSON.parse(json) : json;
+  if (!s || !Array.isArray(s.parts)) throw new Error('This file has no parts list.');
+  if (!PLATES.some(p=>p.id===s.plateId)) s.plateId = 'sq200';
+  s.thickness = clampNum(+s.thickness || 4, 2, 10);
+  s.snap = [0,0.5,1,2.5,5].includes(+s.snap) ? +s.snap : 1;
+  s.parts = s.parts.filter(p => TYPES[p.type]).map(p => ({id:String(p.id||''), type:p.type, x:+p.x||0, y:+p.y||0, rot:+p.rot||0, label:String(p.label||'')}));
+  let max = 0;
+  for (const p of s.parts){ const m = /^p(\d+)$/.exec(p.id); if (m) max = Math.max(max, +m[1]); }
+  nextId = max + 1;
+  for (const p of s.parts){ if (!/^p\d+$/.test(p.id)) p.id = 'p' + (nextId++); if(!p.label) p.label = autoLabel(TYPES[p.type].short, s.parts); }
+  state = s;
+}
+function persist(){ try { localStorage.setItem(STORE_KEY, serialize()); } catch(e){} }
+
+function mutate(fn, before){
+  const snap = before ?? serialize();
+  fn();
+  undoStack.push(snap); if (undoStack.length > 200) undoStack.shift();
+  redoStack = [];
+  afterChange();
+}
+function undo(){ if(!undoStack.length) return; redoStack.push(serialize()); loadState(undoStack.pop()); if(selected && !findPart(selected)) selected=null; afterChange(); }
+function redo(){ if(!redoStack.length) return; undoStack.push(serialize()); loadState(redoStack.pop()); if(selected && !findPart(selected)) selected=null; afterChange(); }
+const findPart = id => state.parts.find(p => p.id === id);
+const clampNum = (v,a,b) => Math.min(b, Math.max(a, v));
+const fmt = v => (Math.round(v*100)/100).toString();
+
+/* ---------------- Geometry ---------------- */
+const EPS = 1e-6;
+function rectPts(cx, cy, w, h, rotDeg, r){
+  const a = rotDeg*Math.PI/180, c = Math.cos(a), s = Math.sin(a);
+  let local;
+  if (!r) local = [[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]];
+  else {
+    local = [];
+    const cs = [[w/2-r,-h/2+r,-90],[w/2-r,h/2-r,0],[-w/2+r,h/2-r,90],[-w/2+r,-h/2+r,180]];
+    for (const [x,y,st] of cs) for (let i=0;i<=6;i++){ const g=(st+i*15)*Math.PI/180; local.push([x+r*Math.cos(g), y+r*Math.sin(g)]); }
+  }
+  return local.map(([x,y]) => [cx + x*c - y*s, cy + x*s + y*c]);
+}
+function shapeOf(spec, p){
+  if (spec.c === 'circle') return {k:'c', x:p.x, y:p.y, r:spec.d/2};
+  return {k:'p', pts:rectPts(p.x, p.y, spec.w, spec.h, p.rot, spec.r||0)};
+}
+const koShape  = p => shapeOf(TYPES[p.type].ko, p);
+const cutShape = p => shapeOf(TYPES[p.type].cut, p);
+
+function insideSquare(sh, half){
+  if (sh.k === 'c') return Math.abs(sh.x)+sh.r <= half+EPS && Math.abs(sh.y)+sh.r <= half+EPS;
+  return sh.pts.every(([x,y]) => Math.abs(x) <= half+EPS && Math.abs(y) <= half+EPS);
+}
+function pointInPoly(x,y,pts){
+  let ins=false;
+  for (let i=0,j=pts.length-1;i<pts.length;j=i++){
+    const [xi,yi]=pts[i],[xj,yj]=pts[j];
+    if ((yi>y)!==(yj>y) && x < (xj-xi)*(y-yi)/(yj-yi)+xi) ins=!ins;
+  }
+  return ins;
+}
+function segDist(px,py,[ax,ay],[bx,by]){
+  const dx=bx-ax, dy=by-ay, L=dx*dx+dy*dy;
+  let t = L ? ((px-ax)*dx+(py-ay)*dy)/L : 0; t = clampNum(t,0,1);
+  return Math.hypot(px-(ax+t*dx), py-(ay+t*dy));
+}
+function circPoly(c, pts){
+  if (pointInPoly(c.x,c.y,pts)) return true;
+  for (let i=0;i<pts.length;i++) if (segDist(c.x,c.y,pts[i],pts[(i+1)%pts.length]) < c.r - EPS) return true;
+  return false;
+}
+function polyPoly(A,B){
+  for (const P of [A,B]){
+    for (let i=0;i<P.length;i++){
+      const [x1,y1]=P[i],[x2,y2]=P[(i+1)%P.length];
+      const nx=y1-y2, ny=x2-x1;
+      let aMin=Infinity,aMax=-Infinity,bMin=Infinity,bMax=-Infinity;
+      for (const [x,y] of A){ const d=x*nx+y*ny; aMin=Math.min(aMin,d); aMax=Math.max(aMax,d); }
+      for (const [x,y] of B){ const d=x*nx+y*ny; bMin=Math.min(bMin,d); bMax=Math.max(bMax,d); }
+      const tol = EPS*Math.hypot(nx,ny);
+      if (aMax <= bMin+tol || bMax <= aMin+tol) return false;
+    }
+  }
+  return true;
+}
+function overlap(A,B){
+  if (A.k==='c' && B.k==='c') return Math.hypot(A.x-B.x, A.y-B.y) < A.r+B.r-EPS;
+  if (A.k==='c') return circPoly(A, B.pts);
+  if (B.k==='c') return circPoly(B, A.pts);
+  return polyPoly(A.pts, B.pts);
+}
+
+/* ---------------- Validation ---------------- */
+function validate(){
+  const pl = plate(), half = pl.size/2 - pl.inset;
+  issues = []; errIds = new Set(); warnIds = new Set();
+  const kos = state.parts.map(p => [p, koShape(p)]);
+  const mounts = pl.holes.map((h,i) => ({i, sh:{k:'c', x:h.x, y:h.y, r:h.ko/2}}));
+  for (const [p, sh] of kos){
+    const t = TYPES[p.type];
+    if (!insideSquare(sh, half)){ issues.push({sev:'err', ids:[p.id], msg:`${p.label} crosses the ${pl.inset} mm edge margin.`}); errIds.add(p.id); }
+    for (const m of mounts) if (overlap(sh, m.sh)){ issues.push({sev:'err', ids:[p.id], msg:`${p.label} overlaps mounting hole ${m.i+1}.`}); errIds.add(p.id); }
+    if (t.depth > pl.maxDepth){ issues.push({sev:'warn', ids:[p.id], msg:`${p.label} needs ${t.depth} mm behind the plate; this back plate leaves ${pl.maxDepth} mm.`}); warnIds.add(p.id); }
+  }
+  for (let i=0;i<kos.length;i++) for (let j=i+1;j<kos.length;j++){
+    if (overlap(kos[i][1], kos[j][1])){
+      const a=kos[i][0], b=kos[j][0];
+      issues.push({sev:'err', ids:[a.id,b.id], msg:`${a.label} and ${b.label} are too close; their keep-out zones overlap.`});
+      errIds.add(a.id); errIds.add(b.id);
+    }
+  }
+  const lbl = new Map();
+  for (const p of state.parts){ const k=p.label.trim(); if(!k) continue; if(lbl.has(k)){ issues.push({sev:'warn', ids:[p.id], msg:`Two parts are named ${k}. Rename one so the parts list stays clear.`}); warnIds.add(p.id);} else lbl.set(k,p.id); }
+}
+const errorCount = () => issues.filter(i=>i.sev==='err').length;
+
+function isFree(type, x, y, rot, ignoreId){
+  const pl = plate(), half = pl.size/2 - pl.inset;
+  const probe = {type, x, y, rot};
+  const sh = koShape(probe);
+  if (!insideSquare(sh, half)) return false;
+  for (const h of pl.holes) if (overlap(sh, {k:'c',x:h.x,y:h.y,r:h.ko/2})) return false;
+  for (const q of state.parts) if (q.id !== ignoreId && overlap(sh, koShape(q))) return false;
+  return true;
+}
+function findFreeSpot(type){
+  const step = 2, half = plate().size/2;
+  if (isFree(type,0,0,0)) return {x:0,y:0};
+  for (let r=step; r<half; r+=step){
+    for (let i=-r;i<=r;i+=step){
+      for (const [x,y] of [[i,r],[i,-r],[r,i],[-r,i]]) if (isFree(type,x,y,0)) return {x,y};
+    }
+  }
+  return null;
+}
+
+/* ---------------- 2D editor ---------------- */
+const svg = $('plate');
+const ns = 'http://www.w3.org/2000/svg';
+function shapeSvg(sh, cls){
+  if (sh.k === 'c') return `<circle class="${cls}" cx="${sh.x}" cy="${-sh.y}" r="${sh.r}"/>`;
+  return `<polygon class="${cls}" points="${sh.pts.map(([x,y])=>`${x.toFixed(3)},${(-y).toFixed(3)}`).join(' ')}"/>`;
+}
+function render2d(){
+  const pl = plate(), S = pl.size, h = S/2, pad = 9, zh = h - pl.inset;
+  svg.setAttribute('viewBox', `${-h-pad} ${-h-pad} ${S+2*pad} ${S+2*pad}`);
+  let o = '';
+  o += `<rect class="plate" x="${-h}" y="${-h}" width="${S}" height="${S}"/>`;
+  for (let v = -Math.floor(h/10)*10; v <= h; v += 10){
+    const s = v % 50 === 0 ? ' s' : '';
+    o += `<line class="gl${s}" x1="${v}" y1="${-h}" x2="${v}" y2="${h}"/><line class="gl${s}" x1="${-h}" y1="${v}" x2="${h}" y2="${v}"/>`;
+  }
+  o += `<rect class="zone" x="${-zh}" y="${-zh}" width="${2*zh}" height="${2*zh}"/>`;
+  for (const m of pl.holes){
+    o += `<circle class="mko" cx="${m.x}" cy="${-m.y}" r="${m.ko/2}"/><circle class="cut" cx="${m.x}" cy="${-m.y}" r="${m.d/2}"/>`;
+  }
+  // dimension labels
+  o += `<line class="dimline" x1="${-h}" y1="${h+3}" x2="${h}" y2="${h+3}"/><text class="dim" x="0" y="${h+7.4}">${S} mm</text>`;
+  o += `<text class="dim" x="${-h+pl.inset}" y="${-h-3}" text-anchor="start" style="text-anchor:start">${pl.inset} mm margin</text>`;
+  for (const p of state.parts){
+    const t = TYPES[p.type];
+    const cls = ['part']; if (p.id===selected) cls.push('sel'); if (errIds.has(p.id)) cls.push('err'); else if (warnIds.has(p.id)) cls.push('warn');
+    const ko = koShape(p);
+    const ly = ko.k==='c' ? -p.y + ko.r + 3.4 : Math.max(...ko.pts.map(([,y])=>-y)) + 3.4;
+    o += `<g class="${cls.join(' ')}" data-id="${p.id}">${shapeSvg(ko,'ko')}${shapeSvg(cutShape(p),'cut')}</g>`;
+    o += `<text class="lbl" x="${p.x}" y="${ly}">${esc(p.label)}</text>`;
+  }
+  svg.innerHTML = o;
+  svg.classList.toggle('hide-ko', !showKO);
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function toWorld(e){
+  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const m = svg.getScreenCTM(); if (!m) return {x:0,y:0};
+  const q = pt.matrixTransform(m.inverse());
+  return {x:q.x, y:-q.y};
+}
+const snapV = v => state.snap ? Math.round(v/state.snap)*state.snap : Math.round(v*100)/100;
+
+let drag = null;
+svg.addEventListener('pointerdown', e => {
+  const g = e.target.closest('[data-id]');
+  if (!g){ if (selected){ selected = null; renderAll(false); } return; }
+  const p = findPart(g.dataset.id); if (!p) return;
+  selected = p.id;
+  const w = toWorld(e);
+  drag = { id:p.id, dx:p.x-w.x, dy:p.y-w.y, before:serialize(), moved:false };
+  svg.setPointerCapture(e.pointerId);
+  e.preventDefault();
+  renderAll(false);
+});
+svg.addEventListener('pointermove', e => {
+  const w = toWorld(e);
+  $('readout').textContent = `x ${fmt(w.x)}  y ${fmt(w.y)} mm`;
+  if (!drag) return;
+  const p = findPart(drag.id); if (!p) return;
+  const h = plate().size/2;
+  const nx = clampNum(snapV(w.x + drag.dx), -h, h), ny = clampNum(snapV(w.y + drag.dy), -h, h);
+  if (nx !== p.x || ny !== p.y){ p.x = nx; p.y = ny; drag.moved = true; validate(); render2d(); renderProps(); renderIssues(); schedule3d(); }
+});
+function endDrag(){
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (d.moved){ undoStack.push(d.before); redoStack = []; afterChange(); }
+}
+svg.addEventListener('pointerup', endDrag);
+svg.addEventListener('pointercancel', endDrag);
+svg.addEventListener('pointerleave', () => { if(!drag) $('readout').textContent = 'x — y —'; });
+
+/* ---------------- Palette ---------------- */
+function iconSvg(t){
+  const sc = 30/Math.max(32, t.ko.d || Math.max(t.ko.w,t.ko.h));
+  const cut = t.cut.c==='circle' ? `<circle cx="17" cy="17" r="${t.cut.d/2*sc}" fill="var(--ink)"/>` : `<rect x="${17-t.cut.w/2*sc}" y="${17-t.cut.h/2*sc}" width="${t.cut.w*sc}" height="${t.cut.h*sc}" fill="var(--ink)"/>`;
+  const ko = t.ko.c==='circle' ? `<circle cx="17" cy="17" r="${t.ko.d/2*sc}" fill="none" stroke="var(--accent)" stroke-width="1" stroke-dasharray="2 1.5"/>` : `<rect x="${17-t.ko.w/2*sc}" y="${17-t.ko.h/2*sc}" width="${t.ko.w*sc}" height="${t.ko.h*sc}" fill="none" stroke="var(--accent)" stroke-width="1" stroke-dasharray="2 1.5"/>`;
+  return `<svg viewBox="0 0 34 34" aria-hidden="true">${ko}${cut}</svg>`;
+}
+const dimText = s => s.c==='circle' ? `Ø${s.d}` : `${s.w}×${s.h}`;
+function renderPalette(){
+  const groups = {};
+  for (const [k,t] of Object.entries(TYPES)) (groups[t.group] ||= []).push([k,t]);
+  let o = '';
+  for (const [g, items] of Object.entries(groups)){
+    o += `<div class="pgroup"><h3>${g}</h3><div class="pitems">`;
+    for (const [k,t] of items) o += `<button class="pitem" data-type="${k}" title="Add ${t.name}">${iconSvg(t)}<span><b>${t.name}</b><i>cut ${dimText(t.cut)} · keep-out ${dimText(t.ko)}</i></span></button>`;
+    o += `</div></div>`;
+  }
+  $('palette').innerHTML = o;
+}
+$('palette').addEventListener('click', e => {
+  const b = e.target.closest('[data-type]'); if (!b) return;
+  addPart(b.dataset.type);
+});
+function addPart(type, at){
+  const spot = at || findFreeSpot(type);
+  mutate(() => {
+    const p = newPart({type, x: spot ? spot.x : 0, y: spot ? spot.y : 0});
+    state.parts.push(p); selected = p.id;
+  });
+  if (!spot) toast('No free space left. The part is placed in the centre; drag it somewhere clear.');
+}
+
+/* ---------------- Inspector ---------------- */
+function renderProps(){
+  const box = $('props');
+  $('selCount').textContent = `${state.parts.length} parts`;
+  const p = selected && findPart(selected);
+  if (!p){ box.innerHTML = `<p class="empty">Click a part on the plate to edit it, or add one from the list.</p>`; return; }
+  const t = TYPES[p.type];
+  const active = document.activeElement && document.activeElement.id;
+  if (box.dataset.pid === p.id && box.querySelector('#pX')){
+    // update values without rebuilding (keeps focus)
+    if (active !== 'pX') $('pX').value = fmt(p.x);
+    if (active !== 'pY') $('pY').value = fmt(p.y);
+    if ($('pRot') && active !== 'pRot') $('pRot').value = fmt(p.rot);
+    if (active !== 'pLabel') $('pLabel').value = p.label;
+    return;
+  }
+  box.dataset.pid = p.id;
+  const step = state.snap || 0.1;
+  box.innerHTML = `
+    <label class="field">Name<input type="text" id="pLabel" maxlength="24" value="${esc(p.label)}"></label>
+    <div class="row">
+      <label class="field">X (mm)<input type="number" id="pX" step="${step}" value="${fmt(p.x)}"></label>
+      <label class="field">Y (mm)<input type="number" id="pY" step="${step}" value="${fmt(p.y)}"></label>
+      ${t.rotatable ? `<label class="field">Rotation (°)<input type="number" id="pRot" step="15" value="${fmt(p.rot)}"></label>` : ''}
+    </div>
+    <dl class="kv">
+      <dt>Part</dt><dd>${esc(t.name)}</dd>
+      <dt>Cutout</dt><dd>${dimText(t.cut)} mm</dd>
+      <dt>Keep-out</dt><dd>${dimText(t.ko)} mm</dd>
+      <dt>Depth</dt><dd>${t.depth} mm</dd>
+    </dl>
+    <div class="row">
+      <button class="btn sm" id="pMirror" title="Add a copy mirrored across the vertical centre line (M)">Mirror copy</button>
+      <button class="btn sm" id="pDup">Duplicate</button>
+      <button class="btn sm danger" id="pDel">Delete</button>
+    </div>`;
+  $('pLabel').addEventListener('change', e => mutate(() => { p.label = e.target.value.trim() || autoLabel(t.short, state.parts.filter(q=>q!==p)); }));
+  $('pX').addEventListener('change', e => { const v=+e.target.value; if(Number.isFinite(v)) mutate(()=>{ p.x = v; }); });
+  $('pY').addEventListener('change', e => { const v=+e.target.value; if(Number.isFinite(v)) mutate(()=>{ p.y = v; }); });
+  if ($('pRot')) $('pRot').addEventListener('change', e => { const v=+e.target.value; if(Number.isFinite(v)) mutate(()=>{ p.rot = ((v%360)+360)%360; }); });
+  $('pMirror').addEventListener('click', mirrorSelected);
+  $('pDup').addEventListener('click', duplicateSelected);
+  $('pDel').addEventListener('click', deleteSelected);
+}
+function mirrorSelected(){
+  const p = selected && findPart(selected); if (!p) return;
+  if (Math.abs(p.x) < 0.01){ toast('This part sits on the centre line, so its mirror copy would land on top of it.'); return; }
+  mutate(() => { const q = newPart({type:p.type, x:-p.x, y:p.y, rot:(360 - p.rot)%360}); state.parts.push(q); selected = q.id; });
+}
+function duplicateSelected(){
+  const p = selected && findPart(selected); if (!p) return;
+  const t = TYPES[p.type];
+  const off = (t.ko.d || Math.max(t.ko.w, t.ko.h));
+  let spot = null;
+  for (const [dx,dy] of [[off,0],[-off,0],[0,-off],[0,off]]) if (isFree(p.type, p.x+dx, p.y+dy, p.rot)) { spot = {x:p.x+dx, y:p.y+dy}; break; }
+  spot ||= findFreeSpot(p.type);
+  mutate(() => { const q = newPart({type:p.type, x:spot?spot.x:p.x, y:spot?spot.y:p.y, rot:p.rot}); state.parts.push(q); selected = q.id; });
+}
+function deleteSelected(){
+  if (!selected) return;
+  mutate(() => { state.parts = state.parts.filter(p => p.id !== selected); selected = null; });
+}
+
+function renderIssues(){
+  const box = $('issuesBox');
+  const errs = errorCount(), warns = issues.length - errs;
+  const st = $('status');
+  if (errs){ st.className='status err'; st.textContent = `${errs} problem${errs>1?'s':''}`; }
+  else if (warns){ st.className='status warn'; st.textContent = `${warns} warning${warns>1?'s':''}`; }
+  else { st.className='status ok'; st.textContent = 'Ready to export'; }
+  if (!issues.length){ box.innerHTML = `<p class="okmsg">All ${state.parts.length} parts fit: inside the margin, clear of mounting holes and of each other.</p>`; }
+  else {
+    box.innerHTML = `<ul class="issues">${issues.slice(0,40).map((i,n)=>`<li class="${i.sev}"><button data-n="${n}"><span>${esc(i.msg)}</span></button></li>`).join('')}</ul>` + (issues.length>40?`<p class="note">${issues.length-40} more not shown.</p>`:'');
+  }
+  const blocked = errs > 0;
+  for (const id of ['exStl','exDxf','exSvg','exAll']) $(id).disabled = blocked;
+  $('exNote').textContent = blocked ? `Fix the ${errs} problem${errs>1?'s':''} under Checks to export the plate. You can still save the layout.` : '';
+}
+$('issuesBox').addEventListener('click', e => {
+  const b = e.target.closest('[data-n]'); if (!b) return;
+  const i = issues[+b.dataset.n]; if (!i) return;
+  selected = i.ids[0]; renderAll(false);
+});
+
+function renderHeader(){
+  const pl = plate();
+  $('plateTag').textContent = `${pl.name} · ${fmt(state.thickness)} mm`;
+  $('plateNote').textContent = `${pl.size} × ${pl.size} mm outline, parts must stay ${pl.inset} mm from the edge. ${pl.holes.length} × M3 mounting holes. ${pl.maxDepth} mm clearance to the back plate.`;
+  $('undoBtn').disabled = !undoStack.length; $('redoBtn').disabled = !redoStack.length;
+}
+
+function renderAll(rebuild3d = true){
+  validate(); render2d(); renderProps(); renderIssues(); renderHeader();
+  if (rebuild3d) schedule3d();
+}
+function afterChange(){ renderAll(true); persist(); }
+
+/* ---------------- Controls wiring ---------------- */
+function initControls(){
+  $('plateSel').innerHTML = PLATES.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  $('plateSel').value = state.plateId;
+  $('thick').value = state.thickness;
+  $('snapSel').value = String(state.snap);
+  $('plateSel').addEventListener('change', e => mutate(() => { state.plateId = e.target.value; }));
+  $('thick').addEventListener('change', e => { const v = clampNum(+e.target.value||4, 2, 10); e.target.value = v; mutate(() => { state.thickness = v; }); });
+  $('snapSel').addEventListener('change', e => { state.snap = +e.target.value; persist(); renderProps(); });
+  $('koChk').addEventListener('change', e => { showKO = e.target.checked; render2d(); });
+  $('partsChk').addEventListener('change', e => { show3dParts = e.target.checked; schedule3d(); });
+  $('undoBtn').addEventListener('click', undo);
+  $('redoBtn').addEventListener('click', redo);
+  $('resetBtn').addEventListener('click', () => { const ex = makeExample(); mutate(() => { loadState(ex); selected=null; }); syncInputs(); });
+  $('clearBtn').addEventListener('click', () => { if (!state.parts.length) return; mutate(() => { state.parts = []; selected = null; }); toast('Parts cleared. Undo brings them back.'); });
+  document.addEventListener('keydown', e => {
+    const tag = (e.target.tagName||'').toLowerCase();
+    if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key.toLowerCase() === 'z'){ e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+    if (mod && e.key.toLowerCase() === 'y'){ e.preventDefault(); redo(); return; }
+    const p = selected && findPart(selected); if (!p) return;
+    if (e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); deleteSelected(); }
+    else if (e.key === 'r' || e.key === 'R'){ if (TYPES[p.type].rotatable) mutate(() => { p.rot = (p.rot + 90) % 360; }); }
+    else if (e.key === 'm' || e.key === 'M'){ mirrorSelected(); }
+    else if (e.key === 'Escape'){ selected = null; renderAll(false); }
+    else if (e.key.startsWith('Arrow')){
+      e.preventDefault();
+      const st = (state.snap || 0.5) * (e.shiftKey ? 5 : 1);
+      const d = {ArrowLeft:[-st,0], ArrowRight:[st,0], ArrowUp:[0,st], ArrowDown:[0,-st]}[e.key];
+      mutate(() => { p.x = +(p.x + d[0]).toFixed(3); p.y = +(p.y + d[1]).toFixed(3); });
+    }
+  });
+}
+function syncInputs(){ $('plateSel').value = state.plateId; $('thick').value = state.thickness; $('snapSel').value = String(state.snap); }
+
+/* ---------------- 3D preview ---------------- */
+let three = null, rebuildTimer = null;
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim() || '#888'; }
+function plateShape(){
+  const pl = plate(), h = pl.size/2;
+  const shape = new THREE.Shape();
+  shape.moveTo(-h,-h); shape.lineTo(h,-h); shape.lineTo(h,h); shape.lineTo(-h,h); shape.lineTo(-h,-h);
+  const addHole = sh => {
+    const path = new THREE.Path();
+    if (sh.k === 'c') path.absarc(sh.x, sh.y, sh.r, 0, Math.PI*2, true);
+    else { path.moveTo(sh.pts[0][0], sh.pts[0][1]); for (let i=1;i<sh.pts.length;i++) path.lineTo(sh.pts[i][0], sh.pts[i][1]); path.lineTo(sh.pts[0][0], sh.pts[0][1]); }
+    shape.holes.push(path);
+  };
+  for (const m of pl.holes) addHole({k:'c', x:m.x, y:m.y, r:m.d/2});
+  for (const p of state.parts) addHole(cutShape(p));
+  return shape;
+}
+function plateGeometry(){
+  return new THREE.ExtrudeGeometry(plateShape(), { depth: state.thickness, bevelEnabled:false, curveSegments: 64 });
+}
+function init3d(){
+  const host = $('view3d');
+  if (!window.THREE || !THREE.OrbitControls){ $('fallback3d').textContent = 'The 3D preview could not load. Editing and export still work.'; return; }
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({antialias:true, alpha:true}); }
+  catch(e){ $('fallback3d').textContent = 'This browser has WebGL turned off, so the 3D preview is unavailable. Editing and export still work.'; return; }
+  $('fallback3d').remove();
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
+  host.appendChild(renderer.domElement);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(32, 1, 1, 6000);
+  camera.up.set(0,0,1);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(0,0,-12);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 0.85));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(-120, -200, 320); scene.add(sun);
+  const fill = new THREE.DirectionalLight(0xffffff, 0.25); fill.position.set(200, 150, 100); scene.add(fill);
+  const draw = () => renderer.render(scene, camera);
+  controls.addEventListener('change', draw);
+  const resize = () => { const w = host.clientWidth, h = host.clientHeight; if(!w||!h) return; renderer.setSize(w,h,false); camera.aspect = w/h; camera.updateProjectionMatrix(); draw(); };
+  new ResizeObserver(resize).observe(host);
+  three = { renderer, scene, camera, controls, draw, resize, group:null, framedFor:null };
+  rebuild3d();
+}
+function schedule3d(){ if (!three) return; clearTimeout(rebuildTimer); rebuildTimer = setTimeout(rebuild3d, drag ? 90 : 30); }
+function disposeGroup(g){ g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); }
+function rebuild3d(){
+  if (!three) return;
+  const { scene } = three;
+  if (three.group){ scene.remove(three.group); disposeGroup(three.group); }
+  const g = new THREE.Group();
+  const pl = plate(), t = state.thickness, gap = pl.maxDepth, S = pl.size;
+  const mat = (c, o={}) => new THREE.MeshStandardMaterial({color:new THREE.Color(c), roughness:0.75, metalness:0.05, ...o});
+  let geo;
+  try { geo = plateGeometry(); } catch(e){ geo = null; }
+  if (geo) g.add(new THREE.Mesh(geo, mat(css('--plate'))));
+  const back = new THREE.Mesh(new THREE.BoxGeometry(S, S, 3), mat(css('--zone'), {transparent:true, opacity:0.28, depthWrite:false}));
+  back.position.z = -gap - 1.5; g.add(back);
+  for (const m of pl.holes){
+    const so = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, gap, 20), mat(css('--zone'), {transparent:true, opacity:0.55}));
+    so.rotation.x = Math.PI/2; so.position.set(m.x, m.y, -gap/2); g.add(so);
+  }
+  if (show3dParts){
+    const acc = css('--accent');
+    for (const p of state.parts){
+      const tp = TYPES[p.type];
+      const bad = errIds.has(p.id);
+      const bodyMat = mat(bad ? css('--err') : acc, {transparent:true, opacity:0.35, depthWrite:false});
+      let body;
+      if (tp.body.c === 'circle'){ body = new THREE.Mesh(new THREE.CylinderGeometry(tp.body.d/2, tp.body.d/2, tp.depth, 28), bodyMat); body.rotation.x = Math.PI/2; }
+      else { body = new THREE.Mesh(new THREE.BoxGeometry(tp.body.w, tp.body.h, tp.depth), bodyMat); body.rotation.z = p.rot*Math.PI/180; }
+      body.position.set(p.x, p.y, -tp.depth/2); g.add(body);
+      if (tp.cap){
+        const col = tp.cap.kind==='led' ? '#E8432E' : tp.cap.kind==='lever' ? '#B9C0C7' : tp.cap.kind==='knob' ? '#1C2024' : '#E3E6E9';
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(tp.cap.d/2*(tp.cap.kind==='knob'?0.94:1), tp.cap.d/2, tp.cap.h, 32), mat(col, tp.cap.kind==='led'?{emissive:new THREE.Color('#7A1408')}:{}));
+        cap.rotation.x = Math.PI/2; cap.position.set(p.x, p.y, t + tp.cap.h/2); g.add(cap);
+      }
+      if (tp.screen){
+        const sc = new THREE.Mesh(new THREE.PlaneGeometry(tp.cut.w+1, tp.cut.h+1), mat('#0B1A2A', {emissive:new THREE.Color('#0D3A5C')}));
+        sc.position.set(p.x, p.y, -0.6); sc.rotation.z = p.rot*Math.PI/180; g.add(sc);
+      }
+    }
+  }
+  scene.add(g); three.group = g;
+  if (three.framedFor !== pl.id){
+    three.framedFor = pl.id;
+    three.camera.position.set(S*0.25, -S*1.45, S*1.25);
+    three.controls.update();
+  }
+  three.resize(); three.draw();
+}
+const mq = window.matchMedia('(prefers-color-scheme: dark)');
+if (mq.addEventListener) mq.addEventListener('change', () => schedule3d());
+new MutationObserver(() => schedule3d()).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+
+/* ---------------- Exports ---------------- */
+const baseName = () => `ash-front-plate-${plate().id}`;
+function stlBinary(){
+  const geo = plateGeometry();
+  const pos = geo.attributes.position.array;
+  const idx = geo.index ? geo.index.array : null;
+  const n = idx ? idx.length/3 : pos.length/9;
+  const buf = new ArrayBuffer(84 + 50*n), dv = new DataView(buf);
+  const hdr = 'ASH front plate - Immersion Dynamics';
+  for (let i=0;i<Math.min(80,hdr.length);i++) dv.setUint8(i, hdr.charCodeAt(i));
+  dv.setUint32(80, n, true);
+  let o = 84;
+  const v = k => { const i = (idx ? idx[k] : k)*3; return [pos[i],pos[i+1],pos[i+2]]; };
+  for (let f=0; f<n; f++){
+    const a=v(f*3), b=v(f*3+1), c=v(f*3+2);
+    const ux=b[0]-a[0], uy=b[1]-a[1], uz=b[2]-a[2], wx=c[0]-a[0], wy=c[1]-a[1], wz=c[2]-a[2];
+    let nx=uy*wz-uz*wy, ny=uz*wx-ux*wz, nz=ux*wy-uy*wx; const L=Math.hypot(nx,ny,nz)||1;
+    for (const val of [nx/L,ny/L,nz/L,...a,...b,...c]){ dv.setFloat32(o, val, true); o+=4; }
+    dv.setUint16(o, 0, true); o+=2;
+  }
+  geo.dispose();
+  return buf;
+}
+function cutEntities(){
+  const pl = plate(), h = pl.size/2;
+  const out = { outline: [[-h,-h],[h,-h],[h,h],[-h,h]], cuts: [], mounts: pl.holes.map(m => ({k:'c', x:m.x, y:m.y, r:m.d/2})) };
+  for (const p of state.parts) out.cuts.push(cutShape(p));
+  return out;
+}
+function dxfText(){
+  const E = cutEntities(), L = [];
+  const n = v => (Math.round(v*10000)/10000).toString();
+  const line = (layer, a, b) => L.push('0','LINE','8',layer,'10',n(a[0]),'20',n(a[1]),'30','0','11',n(b[0]),'21',n(b[1]),'31','0');
+  const circ = (layer, c) => L.push('0','CIRCLE','8',layer,'10',n(c.x),'20',n(c.y),'30','0','40',n(c.r));
+  const poly = (layer, pts) => { for (let i=0;i<pts.length;i++) line(layer, pts[i], pts[(i+1)%pts.length]); };
+  L.push('0','SECTION','2','HEADER','9','$INSUNITS','70','4','0','ENDSEC','0','SECTION','2','ENTITIES');
+  poly('OUTLINE', E.outline);
+  for (const c of E.cuts) c.k==='c' ? circ('CUTOUTS', c) : poly('CUTOUTS', c.pts);
+  for (const m of E.mounts) circ('MOUNTING', m);
+  L.push('0','ENDSEC','0','EOF');
+  return L.join('\n') + '\n';
+}
+function svgText(){
+  const pl = plate(), h = pl.size/2, E = cutEntities();
+  const f = v => (Math.round(v*1000)/1000).toString();
+  const circ = c => `M${f(c.x-c.r)} ${f(-c.y)}A${f(c.r)} ${f(c.r)} 0 1 0 ${f(c.x+c.r)} ${f(-c.y)}A${f(c.r)} ${f(c.r)} 0 1 0 ${f(c.x-c.r)} ${f(-c.y)}Z`;
+  const poly = pts => 'M' + pts.map(([x,y]) => `${f(x)} ${f(-y)}`).join('L') + 'Z';
+  let d = poly(E.outline);
+  for (const c of [...E.cuts, ...E.mounts]) d += c.k==='c' ? circ(c) : poly(c.pts);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${pl.size}mm" height="${pl.size}mm" viewBox="${-h} ${-h} ${pl.size} ${pl.size}">\n  <title>ASH front plate, ${esc(pl.name)}, ${state.parts.length} cutouts</title>\n  <path d="${d}" fill="#222" fill-rule="evenodd" stroke="#000" stroke-width="0.1"/>\n</svg>\n`;
+}
+function bomCsv(){
+  const rows = [['label','part','x_mm','y_mm','rotation_deg','cutout_mm','keepout_mm','depth_mm']];
+  const sorted = [...state.parts].sort((a,b) => a.label.localeCompare(b.label, undefined, {numeric:true}));
+  for (const p of sorted){ const t = TYPES[p.type]; rows.push([p.label, t.name, fmt(p.x), fmt(p.y), fmt(p.rot), dimText(t.cut), dimText(t.ko), t.depth]); }
+  rows.push([]); rows.push(['part','quantity']);
+  const q = {}; for (const p of state.parts) q[TYPES[p.type].name] = (q[TYPES[p.type].name]||0)+1;
+  for (const [k,v] of Object.entries(q)) rows.push([k, v]);
+  return rows.map(r => r.map(c => /[",\n]/.test(String(c)) ? `"${String(c).replace(/"/g,'""')}"` : c).join(',')).join('\n') + '\n';
+}
+const layoutJson = () => JSON.stringify({ format:'ash-front-plate', version:1, ...JSON.parse(serialize()) }, null, 2);
+
+const SAVE_OK = new Set(['gif','png','jpg','jpeg','webp','mp4','webm','mov','txt','json','md','docx','pptx','epub','csv','ttf','html','svg','pdf','xlsx','zip']);
+let dlPromise = null;
+function getDownloads(){
+  if (!window.claude || typeof window.claude.use !== 'function') return Promise.resolve(null);
+  return dlPromise ||= window.claude.use('downloads').catch(() => null);
+}
+async function saveFile(name, data){
+  const dl = await getDownloads();
+  if (dl){
+    let fname = name, payload = data;
+    const ext = name.split('.').pop().toLowerCase();
+    if (!SAVE_OK.has(ext)){
+      if (!window.JSZip){ toast('This file type needs packing into a .zip, and the zip library did not load.'); return; }
+      const z = new JSZip(); z.file(name, data); payload = await z.generateAsync({type:'blob'}); fname = name + '.zip';
+    }
+    try { await dl.save({filename:fname, data:payload}); toast(`Saved ${fname}`); }
+    catch(e){
+      if (e && e.code === 'declined') toast('Save cancelled.');
+      else if (e && e.code === 'rate_limited') toast('A save prompt is already open. Finish that one first.');
+      else toast('Saving files is not available in this view. Open the page on GitHub Pages to download.');
+    }
+    return;
+  }
+  const blob = data instanceof Blob ? data : new Blob([data], {type:'application/octet-stream'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  toast(`Downloaded ${name}`);
+}
+const needThree = () => { if (!window.THREE){ toast('The geometry library did not load, so the STL cannot be built. Reload the page.'); return false; } return true; };
+$('exStl').addEventListener('click', () => { if (needThree()) saveFile(baseName()+'.stl', stlBinary()); });
+$('exDxf').addEventListener('click', () => saveFile(baseName()+'.dxf', dxfText()));
+$('exSvg').addEventListener('click', () => saveFile(baseName()+'.svg', svgText()));
+$('exBom').addEventListener('click', () => saveFile(baseName()+'-parts.csv', bomCsv()));
+$('exJson').addEventListener('click', () => saveFile(baseName()+'-layout.json', layoutJson()));
+$('exAll').addEventListener('click', async () => {
+  if (!needThree()) return;
+  if (!window.JSZip){ toast('The zip library did not load. Use the single-file buttons instead.'); return; }
+  const z = new JSZip(), b = baseName();
+  z.file(b+'.stl', stlBinary()); z.file(b+'.dxf', dxfText()); z.file(b+'.svg', svgText());
+  z.file(b+'-parts.csv', bomCsv()); z.file(b+'-layout.json', layoutJson());
+  saveFile(b+'.zip', await z.generateAsync({type:'blob'}));
+});
+$('imJson').addEventListener('click', () => $('fileIn').click());
+$('fileIn').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try { const before = serialize(); const json = JSON.parse(r.result); mutate(() => { loadState(json); selected = null; }, before); syncInputs(); toast(`Opened ${f.name}`); }
+    catch(err){ toast(`Could not open ${f.name}: ${err.message}`); }
+    e.target.value = '';
+  };
+  r.readAsText(f);
+});
+
+let toastTimer = null;
+function toast(msg){ const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3200); }
+
+/* ---------------- Boot ---------------- */
+function boot(){
+  let saved = null;
+  try { saved = localStorage.getItem(STORE_KEY); } catch(e){}
+  try { if (saved) loadState(saved); else loadState(makeExample()); }
+  catch(e){ loadState(makeExample()); }
+  renderPalette(); initControls(); renderAll(false);
+  init3d();
+}
+boot();
+})();
+</script>
+
+</body>
+</html>
