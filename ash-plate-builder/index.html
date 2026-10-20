@@ -98,7 +98,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .etools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--line)}
 .etools .readout{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;margin-left:auto}
 .stage{display:flex;justify-content:center;padding:12px;background:var(--panel-2);border-radius:0 0 var(--r) var(--r)}
-#plate{width:min(100%, calc(100vh - 170px));min-width:0;max-width:100%;aspect-ratio:1;touch-action:none;user-select:none;-webkit-user-select:none;display:block}
+#plate{width:100%;max-height:calc(100vh - 170px);min-width:0;max-width:100%;touch-action:none;user-select:none;-webkit-user-select:none;display:block}
 @media (max-width:760px){#plate{width:100%}}
 #plate .plate{fill:var(--plate)}
 #plate .gl{stroke:var(--grid);stroke-width:.2}
@@ -231,12 +231,40 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 
 /* ---------------- Data: back plates & component library ----------------
    Replace PLATES with the real back plate outlines later. All units mm, origin = plate centre, +Y up. */
-function squarePlate(id, size){
-  const m = size/2 - 12;
-  return { id, name:`Square ${size} mm`, size, inset:5, maxDepth:35,
-    holes:[[-m,-m],[m,-m],[m,m],[-m,m]].map(([x,y])=>({x,y,d:3.4,ko:9})) };
+/* A plate: outline = closed polygon (any shape), inset = edge margin, holes = mounting holes,
+   maxDepth = clearance between front and back plate. */
+const mh = pts => pts.map(([x,y]) => ({x, y, d:3.4, ko:9}));
+function chaikin(pts, iterations){
+  for (let k=0;k<iterations;k++){
+    const out = [];
+    for (let i=0;i<pts.length;i++){
+      const [ax,ay] = pts[i], [bx,by] = pts[(i+1)%pts.length];
+      out.push([0.75*ax+0.25*bx, 0.75*ay+0.25*by], [0.25*ax+0.75*bx, 0.25*ay+0.75*by]);
+    }
+    pts = out;
+  }
+  return pts;
 }
-const PLATES = [squarePlate('sq160',160), squarePlate('sq200',200), squarePlate('sq240',240)];
+function squarePlate(id, size){
+  const h = size/2, m = h - 12;
+  return { id, name:`Square ${size} mm`, inset:5, maxDepth:35,
+    outline:[[-h,-h],[h,-h],[h,h],[-h,h]], holes: mh([[-m,-m],[m,-m],[m,m],[-m,m]]) };
+}
+function gt3Plate(){
+  // Wide GT3-style plate: flat-ish top, straight grip sides, tapered bottom. Smoothed control polygon.
+  const ctrl = [[-92,-88],[92,-88],[128,-40],[134,40],[120,74],[60,88],[-60,88],[-120,74],[-134,40],[-128,-40]];
+  return { id:'gt3', name:'GT3 wide', inset:5, maxDepth:35, outline: chaikin(ctrl, 4),
+    holes: mh([[-112,48],[112,48],[-114,-34],[114,-34],[-82,-72],[82,-72]]) };
+}
+const PLATES = [gt3Plate(), squarePlate('sq160',160), squarePlate('sq200',200), squarePlate('sq240',240)];
+for (const pl of PLATES){
+  let a = 0; const o = pl.outline;
+  for (let i=0;i<o.length;i++){ const [x1,y1]=o[i],[x2,y2]=o[(i+1)%o.length]; a += x1*y2-x2*y1; }
+  if (a < 0) o.reverse();                       // keep outlines counter-clockwise
+  const xs = o.map(p=>p[0]), ys = o.map(p=>p[1]);
+  pl.bbox = {minX:Math.min(...xs), maxX:Math.max(...xs), minY:Math.min(...ys), maxY:Math.max(...ys)};
+  pl.width = pl.bbox.maxX - pl.bbox.minX; pl.height = pl.bbox.maxY - pl.bbox.minY;
+}
 
 const TYPES = {
   btn7:  {group:'Buttons', name:'Push button 7 mm',  short:'BTN', cut:{c:'circle',d:7},   ko:{c:'circle',d:12}, depth:15, body:{c:'circle',d:9},  cap:{d:9, h:4, kind:'cap'}},
@@ -255,26 +283,26 @@ const TYPES = {
    columns either side, MAP/BB rotaries and ignition/start toggles at the bottom. */
 function exampleParts(){
   const P = [];
-  for (let i=0;i<12;i++) P.push({type:'led3', x:-55+i*10, y:86, label:'SL'+(i+1)});
-  P.push({type:'oled', x:0, y:58, label:'DISPLAY'});
-  P.push({type:'led5', x:-25, y:58, label:'FLAG L'},{type:'led5', x:25, y:58, label:'FLAG R'});
-  P.push({type:'enc', x:-64, y:60, label:'TC'},{type:'enc', x:64, y:60, label:'ABS'});
-  P.push({type:'btn16', x:-23, y:22, label:'RADIO'},{type:'btn16', x:0, y:22, label:'PIT'},{type:'btn16', x:23, y:22, label:'FLASH'});
-  P.push({type:'btn16', x:-12, y:-2, label:'LIGHTS'},{type:'btn16', x:12, y:-2, label:'WIPER'});
+  for (let i=0;i<15;i++) P.push({type:'led3', x:-56+i*8, y:68, label:'SL'+(i+1)});
+  P.push({type:'oled', x:0, y:45, label:'DISPLAY'});
+  P.push({type:'led5', x:-26, y:45, label:'FLAG L'},{type:'led5', x:26, y:45, label:'FLAG R'});
+  P.push({type:'enc', x:-78, y:52, label:'TC'},{type:'enc', x:78, y:52, label:'ABS'});
+  P.push({type:'btn16', x:-24, y:8, label:'RADIO'},{type:'btn16', x:0, y:8, label:'PIT'},{type:'btn16', x:24, y:8, label:'FLASH'});
+  P.push({type:'btn16', x:-12, y:-16, label:'LIGHTS'},{type:'btn16', x:12, y:-16, label:'WIPER'});
   let n = 1;
-  for (const y of [28,4,-20]) for (const x of [-70,-46]) P.push({type:'btn12', x, y, label:'L'+(n++)});
+  for (const y of [24,0,-24]) for (const x of [-98,-72]) P.push({type:'btn12', x, y, label:'L'+(n++)});
   n = 1;
-  for (const y of [28,4,-20]) for (const x of [46,70]) P.push({type:'btn12', x, y, label:'R'+(n++)});
-  P.push({type:'btn12', x:0, y:-32, label:'OK'});
+  for (const y of [24,0,-24]) for (const x of [72,98]) P.push({type:'btn12', x, y, label:'R'+(n++)});
+  P.push({type:'btn12', x:0, y:-38, label:'OK'});
   P.push({type:'enc', x:0, y:-62, label:'MENU'});
-  P.push({type:'rot', x:-40, y:-60, label:'MAP'},{type:'rot', x:40, y:-60, label:'BB'});
-  P.push({type:'btn12', x:-72, y:-55, label:'PREV'},{type:'btn12', x:72, y:-55, label:'NEXT'});
-  P.push({type:'tgl', x:-18, y:-82, label:'IGN'},{type:'tgl', x:18, y:-82, label:'START'});
+  P.push({type:'rot', x:-52, y:-55, label:'MAP'},{type:'rot', x:52, y:-55, label:'BB'});
+  P.push({type:'btn12', x:-90, y:-50, label:'PREV'},{type:'btn12', x:90, y:-50, label:'NEXT'});
+  P.push({type:'tgl', x:-26, y:-68, label:'IGN'},{type:'tgl', x:26, y:-68, label:'START'});
   return P;
 }
 
 /* ---------------- State ---------------- */
-const STORE_KEY = 'ash-front-plate-v2';
+const STORE_KEY = 'ash-front-plate-v3';
 let state = null;
 let nextId = 1;
 let selected = null;
@@ -283,7 +311,7 @@ let undoStack = [], redoStack = [];
 let showKO = true, show3dParts = true;
 
 const $ = id => document.getElementById(id);
-const plate = () => PLATES.find(p => p.id === state.plateId) || PLATES[1];
+const plate = () => PLATES.find(p => p.id === state.plateId) || PLATES[0];
 
 function newPart(o){
   const t = TYPES[o.type];
@@ -297,7 +325,7 @@ function autoLabel(short, list){
   return short + n;
 }
 function makeExample(){
-  const s = { plateId:'sq200', thickness:4, snap:1, parts:[] };
+  const s = { plateId:'gt3', thickness:4, snap:1, parts:[] };
   const prev = state; state = s;
   for (const o of exampleParts()) s.parts.push(newPart({...o, __list:s.parts}));
   state = prev;
@@ -307,7 +335,7 @@ const serialize = () => JSON.stringify(state);
 function loadState(json){
   const s = typeof json === 'string' ? JSON.parse(json) : json;
   if (!s || !Array.isArray(s.parts)) throw new Error('This file has no parts list.');
-  if (!PLATES.some(p=>p.id===s.plateId)) s.plateId = 'sq200';
+  if (!PLATES.some(p=>p.id===s.plateId)) s.plateId = 'gt3';
   s.thickness = clampNum(+s.thickness || 4, 2, 10);
   s.snap = [0,0.5,1,2.5,5].includes(+s.snap) ? +s.snap : 1;
   s.parts = s.parts.filter(p => TYPES[p.type]).map(p => ({id:String(p.id||''), type:p.type, x:+p.x||0, y:+p.y||0, rot:+p.rot||0, label:String(p.label||'')}));
@@ -352,9 +380,17 @@ function shapeOf(spec, p){
 const koShape  = p => shapeOf(TYPES[p.type].ko, p);
 const cutShape = p => shapeOf(TYPES[p.type].cut, p);
 
-function insideSquare(sh, half){
-  if (sh.k === 'c') return Math.abs(sh.x)+sh.r <= half+EPS && Math.abs(sh.y)+sh.r <= half+EPS;
-  return sh.pts.every(([x,y]) => Math.abs(x) <= half+EPS && Math.abs(y) <= half+EPS);
+function edgeDist(x, y, o){
+  let d = Infinity;
+  for (let i=0;i<o.length;i++) d = Math.min(d, segDist(x, y, o[i], o[(i+1)%o.length]));
+  return d;
+}
+// True when the shape lies inside the outline and at least `inset` mm from every edge.
+function insideZone(sh, pl){
+  const o = pl.outline, ins = pl.inset;
+  if (sh.k === 'c') return pointInPoly(sh.x, sh.y, o) && edgeDist(sh.x, sh.y, o) >= sh.r + ins - EPS;
+  if (!sh.pts.every(([x,y]) => pointInPoly(x, y, o) && edgeDist(x, y, o) >= ins - EPS)) return false;
+  return !o.some(([x,y]) => pointInPoly(x, y, sh.pts));
 }
 function pointInPoly(x,y,pts){
   let ins=false;
@@ -397,13 +433,13 @@ function overlap(A,B){
 
 /* ---------------- Validation ---------------- */
 function validate(){
-  const pl = plate(), half = pl.size/2 - pl.inset;
+  const pl = plate();
   issues = []; errIds = new Set(); warnIds = new Set();
   const kos = state.parts.map(p => [p, koShape(p)]);
   const mounts = pl.holes.map((h,i) => ({i, sh:{k:'c', x:h.x, y:h.y, r:h.ko/2}}));
   for (const [p, sh] of kos){
     const t = TYPES[p.type];
-    if (!insideSquare(sh, half)){ issues.push({sev:'err', ids:[p.id], msg:`${p.label} crosses the ${pl.inset} mm edge margin.`}); errIds.add(p.id); }
+    if (!insideZone(sh, pl)){ issues.push({sev:'err', ids:[p.id], msg:`${p.label} crosses the ${pl.inset} mm edge margin.`}); errIds.add(p.id); }
     for (const m of mounts) if (overlap(sh, m.sh)){ issues.push({sev:'err', ids:[p.id], msg:`${p.label} overlaps mounting hole ${m.i+1}.`}); errIds.add(p.id); }
     if (t.depth > pl.maxDepth){ issues.push({sev:'warn', ids:[p.id], msg:`${p.label} needs ${t.depth} mm behind the plate; this back plate leaves ${pl.maxDepth} mm.`}); warnIds.add(p.id); }
   }
@@ -420,16 +456,17 @@ function validate(){
 const errorCount = () => issues.filter(i=>i.sev==='err').length;
 
 function isFree(type, x, y, rot, ignoreId){
-  const pl = plate(), half = pl.size/2 - pl.inset;
+  const pl = plate();
   const probe = {type, x, y, rot};
   const sh = koShape(probe);
-  if (!insideSquare(sh, half)) return false;
+  if (!insideZone(sh, pl)) return false;
   for (const h of pl.holes) if (overlap(sh, {k:'c',x:h.x,y:h.y,r:h.ko/2})) return false;
   for (const q of state.parts) if (q.id !== ignoreId && overlap(sh, koShape(q))) return false;
   return true;
 }
 function findFreeSpot(type){
-  const step = 2, half = plate().size/2;
+  const step = 2, b = plate().bbox;
+  const half = Math.max(-b.minX, b.maxX, -b.minY, b.maxY);
   if (isFree(type,0,0,0)) return {x:0,y:0};
   for (let r=step; r<half; r+=step){
     for (let i=-r;i<=r;i+=step){
@@ -446,22 +483,40 @@ function shapeSvg(sh, cls){
   if (sh.k === 'c') return `<circle class="${cls}" cx="${sh.x}" cy="${-sh.y}" r="${sh.r}"/>`;
   return `<polygon class="${cls}" points="${sh.pts.map(([x,y])=>`${x.toFixed(3)},${(-y).toFixed(3)}`).join(' ')}"/>`;
 }
-function render2d(){
-  const pl = plate(), S = pl.size, h = S/2, pad = 9, zh = h - pl.inset;
-  svg.setAttribute('viewBox', `${-h-pad} ${-h-pad} ${S+2*pad} ${S+2*pad}`);
-  let o = '';
-  o += `<rect class="plate" x="${-h}" y="${-h}" width="${S}" height="${S}"/>`;
-  for (let v = -Math.floor(h/10)*10; v <= h; v += 10){
-    const s = v % 50 === 0 ? ' s' : '';
-    o += `<line class="gl${s}" x1="${v}" y1="${-h}" x2="${v}" y2="${h}"/><line class="gl${s}" x1="${-h}" y1="${v}" x2="${h}" y2="${v}"/>`;
+function offsetInward(o, d){
+  // Mitered inward offset of a CCW polygon; used only to draw the margin line.
+  const n = o.length, out = [];
+  for (let i=0;i<n;i++){
+    const [px,py] = o[(i-1+n)%n], [cx,cy] = o[i], [nx,ny] = o[(i+1)%n];
+    let ax = cx-px, ay = cy-py, bx = nx-cx, by = ny-cy;
+    const la = Math.hypot(ax,ay)||1, lb = Math.hypot(bx,by)||1;
+    const n1 = [-ay/la, ax/la], n2 = [-by/lb, bx/lb];
+    let mx = n1[0]+n2[0], my = n1[1]+n2[1]; const ml = Math.hypot(mx,my)||1; mx/=ml; my/=ml;
+    const cos = mx*n1[0] + my*n1[1];
+    const k = d / Math.max(cos, 0.3);
+    out.push([cx + mx*k, cy + my*k]);
   }
-  o += `<rect class="zone" x="${-zh}" y="${-zh}" width="${2*zh}" height="${2*zh}"/>`;
+  return out;
+}
+const polySvgPts = pts => pts.map(([x,y]) => `${x.toFixed(3)},${(-y).toFixed(3)}`).join(' ');
+function render2d(){
+  const pl = plate(), b = pl.bbox, pad = 10;
+  const vx = b.minX - pad, vy = -b.maxY - pad, vw = pl.width + 2*pad, vh = pl.height + 2*pad;
+  svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
+  svg.style.aspectRatio = `${vw} / ${vh}`;
+  let o = `<defs><clipPath id="plateClip"><polygon points="${polySvgPts(pl.outline)}"/></clipPath></defs>`;
+  o += `<polygon class="plate" points="${polySvgPts(pl.outline)}"/>`;
+  o += `<g clip-path="url(#plateClip)">`;
+  for (let v = Math.ceil(b.minX/10)*10; v <= b.maxX; v += 10) o += `<line class="gl${v%50===0?' s':''}" x1="${v}" y1="${-b.maxY}" x2="${v}" y2="${-b.minY}"/>`;
+  for (let v = Math.ceil(b.minY/10)*10; v <= b.maxY; v += 10) o += `<line class="gl${v%50===0?' s':''}" x1="${b.minX}" y1="${-v}" x2="${b.maxX}" y2="${-v}"/>`;
+  o += `</g>`;
+  o += `<polygon class="zone" points="${polySvgPts(offsetInward(pl.outline, pl.inset))}"/>`;
   for (const m of pl.holes){
     o += `<circle class="mko" cx="${m.x}" cy="${-m.y}" r="${m.ko/2}"/><circle class="cut" cx="${m.x}" cy="${-m.y}" r="${m.d/2}"/>`;
   }
   // dimension labels
-  o += `<line class="dimline" x1="${-h}" y1="${h+3}" x2="${h}" y2="${h+3}"/><text class="dim" x="0" y="${h+7.4}">${S} mm</text>`;
-  o += `<text class="dim" x="${-h+pl.inset}" y="${-h-3}" text-anchor="start" style="text-anchor:start">${pl.inset} mm margin</text>`;
+  o += `<line class="dimline" x1="${b.minX}" y1="${-b.minY+4}" x2="${b.maxX}" y2="${-b.minY+4}"/><text class="dim" x="${(b.minX+b.maxX)/2}" y="${-b.minY+8.4}">${fmt(pl.width)} × ${fmt(pl.height)} mm</text>`;
+  o += `<text class="dim" x="${b.minX}" y="${-b.maxY-3.5}" style="text-anchor:start">${esc(pl.name)} · ${pl.inset} mm margin</text>`;
   for (const p of state.parts){
     const t = TYPES[p.type];
     const cls = ['part']; if (p.id===selected) cls.push('sel'); if (errIds.has(p.id)) cls.push('err'); else if (warnIds.has(p.id)) cls.push('warn');
@@ -500,8 +555,8 @@ svg.addEventListener('pointermove', e => {
   $('readout').textContent = `x ${fmt(w.x)}  y ${fmt(w.y)} mm`;
   if (!drag) return;
   const p = findPart(drag.id); if (!p) return;
-  const h = plate().size/2;
-  const nx = clampNum(snapV(w.x + drag.dx), -h, h), ny = clampNum(snapV(w.y + drag.dy), -h, h);
+  const b = plate().bbox;
+  const nx = clampNum(snapV(w.x + drag.dx), b.minX, b.maxX), ny = clampNum(snapV(w.y + drag.dy), b.minY, b.maxY);
   if (nx !== p.x || ny !== p.y){ p.x = nx; p.y = ny; drag.moved = true; validate(); render2d(); renderProps(); renderIssues(); schedule3d(); }
 });
 function endDrag(){
@@ -632,7 +687,7 @@ $('issuesBox').addEventListener('click', e => {
 function renderHeader(){
   const pl = plate();
   $('plateTag').textContent = `${pl.name} · ${fmt(state.thickness)} mm`;
-  $('plateNote').textContent = `${pl.size} × ${pl.size} mm outline, parts must stay ${pl.inset} mm from the edge. ${pl.holes.length} × M3 mounting holes. ${pl.maxDepth} mm clearance to the back plate.`;
+  $('plateNote').textContent = `${fmt(pl.width)} × ${fmt(pl.height)} mm outline, parts must stay ${pl.inset} mm from the edge. ${pl.holes.length} × M3 mounting holes. ${pl.maxDepth} mm clearance to the back plate.`;
   $('undoBtn').disabled = !undoStack.length; $('redoBtn').disabled = !redoStack.length;
 }
 
@@ -682,9 +737,8 @@ function syncInputs(){ $('plateSel').value = state.plateId; $('thick').value = s
 let three = null, rebuildTimer = null;
 function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim() || '#888'; }
 function plateShape(){
-  const pl = plate(), h = pl.size/2;
-  const shape = new THREE.Shape();
-  shape.moveTo(-h,-h); shape.lineTo(h,-h); shape.lineTo(h,h); shape.lineTo(-h,h); shape.lineTo(-h,-h);
+  const pl = plate();
+  const shape = outlineShape(pl.outline);
   const addHole = sh => {
     const path = new THREE.Path();
     if (sh.k === 'c') path.absarc(sh.x, sh.y, sh.r, 0, Math.PI*2, true);
@@ -693,6 +747,13 @@ function plateShape(){
   };
   for (const m of pl.holes) addHole({k:'c', x:m.x, y:m.y, r:m.d/2});
   for (const p of state.parts) addHole(cutShape(p));
+  return shape;
+}
+function outlineShape(o){
+  const shape = new THREE.Shape();
+  shape.moveTo(o[0][0], o[0][1]);
+  for (let i=1;i<o.length;i++) shape.lineTo(o[i][0], o[i][1]);
+  shape.lineTo(o[0][0], o[0][1]);
   return shape;
 }
 function plateGeometry(){
@@ -729,13 +790,13 @@ function rebuild3d(){
   const { scene } = three;
   if (three.group){ scene.remove(three.group); disposeGroup(three.group); }
   const g = new THREE.Group();
-  const pl = plate(), t = state.thickness, gap = pl.maxDepth, S = pl.size;
+  const pl = plate(), t = state.thickness, gap = pl.maxDepth, S = Math.max(pl.width, pl.height);
   const mat = (c, o={}) => new THREE.MeshStandardMaterial({color:new THREE.Color(c), roughness:0.75, metalness:0.05, ...o});
   let geo;
   try { geo = plateGeometry(); } catch(e){ geo = null; }
   if (geo) g.add(new THREE.Mesh(geo, mat(css('--plate'))));
-  const back = new THREE.Mesh(new THREE.BoxGeometry(S, S, 3), mat(css('--zone'), {transparent:true, opacity:0.28, depthWrite:false}));
-  back.position.z = -gap - 1.5; g.add(back);
+  const back = new THREE.Mesh(new THREE.ExtrudeGeometry(outlineShape(pl.outline), {depth:3, bevelEnabled:false}), mat(css('--zone'), {transparent:true, opacity:0.28, depthWrite:false}));
+  back.position.z = -gap - 3; g.add(back);
   for (const m of pl.holes){
     const so = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, gap, 20), mat(css('--zone'), {transparent:true, opacity:0.55}));
     so.rotation.x = Math.PI/2; so.position.set(m.x, m.y, -gap/2); g.add(so);
@@ -797,8 +858,8 @@ function stlBinary(){
   return buf;
 }
 function cutEntities(){
-  const pl = plate(), h = pl.size/2;
-  const out = { outline: [[-h,-h],[h,-h],[h,h],[-h,h]], cuts: [], mounts: pl.holes.map(m => ({k:'c', x:m.x, y:m.y, r:m.d/2})) };
+  const pl = plate();
+  const out = { outline: pl.outline, cuts: [], mounts: pl.holes.map(m => ({k:'c', x:m.x, y:m.y, r:m.d/2})) };
   for (const p of state.parts) out.cuts.push(cutShape(p));
   return out;
 }
@@ -816,13 +877,13 @@ function dxfText(){
   return L.join('\n') + '\n';
 }
 function svgText(){
-  const pl = plate(), h = pl.size/2, E = cutEntities();
+  const pl = plate(), b = pl.bbox, E = cutEntities();
   const f = v => (Math.round(v*1000)/1000).toString();
   const circ = c => `M${f(c.x-c.r)} ${f(-c.y)}A${f(c.r)} ${f(c.r)} 0 1 0 ${f(c.x+c.r)} ${f(-c.y)}A${f(c.r)} ${f(c.r)} 0 1 0 ${f(c.x-c.r)} ${f(-c.y)}Z`;
   const poly = pts => 'M' + pts.map(([x,y]) => `${f(x)} ${f(-y)}`).join('L') + 'Z';
   let d = poly(E.outline);
   for (const c of [...E.cuts, ...E.mounts]) d += c.k==='c' ? circ(c) : poly(c.pts);
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${pl.size}mm" height="${pl.size}mm" viewBox="${-h} ${-h} ${pl.size} ${pl.size}">\n  <title>ASH front plate, ${esc(pl.name)}, ${state.parts.length} cutouts</title>\n  <path d="${d}" fill="#222" fill-rule="evenodd" stroke="#000" stroke-width="0.1"/>\n</svg>\n`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${f(pl.width)}mm" height="${f(pl.height)}mm" viewBox="${f(b.minX)} ${f(-b.maxY)} ${f(pl.width)} ${f(pl.height)}">\n  <title>ASH front plate, ${esc(pl.name)}, ${state.parts.length} cutouts</title>\n  <path d="${d}" fill="#222" fill-rule="evenodd" stroke="#000" stroke-width="0.1"/>\n</svg>\n`;
 }
 function bomCsv(){
   const rows = [['label','part','x_mm','y_mm','rotation_deg','cutout_mm','keepout_mm','depth_mm']];

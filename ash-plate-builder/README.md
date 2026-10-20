@@ -26,7 +26,13 @@ Export of the plate files is blocked while any check fails (edge margin, mountin
 ## Editing the data
 All data lives at the top of the script in `index.html`. Units are mm, the origin is the plate centre, and +Y points up.
 
-- **`PLATES`** holds the back plates. The current entries are square placeholders (160, 200 and 240 mm) with a 5 mm edge margin, four M3 mounting holes and 35 mm clearance to the back plate. Replace or add entries as the real back plates are drawn.
+- **`PLATES`** holds the back plates. Each one has:
+  - `outline`, a closed polygon of any shape
+  - `inset`, the edge margin
+  - `holes`, the mounting holes
+  - `maxDepth`, the clearance to the back plate
+
+  The **GT3 wide** plate (about 264 × 176 mm) is a smoothed placeholder shape, and the square plates are simple test outlines. Replace them as the real back plates are drawn.
 - **`TYPES`** is the part library. For each part it defines:
   - the cutout
   - the keep-out zone
