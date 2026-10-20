@@ -178,7 +178,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
             <select id="snapSel" style="width:auto"><option value="0">Off</option><option value="0.5">0.5 mm</option><option value="1">1 mm</option><option value="2.5">2.5 mm</option><option value="5">5 mm</option></select>
           </label>
           <label class="check"><input type="checkbox" id="koChk" checked> Keep-out zones</label>
-          <button class="btn sm ghost" id="resetBtn">Load example</button>
+          <button class="btn sm ghost" id="resetBtn">Load GT3 example</button>
           <button class="btn sm ghost danger" id="clearBtn">Clear parts</button>
           <span class="readout" id="readout">x — y —</span>
         </div>
@@ -250,21 +250,31 @@ const TYPES = {
   oled:  {group:'Indicators & displays', name:'OLED 0.96″ window', short:'OLED', cut:{c:'rect',w:25,h:14,r:1}, ko:{c:'rect',w:30,h:30}, depth:8, body:{c:'rect',w:27,h:28}, cap:null, screen:true, rotatable:true},
 };
 
+/* GT3-style example: shift-light strip, central display with flag LEDs,
+   TC/ABS encoders up top, function buttons in the middle, thumb button
+   columns either side, MAP/BB rotaries and ignition/start toggles at the bottom. */
 function exampleParts(){
   const P = [];
-  for (let i=0;i<8;i++) P.push({type:'led3', x:-42+i*12, y:82});
-  P.push({type:'oled', x:0, y:62});
-  P.push({type:'enc', x:-60, y:50},{type:'enc', x:60, y:50});
-  for (const x of [-60,-30,30,60]) for (const y of [15,-15]) P.push({type:'btn16', x, y});
-  P.push({type:'btn12', x:0, y:15},{type:'btn12', x:0, y:-15});
-  P.push({type:'rot', x:0, y:-55});
-  P.push({type:'tgl', x:-30, y:-55},{type:'tgl', x:30, y:-55});
-  P.push({type:'btn12', x:-60, y:-55},{type:'btn12', x:60, y:-55});
+  for (let i=0;i<12;i++) P.push({type:'led3', x:-55+i*10, y:86, label:'SL'+(i+1)});
+  P.push({type:'oled', x:0, y:58, label:'DISPLAY'});
+  P.push({type:'led5', x:-25, y:58, label:'FLAG L'},{type:'led5', x:25, y:58, label:'FLAG R'});
+  P.push({type:'enc', x:-64, y:60, label:'TC'},{type:'enc', x:64, y:60, label:'ABS'});
+  P.push({type:'btn16', x:-23, y:22, label:'RADIO'},{type:'btn16', x:0, y:22, label:'PIT'},{type:'btn16', x:23, y:22, label:'FLASH'});
+  P.push({type:'btn16', x:-12, y:-2, label:'LIGHTS'},{type:'btn16', x:12, y:-2, label:'WIPER'});
+  let n = 1;
+  for (const y of [28,4,-20]) for (const x of [-70,-46]) P.push({type:'btn12', x, y, label:'L'+(n++)});
+  n = 1;
+  for (const y of [28,4,-20]) for (const x of [46,70]) P.push({type:'btn12', x, y, label:'R'+(n++)});
+  P.push({type:'btn12', x:0, y:-32, label:'OK'});
+  P.push({type:'enc', x:0, y:-62, label:'MENU'});
+  P.push({type:'rot', x:-40, y:-60, label:'MAP'},{type:'rot', x:40, y:-60, label:'BB'});
+  P.push({type:'btn12', x:-72, y:-55, label:'PREV'},{type:'btn12', x:72, y:-55, label:'NEXT'});
+  P.push({type:'tgl', x:-18, y:-82, label:'IGN'},{type:'tgl', x:18, y:-82, label:'START'});
   return P;
 }
 
 /* ---------------- State ---------------- */
-const STORE_KEY = 'ash-front-plate-v1';
+const STORE_KEY = 'ash-front-plate-v2';
 let state = null;
 let nextId = 1;
 let selected = null;
