@@ -106,6 +106,9 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 #plate .zone{fill:none;stroke:var(--zone);stroke-width:.4;stroke-dasharray:2 1.5}
 #plate .ko{fill:var(--ko-fill);stroke:var(--ko);stroke-width:.35;stroke-dasharray:1.2 .9}
 #plate .cut{fill:var(--hole);stroke:var(--hole-edge);stroke-width:.3}
+#plate .nogo{fill:url(#nogoHatch);stroke:var(--zone);stroke-width:.3}
+#plate .hatch{stroke:var(--zone);stroke-width:.5;opacity:.55}
+#plate .nogo-hole{fill:none;stroke:var(--plate-ink);stroke-width:.3;stroke-dasharray:.8 .8;opacity:.7}
 #plate .mko{fill:none;stroke:var(--zone);stroke-width:.3;stroke-dasharray:1 1}
 #plate .lbl{fill:var(--plate-ink);font-family:var(--f-mono);font-size:3.2px;text-anchor:middle;pointer-events:none}
 #plate .part{cursor:grab}
@@ -178,7 +181,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
             <select id="snapSel" style="width:auto"><option value="0">Off</option><option value="0.5">0.5 mm</option><option value="1">1 mm</option><option value="2.5">2.5 mm</option><option value="5">5 mm</option></select>
           </label>
           <label class="check"><input type="checkbox" id="koChk" checked> Keep-out zones</label>
-          <button class="btn sm ghost" id="resetBtn">Load GT3 example</button>
+          <button class="btn sm ghost" id="resetBtn">Load example</button>
           <button class="btn sm ghost danger" id="clearBtn">Clear parts</button>
           <span class="readout" id="readout">x — y —</span>
         </div>
@@ -233,7 +236,11 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
    Replace PLATES with the real back plate outlines later. All units mm, origin = plate centre, +Y up. */
 /* A plate: outline = closed polygon (any shape), inset = edge margin, holes = mounting holes,
    maxDepth = clearance between front and back plate. */
-const mh = pts => pts.map(([x,y]) => ({x, y, d:3.4, ko:9}));
+const mh = pts => pts.map(([x,y]) => ({x, y, d:3.4, ko:9, role:'mount'}));
+/* Hole roles: 'mount' = front plate screw, cut through the front plate;
+   'keepout' = no-go area on the back plate (handle bolts, hub), not cut, parts keep clear. */
+// Imported from simpleBackplate5 - Part 30.dxf with tools/dxf2plate.py
+const BACKPLATE_5 = {"id":"bp5","name":"Backplate 5","inset":5,"maxDepth":35,"outline":[[95.458,-56.776],[89.471,-50.789],[89.02,-50.39],[88.526,-50.048],[87.995,-49.769],[87.432,-49.554],[72.901,-45.003],[71.105,-44.243],[69.534,-43.183],[68.211,-41.867],[67.162,-40.34],[66.412,-38.645],[65.985,-36.829],[65.907,-34.935],[66.202,-33.007],[69.125,-21.488],[69.495,-20.492],[70.059,-19.606],[70.795,-18.858],[71.683,-18.274],[79.84,-14.077],[80.384,-13.837],[80.95,-13.664],[81.533,-13.559],[82.126,-13.524],[96.525,-13.524],[96.651,-13.52],[96.776,-13.508],[96.901,-13.488],[97.024,-13.461],[97.024,11.461],[96.901,11.488],[96.776,11.508],[96.651,11.52],[96.525,11.524],[82.177,11.524],[81.36,11.591],[80.571,11.789],[79.824,12.113],[79.135,12.556],[77.094,14.122],[76.502,14.513],[75.864,14.815],[75.189,15.024],[74.488,15.136],[69.912,15.536],[69.15,15.76],[68.555,16.242],[68.184,16.913],[68.095,17.701],[69.834,37.58],[70.058,38.342],[70.54,38.937],[71.211,39.309],[72.0,39.397],[75.999,39.047],[77.514,39.03],[79.005,39.24],[80.448,39.672],[81.817,40.32],[84.262,41.712],[85.107,42.142],[85.988,42.489],[86.897,42.752],[87.829,42.927],[100.471,44.689],[101.873,44.686],[103.196,44.304],[104.364,43.575],[105.303,42.534],[110.101,35.421],[110.175,35.319],[110.255,35.222],[110.34,35.13],[110.432,35.043],[133.58,50.656],[133.534,50.774],[133.481,50.888],[133.421,50.998],[133.353,51.105],[125.143,63.277],[124.302,64.433],[123.384,65.522],[122.393,66.54],[121.334,67.484],[120.211,68.35],[119.027,69.136],[117.788,69.837],[116.496,70.45],[106.856,74.613],[105.505,75.085],[104.109,75.358],[102.688,75.43],[101.263,75.298],[64.081,69.149],[63.384,69.008],[62.699,68.818],[62.029,68.58],[61.377,68.294],[29.778,53.084],[28.741,52.655],[27.666,52.346],[26.564,52.159],[25.443,52.096],[-25.443,52.096],[-26.564,52.159],[-27.666,52.346],[-28.741,52.655],[-29.778,53.084],[-61.377,68.294],[-62.029,68.58],[-62.699,68.818],[-63.384,69.008],[-64.081,69.149],[-101.263,75.298],[-102.688,75.43],[-104.109,75.358],[-105.505,75.085],[-106.856,74.613],[-116.496,70.45],[-117.788,69.837],[-119.027,69.136],[-120.211,68.35],[-121.334,67.484],[-122.393,66.54],[-123.384,65.522],[-124.302,64.433],[-125.143,63.277],[-133.353,51.105],[-133.421,50.998],[-133.481,50.888],[-133.534,50.774],[-133.58,50.656],[-110.432,35.043],[-110.34,35.13],[-110.255,35.222],[-110.175,35.319],[-110.101,35.421],[-105.303,42.534],[-104.364,43.575],[-103.196,44.304],[-101.873,44.686],[-100.471,44.689],[-87.829,42.927],[-86.897,42.752],[-85.988,42.489],[-85.107,42.142],[-84.262,41.712],[-81.817,40.32],[-80.448,39.672],[-79.005,39.24],[-77.514,39.03],[-75.999,39.047],[-72.0,39.397],[-71.211,39.309],[-70.54,38.937],[-70.058,38.342],[-69.834,37.58],[-68.095,17.701],[-68.184,16.913],[-68.555,16.242],[-69.15,15.76],[-69.912,15.536],[-74.488,15.136],[-75.189,15.024],[-75.864,14.815],[-76.502,14.513],[-77.094,14.122],[-79.135,12.556],[-79.824,12.113],[-80.571,11.789],[-81.36,11.591],[-82.177,11.524],[-96.525,11.524],[-96.651,11.52],[-96.776,11.508],[-96.901,11.488],[-97.024,11.461],[-97.024,-13.461],[-96.901,-13.488],[-96.776,-13.508],[-96.651,-13.52],[-96.525,-13.524],[-82.126,-13.524],[-81.533,-13.559],[-80.95,-13.664],[-80.384,-13.837],[-79.84,-14.077],[-71.683,-18.274],[-70.795,-18.858],[-70.059,-19.606],[-69.495,-20.492],[-69.125,-21.488],[-66.202,-33.007],[-65.907,-34.935],[-65.985,-36.829],[-66.412,-38.645],[-67.162,-40.34],[-68.211,-41.867],[-69.534,-43.183],[-71.105,-44.243],[-72.901,-45.003],[-87.432,-49.554],[-87.995,-49.769],[-88.526,-50.048],[-89.02,-50.39],[-89.471,-50.789],[-95.458,-56.776],[-89.764,-66.663],[-51.059,-59.838],[-50.819,-59.793],[-50.58,-59.742],[-50.342,-59.685],[-50.106,-59.622],[-29.538,-53.876],[-28.876,-53.715],[-28.206,-53.6],[-27.53,-53.531],[-26.849,-53.507],[26.849,-53.507],[27.53,-53.531],[28.206,-53.6],[28.876,-53.715],[29.538,-53.876],[50.106,-59.622],[50.342,-59.685],[50.58,-59.742],[50.819,-59.793],[51.059,-59.838],[89.764,-66.663]],"holes":[{"x":88.707,"y":-59.618,"d":4.2,"ko":14.2,"role":"keepout"},{"x":-88.707,"y":-59.618,"d":4.2,"ko":14.2,"role":"keepout"},{"x":92.0,"y":-7.0,"d":4.2,"ko":14.2,"role":"keepout"},{"x":92.0,"y":5.0,"d":4.2,"ko":14.2,"role":"keepout"},{"x":113.393,"y":43.1,"d":4.2,"ko":14.2,"role":"keepout"},{"x":125.0,"y":50.929,"d":4.2,"ko":14.2,"role":"keepout"},{"x":-125.0,"y":50.929,"d":4.2,"ko":14.2,"role":"keepout"},{"x":-113.393,"y":43.1,"d":4.2,"ko":14.2,"role":"keepout"},{"x":-92.0,"y":-7.0,"d":4.2,"ko":14.2,"role":"keepout"},{"x":-92.0,"y":5.0,"d":4.2,"ko":14.2,"role":"keepout"},{"x":0.0,"y":-46.568,"d":3.3,"ko":9,"role":"mount"},{"x":-51.202,"y":53.7,"d":3.3,"ko":9,"role":"mount"},{"x":51.202,"y":53.7,"d":3.3,"ko":9,"role":"mount"},{"x":0.0,"y":0.472,"d":46.0,"ko":56.0,"role":"keepout"}]};
 function chaikin(pts, iterations){
   for (let k=0;k<iterations;k++){
     const out = [];
@@ -256,8 +263,9 @@ function gt3Plate(){
   return { id:'gt3', name:'GT3 wide', inset:5, maxDepth:35, outline: chaikin(ctrl, 4),
     holes: mh([[-112,48],[112,48],[-114,-34],[114,-34],[-82,-72],[82,-72]]) };
 }
-const PLATES = [gt3Plate(), squarePlate('sq160',160), squarePlate('sq200',200), squarePlate('sq240',240)];
+const PLATES = [BACKPLATE_5, gt3Plate(), squarePlate('sq160',160), squarePlate('sq200',200), squarePlate('sq240',240)];
 for (const pl of PLATES){
+  for (const h of pl.holes) h.role ||= 'mount';
   let a = 0; const o = pl.outline;
   for (let i=0;i<o.length;i++){ const [x1,y1]=o[i],[x2,y2]=o[(i+1)%o.length]; a += x1*y2-x2*y1; }
   if (a < 0) o.reverse();                       // keep outlines counter-clockwise
@@ -278,10 +286,21 @@ const TYPES = {
   oled:  {group:'Indicators & displays', name:'OLED 0.96″ window', short:'OLED', cut:{c:'rect',w:25,h:14,r:1}, ko:{c:'rect',w:30,h:30}, depth:8, body:{c:'rect',w:27,h:28}, cap:null, screen:true, rotatable:true},
 };
 
-/* GT3-style example: shift-light strip, central display with flag LEDs,
-   TC/ABS encoders up top, function buttons in the middle, thumb button
-   columns either side, MAP/BB rotaries and ignition/start toggles at the bottom. */
-function exampleParts(){
+/* Example layouts, one per plate. GT3 style: shift-light strip, flag LEDs,
+   TC/ABS encoders, thumb buttons on the grips, function buttons around the hub. */
+function exampleBp5(){
+  const P = [];
+  for (let i=0;i<11;i++) P.push({type:'led3', x:-40+i*8, y:44, label:'SL'+(i+1)});
+  P.push({type:'led5', x:-52, y:38, label:'FLAG L'},{type:'led5', x:52, y:38, label:'FLAG R'});
+  P.push({type:'enc', x:-46, y:18, label:'TC'},{type:'enc', x:46, y:18, label:'ABS'});
+  P.push({type:'btn12', x:-48, y:-6, label:'RADIO'},{type:'btn12', x:48, y:-6, label:'PIT'});
+  P.push({type:'btn12', x:-48, y:-26, label:'LIGHTS'},{type:'btn12', x:48, y:-26, label:'FLASH'});
+  P.push({type:'btn7', x:-80, y:-1, label:'THUMB L'},{type:'btn7', x:80, y:-1, label:'THUMB R'});
+  P.push({type:'btn12', x:-20, y:-38, label:'BACK'},{type:'btn12', x:20, y:-38, label:'OK'});
+  P.push({type:'btn12', x:-94, y:58, label:'WING L'},{type:'btn12', x:94, y:58, label:'WING R'});
+  return P;
+}
+function exampleGt3(){
   const P = [];
   for (let i=0;i<15;i++) P.push({type:'led3', x:-56+i*8, y:68, label:'SL'+(i+1)});
   P.push({type:'oled', x:0, y:45, label:'DISPLAY'});
@@ -300,9 +319,10 @@ function exampleParts(){
   P.push({type:'tgl', x:-26, y:-68, label:'IGN'},{type:'tgl', x:26, y:-68, label:'START'});
   return P;
 }
+const EXAMPLES = { bp5: exampleBp5, gt3: exampleGt3 };
 
 /* ---------------- State ---------------- */
-const STORE_KEY = 'ash-front-plate-v3';
+const STORE_KEY = 'ash-front-plate-v4';
 let state = null;
 let nextId = 1;
 let selected = null;
@@ -324,10 +344,11 @@ function autoLabel(short, list){
   while (used.has(short + n)) n++;
   return short + n;
 }
-function makeExample(){
-  const s = { plateId:'gt3', thickness:4, snap:1, parts:[] };
+function makeExample(plateId){
+  if (!EXAMPLES[plateId]) plateId = 'bp5';
+  const s = { plateId, thickness:4, snap:1, parts:[] };
   const prev = state; state = s;
-  for (const o of exampleParts()) s.parts.push(newPart({...o, __list:s.parts}));
+  for (const o of EXAMPLES[plateId]()) s.parts.push(newPart({...o, __list:s.parts}));
   state = prev;
   return s;
 }
@@ -335,7 +356,7 @@ const serialize = () => JSON.stringify(state);
 function loadState(json){
   const s = typeof json === 'string' ? JSON.parse(json) : json;
   if (!s || !Array.isArray(s.parts)) throw new Error('This file has no parts list.');
-  if (!PLATES.some(p=>p.id===s.plateId)) s.plateId = 'gt3';
+  if (!PLATES.some(p=>p.id===s.plateId)) s.plateId = 'bp5';
   s.thickness = clampNum(+s.thickness || 4, 2, 10);
   s.snap = [0,0.5,1,2.5,5].includes(+s.snap) ? +s.snap : 1;
   s.parts = s.parts.filter(p => TYPES[p.type]).map(p => ({id:String(p.id||''), type:p.type, x:+p.x||0, y:+p.y||0, rot:+p.rot||0, label:String(p.label||'')}));
@@ -436,11 +457,15 @@ function validate(){
   const pl = plate();
   issues = []; errIds = new Set(); warnIds = new Set();
   const kos = state.parts.map(p => [p, koShape(p)]);
-  const mounts = pl.holes.map((h,i) => ({i, sh:{k:'c', x:h.x, y:h.y, r:h.ko/2}}));
+  let nm = 0, nk = 0;
+  const mounts = pl.holes.map(h => ({role:h.role, n: h.role==='mount' ? ++nm : ++nk, sh:{k:'c', x:h.x, y:h.y, r:h.ko/2}}));
   for (const [p, sh] of kos){
     const t = TYPES[p.type];
     if (!insideZone(sh, pl)){ issues.push({sev:'err', ids:[p.id], msg:`${p.label} crosses the ${pl.inset} mm edge margin.`}); errIds.add(p.id); }
-    for (const m of mounts) if (overlap(sh, m.sh)){ issues.push({sev:'err', ids:[p.id], msg:`${p.label} overlaps mounting hole ${m.i+1}.`}); errIds.add(p.id); }
+    for (const m of mounts) if (overlap(sh, m.sh)){
+      issues.push({sev:'err', ids:[p.id], msg: m.role==='mount' ? `${p.label} overlaps mounting hole ${m.n}.` : `${p.label} reaches into no-go area ${m.n} (handle bolt or hub).`});
+      errIds.add(p.id);
+    }
     if (t.depth > pl.maxDepth){ issues.push({sev:'warn', ids:[p.id], msg:`${p.label} needs ${t.depth} mm behind the plate; this back plate leaves ${pl.maxDepth} mm.`}); warnIds.add(p.id); }
   }
   for (let i=0;i<kos.length;i++) for (let j=i+1;j<kos.length;j++){
@@ -504,7 +529,7 @@ function render2d(){
   const vx = b.minX - pad, vy = -b.maxY - pad, vw = pl.width + 2*pad, vh = pl.height + 2*pad;
   svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
   svg.style.aspectRatio = `${vw} / ${vh}`;
-  let o = `<defs><clipPath id="plateClip"><polygon points="${polySvgPts(pl.outline)}"/></clipPath></defs>`;
+  let o = `<defs><pattern id="nogoHatch" width="2.4" height="2.4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="2.4" class="hatch"/></pattern><clipPath id="plateClip"><polygon points="${polySvgPts(pl.outline)}"/></clipPath></defs>`;
   o += `<polygon class="plate" points="${polySvgPts(pl.outline)}"/>`;
   o += `<g clip-path="url(#plateClip)">`;
   for (let v = Math.ceil(b.minX/10)*10; v <= b.maxX; v += 10) o += `<line class="gl${v%50===0?' s':''}" x1="${v}" y1="${-b.maxY}" x2="${v}" y2="${-b.minY}"/>`;
@@ -512,7 +537,8 @@ function render2d(){
   o += `</g>`;
   o += `<polygon class="zone" points="${polySvgPts(offsetInward(pl.outline, pl.inset))}"/>`;
   for (const m of pl.holes){
-    o += `<circle class="mko" cx="${m.x}" cy="${-m.y}" r="${m.ko/2}"/><circle class="cut" cx="${m.x}" cy="${-m.y}" r="${m.d/2}"/>`;
+    if (m.role === 'mount') o += `<circle class="mko" cx="${m.x}" cy="${-m.y}" r="${m.ko/2}"/><circle class="cut" cx="${m.x}" cy="${-m.y}" r="${m.d/2}"/>`;
+    else o += `<circle class="nogo" cx="${m.x}" cy="${-m.y}" r="${m.ko/2}"/><circle class="nogo-hole" cx="${m.x}" cy="${-m.y}" r="${m.d/2}"/>`;
   }
   // dimension labels
   o += `<line class="dimline" x1="${b.minX}" y1="${-b.minY+4}" x2="${b.maxX}" y2="${-b.minY+4}"/><text class="dim" x="${(b.minX+b.maxX)/2}" y="${-b.minY+8.4}">${fmt(pl.width)} × ${fmt(pl.height)} mm</text>`;
@@ -687,7 +713,7 @@ $('issuesBox').addEventListener('click', e => {
 function renderHeader(){
   const pl = plate();
   $('plateTag').textContent = `${pl.name} · ${fmt(state.thickness)} mm`;
-  $('plateNote').textContent = `${fmt(pl.width)} × ${fmt(pl.height)} mm outline, parts must stay ${pl.inset} mm from the edge. ${pl.holes.length} × M3 mounting holes. ${pl.maxDepth} mm clearance to the back plate.`;
+  $('plateNote').textContent = `${fmt(pl.width)} × ${fmt(pl.height)} mm outline, parts must stay ${pl.inset} mm from the edge. ${pl.holes.filter(h=>h.role==='mount').length} mounting holes${pl.holes.some(h=>h.role!=='mount') ? `, ${pl.holes.filter(h=>h.role!=='mount').length} no-go areas (hatched)` : ''}. ${pl.maxDepth} mm clearance to the back plate.`;
   $('undoBtn').disabled = !undoStack.length; $('redoBtn').disabled = !redoStack.length;
 }
 
@@ -710,7 +736,7 @@ function initControls(){
   $('partsChk').addEventListener('change', e => { show3dParts = e.target.checked; schedule3d(); });
   $('undoBtn').addEventListener('click', undo);
   $('redoBtn').addEventListener('click', redo);
-  $('resetBtn').addEventListener('click', () => { const ex = makeExample(); mutate(() => { loadState(ex); selected=null; }); syncInputs(); });
+  $('resetBtn').addEventListener('click', () => { const ex = makeExample(state.plateId); mutate(() => { loadState(ex); selected=null; }); syncInputs(); });
   $('clearBtn').addEventListener('click', () => { if (!state.parts.length) return; mutate(() => { state.parts = []; selected = null; }); toast('Parts cleared. Undo brings them back.'); });
   document.addEventListener('keydown', e => {
     const tag = (e.target.tagName||'').toLowerCase();
@@ -745,7 +771,7 @@ function plateShape(){
     else { path.moveTo(sh.pts[0][0], sh.pts[0][1]); for (let i=1;i<sh.pts.length;i++) path.lineTo(sh.pts[i][0], sh.pts[i][1]); path.lineTo(sh.pts[0][0], sh.pts[0][1]); }
     shape.holes.push(path);
   };
-  for (const m of pl.holes) addHole({k:'c', x:m.x, y:m.y, r:m.d/2});
+  for (const m of pl.holes) if (m.role === 'mount') addHole({k:'c', x:m.x, y:m.y, r:m.d/2});
   for (const p of state.parts) addHole(cutShape(p));
   return shape;
 }
@@ -795,9 +821,11 @@ function rebuild3d(){
   let geo;
   try { geo = plateGeometry(); } catch(e){ geo = null; }
   if (geo) g.add(new THREE.Mesh(geo, mat(css('--plate'))));
-  const back = new THREE.Mesh(new THREE.ExtrudeGeometry(outlineShape(pl.outline), {depth:3, bevelEnabled:false}), mat(css('--zone'), {transparent:true, opacity:0.28, depthWrite:false}));
+  const backShape = outlineShape(pl.outline);
+  for (const m of pl.holes){ const ph = new THREE.Path(); ph.absarc(m.x, m.y, m.d/2, 0, Math.PI*2, true); backShape.holes.push(ph); }
+  const back = new THREE.Mesh(new THREE.ExtrudeGeometry(backShape, {depth:3, bevelEnabled:false, curveSegments:40}), mat(css('--zone'), {transparent:true, opacity:0.28, depthWrite:false}));
   back.position.z = -gap - 3; g.add(back);
-  for (const m of pl.holes){
+  for (const m of pl.holes.filter(h => h.role === 'mount')){
     const so = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, gap, 20), mat(css('--zone'), {transparent:true, opacity:0.55}));
     so.rotation.x = Math.PI/2; so.position.set(m.x, m.y, -gap/2); g.add(so);
   }
@@ -859,7 +887,7 @@ function stlBinary(){
 }
 function cutEntities(){
   const pl = plate();
-  const out = { outline: pl.outline, cuts: [], mounts: pl.holes.map(m => ({k:'c', x:m.x, y:m.y, r:m.d/2})) };
+  const out = { outline: pl.outline, cuts: [], mounts: pl.holes.filter(m => m.role === 'mount').map(m => ({k:'c', x:m.x, y:m.y, r:m.d/2})) };
   for (const p of state.parts) out.cuts.push(cutShape(p));
   return out;
 }
@@ -958,8 +986,8 @@ function toast(msg){ const t = $('toast'); t.textContent = msg; t.hidden = false
 function boot(){
   let saved = null;
   try { saved = localStorage.getItem(STORE_KEY); } catch(e){}
-  try { if (saved) loadState(saved); else loadState(makeExample()); }
-  catch(e){ loadState(makeExample()); }
+  try { if (saved) loadState(saved); else loadState(makeExample('bp5')); }
+  catch(e){ loadState(makeExample('bp5')); }
   renderPalette(); initControls(); renderAll(false);
   init3d();
 }

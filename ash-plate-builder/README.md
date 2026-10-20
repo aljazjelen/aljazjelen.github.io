@@ -32,7 +32,12 @@ All data lives at the top of the script in `index.html`. Units are mm, the origi
   - `holes`, the mounting holes
   - `maxDepth`, the clearance to the back plate
 
-  The **GT3 wide** plate (about 264 × 176 mm) is a smoothed placeholder shape, and the square plates are simple test outlines. Replace them as the real back plates are drawn.
+  - **Backplate 5** (the default) was imported from CAD.
+  - **GT3 wide** and the squares are placeholder shapes.
+
+  Each hole has a `role`:
+  - `mount` is a front plate screw. It's cut through the front plate and keeps parts clear.
+  - `keepout` is a no-go area such as a handle bolt or the hub. It isn't cut, and parts must stay clear of the hole plus the edge margin.
 - **`TYPES`** is the part library. For each part it defines:
   - the cutout
   - the keep-out zone
@@ -40,6 +45,22 @@ All data lives at the top of the script in `index.html`. Units are mm, the origi
   - the 3D preview body
   
   The cutout sizes are typical values, so check them against the datasheets of the parts you actually use.
+
+## Adding a back plate from CAD
+Export the back plate as a DXF in mm, with the wheel centre at the origin. Then run:
+
+```
+pip install ezdxf
+python3 tools/dxf2plate.py backplate.dxf --id bp6 --name "Backplate 6" \
+    --mount 3.3 --keepout 4.2 --keepout 46 > bp6.json
+```
+
+The script works like this:
+- The largest closed loop of lines and arcs becomes the outline.
+- Each circle becomes a hole, and its role comes from its diameter.
+- Circles that match neither `--mount` nor `--keepout` are reported and treated as keep-out.
+
+Paste the JSON into `index.html` as a constant and add it to `PLATES`.
 
 ## Controls
 - Drag parts on the plate. They snap to the grid set by **Snap**.
