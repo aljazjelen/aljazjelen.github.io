@@ -21,7 +21,7 @@ To run it locally, open `index.html` in a browser. It needs internet access to l
 | `-parts.csv` | Every part with its position, plus quantities per part type |
 | `-layout.json` | The layout itself; reopen it with **Open layout** |
 
-Export of the plate files is blocked while any check fails (edge margin, mounting hole or keep-out overlap).
+If any check fails (edge margin, mounting hole, no-go area or keep-out overlap), exporting the plate asks for confirmation first.
 
 ## Editing the data
 All data lives at the top of the script in `index.html`. Units are mm, the origin is the plate centre, and +Y points up.
@@ -30,7 +30,6 @@ All data lives at the top of the script in `index.html`. Units are mm, the origi
   - `outline`, a closed polygon of any shape
   - `inset`, the edge margin
   - `holes`, the mounting holes
-  - `maxDepth`, the clearance to the back plate
 
   - **Backplate 5** (the default) was imported from CAD.
   - **GT3 wide** and the squares are placeholder shapes.
@@ -38,6 +37,10 @@ All data lives at the top of the script in `index.html`. Units are mm, the origi
   Each hole has a `role`:
   - `mount` is a front plate screw. It's cut through the front plate and keeps parts clear.
   - `keepout` is a no-go area such as a handle bolt or the hub. It isn't cut, and parts must stay clear of the hole plus the edge margin.
+
+  A part type with `ignoresNoGo: true` (the OLED for now) only has to avoid `mount` holes.
+
+  The distance between the front and back plates is the **Plate spacing** setting (default 20 mm). Parts deeper than that get a warning.
 - **`TYPES`** is the part library. For each part it defines:
   - the cutout
   - the keep-out zone

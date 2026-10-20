@@ -141,6 +141,12 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .exports .wide{grid-column:1/-1}
 
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:4px;font-size:13px;z-index:20;max-width:calc(100% - 32px)}
+.modal{position:fixed;inset:0;background:rgba(10,12,14,.55);display:grid;place-items:center;z-index:30;padding:16px}
+.modal-box{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);max-width:440px;width:100%;padding:18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.modal-box h3{margin:0;font-family:var(--f-display);font-weight:600;font-size:18px}
+.modal-box p{margin:0;color:var(--muted);font-size:13px}
+.modal-box ul{margin:0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:4px;max-height:40vh;overflow:auto}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
 kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:3px;padding:0 4px;background:var(--panel-2)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -161,7 +167,8 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
         <div class="body">
           <label class="field">Model<select id="plateSel"></select></label>
           <div class="row">
-            <label class="field">Front plate thickness (mm)<input type="number" id="thick" min="2" max="10" step="0.5"></label>
+            <label class="field">Thickness (mm)<input type="number" id="thick" min="2" max="10" step="0.5"></label>
+            <label class="field">Plate spacing (mm)<input type="number" id="gap" min="5" max="60" step="1" title="Distance between the back of the front plate and the back plate"></label>
           </div>
           <p class="note" id="plateNote"></p>
         </div>
@@ -224,6 +231,14 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div class="modal" id="confirm" hidden role="dialog" aria-modal="true" aria-labelledby="cfTitle">
+  <div class="modal-box">
+    <h3 id="cfTitle">Export anyway?</h3>
+    <p>The plate still fails these checks. The exported file may not fit or assemble.</p>
+    <ul id="cfList"></ul>
+    <div class="modal-actions"><button class="btn" id="cfCancel">Go back</button><button class="btn primary" id="cfGo">Export anyway</button></div>
+  </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -283,7 +298,7 @@ const TYPES = {
   tgl:   {group:'Encoders & switches', name:'Toggle switch M6', short:'TGL', cut:{c:'circle',d:6.2}, ko:{c:'circle',d:16}, depth:25, body:{c:'rect',w:8,h:13}, cap:{d:3,h:11,kind:'lever'}, rotatable:true},
   led5:  {group:'Indicators & displays', name:'LED 5 mm', short:'LED', cut:{c:'circle',d:5.1}, ko:{c:'circle',d:8}, depth:10, body:{c:'circle',d:5}, cap:{d:5,h:4,kind:'led'}},
   led3:  {group:'Indicators & displays', name:'LED 3 mm', short:'LED', cut:{c:'circle',d:3.1}, ko:{c:'circle',d:5}, depth:10, body:{c:'circle',d:3}, cap:{d:3,h:3,kind:'led'}},
-  oled:  {group:'Indicators & displays', name:'OLED 0.96″ window', short:'OLED', cut:{c:'rect',w:25,h:14,r:1}, ko:{c:'rect',w:30,h:30}, depth:8, body:{c:'rect',w:27,h:28}, cap:null, screen:true, rotatable:true},
+  oled:  {group:'Indicators & displays', name:'OLED 0.96″ window', short:'OLED', cut:{c:'rect',w:25,h:14,r:1}, ko:{c:'rect',w:30,h:30}, depth:8, body:{c:'rect',w:27,h:28}, cap:null, screen:true, rotatable:true, ignoresNoGo:true},
 };
 
 /* Example layouts, one per plate. GT3 style: shift-light strip, flag LEDs,
@@ -291,6 +306,7 @@ const TYPES = {
 function exampleBp5(){
   const P = [];
   for (let i=0;i<11;i++) P.push({type:'led3', x:-40+i*8, y:44, label:'SL'+(i+1)});
+  P.push({type:'oled', x:0, y:0, label:'DISPLAY'});
   P.push({type:'led5', x:-52, y:38, label:'FLAG L'},{type:'led5', x:52, y:38, label:'FLAG R'});
   P.push({type:'enc', x:-46, y:18, label:'TC'},{type:'enc', x:46, y:18, label:'ABS'});
   P.push({type:'btn12', x:-48, y:-6, label:'RADIO'},{type:'btn12', x:48, y:-6, label:'PIT'});
@@ -323,6 +339,7 @@ const EXAMPLES = { bp5: exampleBp5, gt3: exampleGt3 };
 
 /* ---------------- State ---------------- */
 const STORE_KEY = 'ash-front-plate-v4';
+const DEFAULT_GAP = 20;   // mm between front plate and back plate
 let state = null;
 let nextId = 1;
 let selected = null;
@@ -346,7 +363,7 @@ function autoLabel(short, list){
 }
 function makeExample(plateId){
   if (!EXAMPLES[plateId]) plateId = 'bp5';
-  const s = { plateId, thickness:4, snap:1, parts:[] };
+  const s = { plateId, thickness:4, gap:DEFAULT_GAP, snap:1, parts:[] };
   const prev = state; state = s;
   for (const o of EXAMPLES[plateId]()) s.parts.push(newPart({...o, __list:s.parts}));
   state = prev;
@@ -358,6 +375,7 @@ function loadState(json){
   if (!s || !Array.isArray(s.parts)) throw new Error('This file has no parts list.');
   if (!PLATES.some(p=>p.id===s.plateId)) s.plateId = 'bp5';
   s.thickness = clampNum(+s.thickness || 4, 2, 10);
+  s.gap = clampNum(+s.gap || DEFAULT_GAP, 5, 60);
   s.snap = [0,0.5,1,2.5,5].includes(+s.snap) ? +s.snap : 1;
   s.parts = s.parts.filter(p => TYPES[p.type]).map(p => ({id:String(p.id||''), type:p.type, x:+p.x||0, y:+p.y||0, rot:+p.rot||0, label:String(p.label||'')}));
   let max = 0;
@@ -462,11 +480,11 @@ function validate(){
   for (const [p, sh] of kos){
     const t = TYPES[p.type];
     if (!insideZone(sh, pl)){ issues.push({sev:'err', ids:[p.id], msg:`${p.label} crosses the ${pl.inset} mm edge margin.`}); errIds.add(p.id); }
-    for (const m of mounts) if (overlap(sh, m.sh)){
+    for (const m of mounts) if ((m.role === 'mount' || !t.ignoresNoGo) && overlap(sh, m.sh)){
       issues.push({sev:'err', ids:[p.id], msg: m.role==='mount' ? `${p.label} overlaps mounting hole ${m.n}.` : `${p.label} reaches into no-go area ${m.n} (handle bolt or hub).`});
       errIds.add(p.id);
     }
-    if (t.depth > pl.maxDepth){ issues.push({sev:'warn', ids:[p.id], msg:`${p.label} needs ${t.depth} mm behind the plate; this back plate leaves ${pl.maxDepth} mm.`}); warnIds.add(p.id); }
+    if (t.depth > state.gap){ issues.push({sev:'warn', ids:[p.id], msg:`${p.label} needs ${t.depth} mm behind the plate; the plates are ${fmt(state.gap)} mm apart.`}); warnIds.add(p.id); }
   }
   for (let i=0;i<kos.length;i++) for (let j=i+1;j<kos.length;j++){
     if (overlap(kos[i][1], kos[j][1])){
@@ -485,7 +503,7 @@ function isFree(type, x, y, rot, ignoreId){
   const probe = {type, x, y, rot};
   const sh = koShape(probe);
   if (!insideZone(sh, pl)) return false;
-  for (const h of pl.holes) if (overlap(sh, {k:'c',x:h.x,y:h.y,r:h.ko/2})) return false;
+  for (const h of pl.holes) if ((h.role === 'mount' || !TYPES[type].ignoresNoGo) && overlap(sh, {k:'c',x:h.x,y:h.y,r:h.ko/2})) return false;
   for (const q of state.parts) if (q.id !== ignoreId && overlap(sh, koShape(q))) return false;
   return true;
 }
@@ -700,9 +718,7 @@ function renderIssues(){
   else {
     box.innerHTML = `<ul class="issues">${issues.slice(0,40).map((i,n)=>`<li class="${i.sev}"><button data-n="${n}"><span>${esc(i.msg)}</span></button></li>`).join('')}</ul>` + (issues.length>40?`<p class="note">${issues.length-40} more not shown.</p>`:'');
   }
-  const blocked = errs > 0;
-  for (const id of ['exStl','exDxf','exSvg','exAll']) $(id).disabled = blocked;
-  $('exNote').textContent = blocked ? `Fix the ${errs} problem${errs>1?'s':''} under Checks to export the plate. You can still save the layout.` : '';
+  $('exNote').textContent = errs ? `${errs} problem${errs>1?'s':''} under Checks. You can still export; you'll be asked to confirm first.` : '';
 }
 $('issuesBox').addEventListener('click', e => {
   const b = e.target.closest('[data-n]'); if (!b) return;
@@ -712,8 +728,8 @@ $('issuesBox').addEventListener('click', e => {
 
 function renderHeader(){
   const pl = plate();
-  $('plateTag').textContent = `${pl.name} · ${fmt(state.thickness)} mm`;
-  $('plateNote').textContent = `${fmt(pl.width)} × ${fmt(pl.height)} mm outline, parts must stay ${pl.inset} mm from the edge. ${pl.holes.filter(h=>h.role==='mount').length} mounting holes${pl.holes.some(h=>h.role!=='mount') ? `, ${pl.holes.filter(h=>h.role!=='mount').length} no-go areas (hatched)` : ''}. ${pl.maxDepth} mm clearance to the back plate.`;
+  $('plateTag').textContent = `${pl.name} · ${fmt(state.thickness)} mm · ${fmt(state.gap)} mm spacing`;
+  $('plateNote').textContent = `${fmt(pl.width)} × ${fmt(pl.height)} mm outline, parts must stay ${pl.inset} mm from the edge. ${pl.holes.filter(h=>h.role==='mount').length} mounting holes${pl.holes.some(h=>h.role!=='mount') ? `, ${pl.holes.filter(h=>h.role!=='mount').length} no-go areas (hatched)` : ''}.`;
   $('undoBtn').disabled = !undoStack.length; $('redoBtn').disabled = !redoStack.length;
 }
 
@@ -728,9 +744,11 @@ function initControls(){
   $('plateSel').innerHTML = PLATES.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
   $('plateSel').value = state.plateId;
   $('thick').value = state.thickness;
+  $('gap').value = state.gap;
   $('snapSel').value = String(state.snap);
   $('plateSel').addEventListener('change', e => mutate(() => { state.plateId = e.target.value; }));
   $('thick').addEventListener('change', e => { const v = clampNum(+e.target.value||4, 2, 10); e.target.value = v; mutate(() => { state.thickness = v; }); });
+  $('gap').addEventListener('change', e => { const v = clampNum(+e.target.value||DEFAULT_GAP, 5, 60); e.target.value = v; mutate(() => { state.gap = v; }); });
   $('snapSel').addEventListener('change', e => { state.snap = +e.target.value; persist(); renderProps(); });
   $('koChk').addEventListener('change', e => { showKO = e.target.checked; render2d(); });
   $('partsChk').addEventListener('change', e => { show3dParts = e.target.checked; schedule3d(); });
@@ -757,7 +775,7 @@ function initControls(){
     }
   });
 }
-function syncInputs(){ $('plateSel').value = state.plateId; $('thick').value = state.thickness; $('snapSel').value = String(state.snap); }
+function syncInputs(){ $('plateSel').value = state.plateId; $('thick').value = state.thickness; $('gap').value = state.gap; $('snapSel').value = String(state.snap); }
 
 /* ---------------- 3D preview ---------------- */
 let three = null, rebuildTimer = null;
@@ -816,7 +834,7 @@ function rebuild3d(){
   const { scene } = three;
   if (three.group){ scene.remove(three.group); disposeGroup(three.group); }
   const g = new THREE.Group();
-  const pl = plate(), t = state.thickness, gap = pl.maxDepth, S = Math.max(pl.width, pl.height);
+  const pl = plate(), t = state.thickness, gap = state.gap, S = Math.max(pl.width, pl.height);
   const mat = (c, o={}) => new THREE.MeshStandardMaterial({color:new THREE.Color(c), roughness:0.75, metalness:0.05, ...o});
   let geo;
   try { geo = plateGeometry(); } catch(e){ geo = null; }
@@ -954,19 +972,30 @@ async function saveFile(name, data){
   toast(`Downloaded ${name}`);
 }
 const needThree = () => { if (!window.THREE){ toast('The geometry library did not load, so the STL cannot be built. Reload the page.'); return false; } return true; };
-$('exStl').addEventListener('click', () => { if (needThree()) saveFile(baseName()+'.stl', stlBinary()); });
-$('exDxf').addEventListener('click', () => saveFile(baseName()+'.dxf', dxfText()));
-$('exSvg').addEventListener('click', () => saveFile(baseName()+'.svg', svgText()));
+function guarded(run){
+  const errs = issues.filter(i => i.sev === 'err');
+  if (!errs.length){ run(); return; }
+  $('cfTitle').textContent = `Export with ${errs.length} problem${errs.length>1?'s':''}?`;
+  $('cfList').innerHTML = errs.slice(0,6).map(i => `<li>${esc(i.msg)}</li>`).join('') + (errs.length>6 ? `<li>…and ${errs.length-6} more</li>` : '');
+  $('confirm').hidden = false; $('cfGo').focus();
+  $('cfGo').onclick = () => { $('confirm').hidden = true; run(); };
+}
+$('cfCancel').addEventListener('click', () => { $('confirm').hidden = true; });
+$('confirm').addEventListener('click', e => { if (e.target === $('confirm')) $('confirm').hidden = true; });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('confirm').hidden){ $('confirm').hidden = true; e.stopImmediatePropagation(); } }, true);
+$('exStl').addEventListener('click', () => { if (needThree()) guarded(() => saveFile(baseName()+'.stl', stlBinary())); });
+$('exDxf').addEventListener('click', () => guarded(() => saveFile(baseName()+'.dxf', dxfText())));
+$('exSvg').addEventListener('click', () => guarded(() => saveFile(baseName()+'.svg', svgText())));
 $('exBom').addEventListener('click', () => saveFile(baseName()+'-parts.csv', bomCsv()));
 $('exJson').addEventListener('click', () => saveFile(baseName()+'-layout.json', layoutJson()));
-$('exAll').addEventListener('click', async () => {
-  if (!needThree()) return;
+$('exAll').addEventListener('click', () => { if (needThree()) guarded(exportAll); });
+async function exportAll(){
   if (!window.JSZip){ toast('The zip library did not load. Use the single-file buttons instead.'); return; }
   const z = new JSZip(), b = baseName();
   z.file(b+'.stl', stlBinary()); z.file(b+'.dxf', dxfText()); z.file(b+'.svg', svgText());
   z.file(b+'-parts.csv', bomCsv()); z.file(b+'-layout.json', layoutJson());
   saveFile(b+'.zip', await z.generateAsync({type:'blob'}));
-});
+}
 $('imJson').addEventListener('click', () => $('fileIn').click());
 $('fileIn').addEventListener('change', e => {
   const f = e.target.files && e.target.files[0]; if (!f) return;
