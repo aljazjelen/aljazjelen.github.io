@@ -1,0 +1,62 @@
+{
+  "_help": [
+    "Settings for one wheel. The folder name is the wheel's id; list it in wheels/index.json.",
+    "All sizes in mm. The back plate DXF should be drawn in mm with the wheel centre at 0,0 (or set origin).",
+    "name: shown in the wheel list.",
+    "dxf: the back plate drawing in this folder. The largest closed shape becomes the outline; circles become holes; other closed shapes inside become no-go areas.",
+    "outline / extraHoles: use instead of (or next to) a DXF. outline = [[x,y], ...]; extraHoles = [{\"x\":0,\"y\":0,\"d\":3.3,\"role\":\"mount\"|\"noGo\"}].",
+    "origin (optional): [x, y] of the wheel centre in the DXF, if it isn't at 0,0.",
+    "edgeMargin: how far parts must stay from the outline (the wheel's border).",
+    "holes.mount: circle diameters that are front plate screw holes. They are cut through the front plate; clearance = free space around them.",
+    "holes.noGo: circle diameters that are no-go areas (handle bolts, hub). Not cut; parts keep clearance away from them.",
+    "holes.otherCircles: what to do with circles matching neither list: noGo, mount or ignore. holes.otherShapes: same for other closed shapes (noGo or ignore).",
+    "plateSpacing / frontPlateThickness: defaults applied when this wheel is picked.",
+    "layers (optional): only read these DXF layers.",
+    "example: the layout loaded by 'Load example' for this wheel."
+  ],
+  "name": "Backplate 5",
+  "dxf": "backplate.dxf",
+  "edgeMargin": 4.5,
+  "plateSpacing": 20,
+  "frontPlateThickness": 4,
+  "holes": {
+    "mount": {
+      "diameters": [3.3],
+      "clearance": 2.85
+    },
+    "noGo": {
+      "diameters": [4.2, 46],
+      "clearance": 4.5
+    },
+    "otherCircles": "noGo",
+    "otherShapes": "noGo"
+  },
+  "example": [
+    { "type": "led3", "x": -40, "y": 44, "label": "SL1" },
+    { "type": "led3", "x": -32, "y": 44, "label": "SL2" },
+    { "type": "led3", "x": -24, "y": 44, "label": "SL3" },
+    { "type": "led3", "x": -16, "y": 44, "label": "SL4" },
+    { "type": "led3", "x": -8, "y": 44, "label": "SL5" },
+    { "type": "led3", "x": 0, "y": 44, "label": "SL6" },
+    { "type": "led3", "x": 8, "y": 44, "label": "SL7" },
+    { "type": "led3", "x": 16, "y": 44, "label": "SL8" },
+    { "type": "led3", "x": 24, "y": 44, "label": "SL9" },
+    { "type": "led3", "x": 32, "y": 44, "label": "SL10" },
+    { "type": "led3", "x": 40, "y": 44, "label": "SL11" },
+    { "type": "oled", "x": 0, "y": 0, "label": "DISPLAY" },
+    { "type": "led5", "x": -52, "y": 38, "label": "FLAG L" },
+    { "type": "led5", "x": 52, "y": 38, "label": "FLAG R" },
+    { "type": "enc", "x": -46, "y": 18, "label": "TC" },
+    { "type": "enc", "x": 46, "y": 18, "label": "ABS" },
+    { "type": "btn12", "x": -48, "y": -6, "label": "RADIO" },
+    { "type": "btn12", "x": 48, "y": -6, "label": "PIT" },
+    { "type": "btn12", "x": -48, "y": -26, "label": "LIGHTS" },
+    { "type": "btn12", "x": 48, "y": -26, "label": "FLASH" },
+    { "type": "btn7", "x": -80, "y": -1, "label": "THUMB L" },
+    { "type": "btn7", "x": 80, "y": -1, "label": "THUMB R" },
+    { "type": "btn12", "x": -20, "y": -38, "label": "BACK" },
+    { "type": "btn12", "x": 20, "y": -38, "label": "OK" },
+    { "type": "btn12", "x": -94, "y": 58, "rot": 355, "label": "WING L" },
+    { "type": "btn12", "x": 94, "y": 58, "rot": 5, "label": "WING R" }
+  ]
+}

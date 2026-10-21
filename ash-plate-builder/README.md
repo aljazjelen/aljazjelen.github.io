@@ -24,55 +24,62 @@ To run it locally, open `index.html` in a browser. It needs internet access to l
 If any check fails (edge margin, mounting hole, no-go area or keep-out overlap), exporting the plate asks for confirmation first.
 
 ## Editing the data
-Back plates live at the top of the script in `index.html`. Part sizes live in `parts.json`. Units are mm, the origin is the plate centre, and +Y points up.
+Units are mm throughout, and +Y points up.
 
-- **`PLATES`** holds the back plates. Each one has:
-  - `outline`, a closed polygon of any shape
-  - `inset`, the edge margin
-  - `holes`, the mounting holes
-
-  - **Backplate 5** (the default) was imported from CAD.
-  - **GT3 wide** and the squares are placeholder shapes.
-
-  Each hole has a `role`:
-  - `mount` is a front plate screw. It's cut through the front plate and keeps parts clear.
-  - `keepout` is a no-go area such as a handle bolt or the hub. It isn't cut, and parts must stay clear of the hole plus the edge margin.
-
-  A part type with `ignoresNoGo: true` (the OLED for now) only has to avoid `mount` holes.
-
-  The distance between the front and back plates is the **Plate spacing** setting (default 20 mm). Parts deeper than that get a warning.
-- **`parts.json`** (next to `index.html`) is the part library. Edit it on GitHub and the site picks it up on the next load, with no rebuild needed. Each part sets:
-  - `hole`: the cutout in the front plate
-  - `cap`: the button cap, knob, lever or LED on top, including its height
-  - `pcb`: the board or switch body underneath, including its depth behind the plate
-  - `clearance`: the safe space around the part. The keep-out zone is the largest of the hole, cap and PCB, plus the clearance on every side.
-  - optional `keepout`, to set the keep-out shape exactly instead
-  - `allowOverNoGo` and `display`, plus `rotatable: false` to lock rotation (every part rotates by default)
-
-  The `_help` block at the top of the file explains every field. The sizes are typical values, so check them against your parts' datasheets.
-
-  `index.html` also carries a built-in copy of the library, used when `parts.json` can't be loaded, for example when the page is opened as a local file. To refresh that copy after editing `parts.json`, run `python3 tools/sync_parts.py`.
-
-## Adding a back plate from CAD
-Export the back plate as a DXF in mm, with the wheel centre at the origin. Then run:
+### Wheels: `wheels/`
+Each wheel has its own folder containing its back plate DXF and a `wheel.json` with its settings:
 
 ```
-pip install ezdxf
-python3 tools/dxf2plate.py backplate.dxf --id bp6 --name "Backplate 6" \
-    --mount 3.3 --keepout 4.2 --keepout 46 > bp6.json
+wheels/
+  index.json            list of wheel folders; the first one is the default
+  backplate-5/
+    wheel.json
+    backplate.dxf
 ```
 
-The script works like this:
-- The largest closed loop of lines and arcs becomes the outline.
-- Each circle becomes a hole, and its role comes from its diameter.
-- Circles that match neither `--mount` nor `--keepout` are reported and treated as keep-out.
+The DXF is read straight in the browser, with no conversion step:
+- The largest closed shape becomes the outline.
+- Circles become holes.
+- Other closed shapes inside the outline become no-go areas.
 
-Paste the JSON into `index.html` as a constant and add it to `PLATES`.
+Supported DXF elements are lines, arcs, circles, ellipses, polylines (including arc segments) and splines. Export the drawing in mm with the wheel centre at 0,0, or set `origin` instead. For the most accurate curves, export splines with control points, which Onshape, Fusion and SolidWorks do by default.
+
+Main `wheel.json` settings (the `_help` block in each file lists them all):
+- `edgeMargin`: how far parts must stay from the wheel's border. Backplate 5 uses 4.5 mm.
+- `holes.mount.diameters`: circle sizes that are front plate screws. These are cut through the front plate and keep `clearance` free around them.
+- `holes.noGo.diameters`: circle sizes that are no-go areas, such as handle bolts or the hub. These aren't cut, and parts stay `clearance` away.
+- `plateSpacing` and `frontPlateThickness`: the defaults applied when the wheel is picked.
+- `example`: the layout loaded by **Load example**.
+
+A wheel without a DXF can set `outline` and `extraHoles` directly; `wheels/gt3-placeholder` is an example.
+
+To add a wheel:
+1. Create a folder.
+2. Put the DXF and a `wheel.json` in it (copy one from `backplate-5`).
+3. Add the folder name to `wheels/index.json`.
+
+Any problems with a wheel are listed under the wheel picker in the app.
+
+### Parts: `parts.json`
+The part library. For each part it sets:
+- `hole`: the cutout in the front plate
+- `cap`: the button cap, knob, lever or LED on top, including its height
+- `pcb`: the board or switch body underneath, including its depth behind the plate
+- `clearance`: the safe space around the part. The keep-out zone is the largest of the hole, cap and PCB, plus the clearance on every side.
+- optional `keepout`, to set the keep-out shape exactly instead
+- `allowOverNoGo` and `display`, plus `rotatable: false` to lock rotation (every part rotates by default)
+
+The `_help` block in the file explains every field. The sizes are typical values, so check them against your parts' datasheets.
+
+### Built-in copy
+`index.html` carries a built-in copy of `parts.json` and `wheels/`. It's only used when those files can't be loaded, for example when the page is opened straight from disk.
+
+After editing, run `python3 tools/sync_builtin.py` to refresh the copy. GitHub Pages always uses the files themselves, so this is optional there.
 
 ## Controls
 - Drag parts on the plate. They snap to the grid set by **Snap**.
-- Drag the orange handle on the selected part to rotate it. It snaps to 15°; hold <kbd>Shift</kbd> for 1° steps. The keep-out zone rotates with the part.
-- <kbd>Del</kbd> removes the selected part, <kbd>R</kbd> rotates it 90° (<kbd>Shift</kbd>+<kbd>R</kbd> 15°), and <kbd>M</kbd> adds a mirrored copy.
+- Drag the orange handle on the selected part to rotate it. It snaps to 5°; hold <kbd>Shift</kbd> for 1° steps. The keep-out zone rotates with the part.
+- <kbd>Del</kbd> removes the selected part, <kbd>R</kbd> rotates it 90° (<kbd>Shift</kbd>+<kbd>R</kbd> 5°), and <kbd>M</kbd> adds a mirrored copy.
 - The arrow keys nudge the selected part; hold <kbd>Shift</kbd> to move 5× as far.
 - <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes and <kbd>Ctrl</kbd>+<kbd>Y</kbd> redoes.
 - The layout is autosaved in the browser.
