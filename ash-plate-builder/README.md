@@ -47,7 +47,7 @@ Back plates live at the top of the script in `index.html`. Part sizes live in `p
   - `pcb`: the board or switch body underneath, including its depth behind the plate
   - `clearance`: the safe space around the part. The keep-out zone is the largest of the hole, cap and PCB, plus the clearance on every side.
   - optional `keepout`, to set the keep-out shape exactly instead
-  - `rotatable`, `allowOverNoGo` and `display`
+  - `allowOverNoGo` and `display`, plus `rotatable: false` to lock rotation (every part rotates by default)
 
   The `_help` block at the top of the file explains every field. The sizes are typical values, so check them against your parts' datasheets.
 
@@ -71,7 +71,8 @@ Paste the JSON into `index.html` as a constant and add it to `PLATES`.
 
 ## Controls
 - Drag parts on the plate. They snap to the grid set by **Snap**.
-- <kbd>Del</kbd> removes the selected part, <kbd>R</kbd> rotates it 90°, and <kbd>M</kbd> adds a mirrored copy.
+- Drag the orange handle on the selected part to rotate it. It snaps to 15°; hold <kbd>Shift</kbd> for 1° steps. The keep-out zone rotates with the part.
+- <kbd>Del</kbd> removes the selected part, <kbd>R</kbd> rotates it 90° (<kbd>Shift</kbd>+<kbd>R</kbd> 15°), and <kbd>M</kbd> adds a mirrored copy.
 - The arrow keys nudge the selected part; hold <kbd>Shift</kbd> to move 5× as far.
 - <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes and <kbd>Ctrl</kbd>+<kbd>Y</kbd> redoes.
 - The layout is autosaved in the browser.
