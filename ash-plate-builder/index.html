@@ -94,6 +94,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .pitem b{display:block;font-weight:500;font-size:13px;line-height:1.2}
 .pitem i{display:block;font-style:normal;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
 .note{font-size:12px;color:var(--muted);margin:0}
+.warnlist{color:var(--warn);padding-left:16px;display:flex;flex-direction:column;gap:4px}
 
 .editor .card{display:flex;flex-direction:column}
 .etools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--line)}
@@ -177,7 +178,8 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
       <section class="card">
         <h2>Add part</h2>
         <div class="body"><div class="palette" id="palette"></div>
-          <p class="note">Cutout sizes are typical values. Check them against your parts' datasheets before printing.</p>
+          <p class="note" id="partsNote"></p>
+          <ul class="note warnlist" id="partsWarn" hidden></ul>
         </div>
       </section>
     </aside>
@@ -290,17 +292,73 @@ for (const pl of PLATES){
   pl.width = pl.bbox.maxX - pl.bbox.minX; pl.height = pl.bbox.maxY - pl.bbox.minY;
 }
 
-const TYPES = {
-  btn7:  {group:'Buttons', name:'Push button 7 mm',  short:'BTN', cut:{c:'circle',d:7},   ko:{c:'circle',d:12}, depth:15, body:{c:'circle',d:9},  cap:{d:9, h:4, kind:'cap'}},
-  btn12: {group:'Buttons', name:'Push button 12 mm', short:'BTN', cut:{c:'circle',d:12},  ko:{c:'circle',d:18}, depth:20, body:{c:'circle',d:13}, cap:{d:14,h:5, kind:'cap'}},
-  btn16: {group:'Buttons', name:'Push button 16 mm', short:'BTN', cut:{c:'circle',d:16},  ko:{c:'circle',d:22}, depth:24, body:{c:'circle',d:17}, cap:{d:18,h:6, kind:'cap'}},
-  enc:   {group:'Encoders & switches', name:'Encoder EC11', short:'ENC', cut:{c:'circle',d:7.2}, ko:{c:'circle',d:24}, depth:20, body:{c:'rect',w:12,h:13}, cap:{d:20,h:15,kind:'knob'}, rotatable:true},
-  rot:   {group:'Encoders & switches', name:'Rotary switch 12-pos', short:'ROT', cut:{c:'circle',d:9.5}, ko:{c:'circle',d:32}, depth:30, body:{c:'circle',d:26}, cap:{d:28,h:16,kind:'knob'}},
-  tgl:   {group:'Encoders & switches', name:'Toggle switch M6', short:'TGL', cut:{c:'circle',d:6.2}, ko:{c:'circle',d:16}, depth:25, body:{c:'rect',w:8,h:13}, cap:{d:3,h:11,kind:'lever'}, rotatable:true},
-  led5:  {group:'Indicators & displays', name:'LED 5 mm', short:'LED', cut:{c:'circle',d:5.1}, ko:{c:'circle',d:8}, depth:10, body:{c:'circle',d:5}, cap:{d:5,h:4,kind:'led'}},
-  led3:  {group:'Indicators & displays', name:'LED 3 mm', short:'LED', cut:{c:'circle',d:3.1}, ko:{c:'circle',d:5}, depth:10, body:{c:'circle',d:3}, cap:{d:3,h:3,kind:'led'}},
-  oled:  {group:'Indicators & displays', name:'OLED 0.96″ window', short:'OLED', cut:{c:'rect',w:25,h:14,r:1}, ko:{c:'rect',w:30,h:30}, depth:8, body:{c:'rect',w:27,h:28}, cap:null, screen:true, rotatable:true, ignoresNoGo:true},
-};
+/* Part library. Loaded from parts.json next to this page (its "_help" explains every field).
+   DEFAULT_PARTS is a built-in copy of that file, used when parts.json can't be loaded (e.g. the page is opened as a local file). */
+const DEFAULT_PARTS = /*PARTS_JSON*/{"_help":["Part library for the ASH Front Plate Builder. All sizes in mm.","Each entry under 'parts' is one part type; its key (e.g. 'btn16') is stored in saved layouts, so don't rename keys that are in use.","Shapes: { \"shape\": \"circle\", \"d\": 16 } or { \"shape\": \"rect\", \"w\": 25, \"h\": 14, \"r\": 1 } (r = corner radius, optional).","name / group / label: shown in the parts list; label is the prefix for auto names (BTN1, BTN2...).","hole: the cutout in the front plate.","cap: what sits on top of the plate (button cap, knob, lever, LED). height is only used for the 3D preview. style: button | knob | lever | led. Leave cap out for flush parts like a display.","pcb: the board or switch body under the plate. depth = how far it reaches behind the plate (checked against Plate spacing).","clearance: safe space around the part. The keep-out zone = the largest of hole, cap and pcb, plus clearance on every side.","keepout (optional): set an exact keep-out shape instead of the computed one.","rotatable: true lets the user rotate the part. allowOverNoGo: true lets it sit over the back plate's no-go areas (it must still avoid mounting holes).","display: true draws a screen in the 3D preview."],"version":1,"parts":{"btn7":{"name":"Push button 7 mm","group":"Buttons","label":"BTN","hole":{"shape":"circle","d":7},"cap":{"shape":"circle","d":9,"height":4,"style":"button"},"pcb":{"shape":"circle","d":9,"depth":15},"clearance":1.5},"btn12":{"name":"Push button 12 mm","group":"Buttons","label":"BTN","hole":{"shape":"circle","d":12},"cap":{"shape":"circle","d":14,"height":5,"style":"button"},"pcb":{"shape":"circle","d":13,"depth":20},"clearance":2},"btn16":{"name":"Push button 16 mm","group":"Buttons","label":"BTN","hole":{"shape":"circle","d":16},"cap":{"shape":"circle","d":18,"height":6,"style":"button"},"pcb":{"shape":"circle","d":17,"depth":24},"clearance":2},"enc":{"name":"Encoder EC11","group":"Encoders & switches","label":"ENC","hole":{"shape":"circle","d":7.2},"cap":{"shape":"circle","d":20,"height":15,"style":"knob"},"pcb":{"shape":"rect","w":12,"h":13,"depth":20},"clearance":2,"rotatable":true},"rot":{"name":"Rotary switch 12-pos","group":"Encoders & switches","label":"ROT","hole":{"shape":"circle","d":9.5},"cap":{"shape":"circle","d":28,"height":16,"style":"knob"},"pcb":{"shape":"circle","d":26,"depth":30},"clearance":2},"tgl":{"name":"Toggle switch M6","group":"Encoders & switches","label":"TGL","hole":{"shape":"circle","d":6.2},"cap":{"shape":"circle","d":3,"height":11,"style":"lever"},"pcb":{"shape":"rect","w":8,"h":13,"depth":25},"clearance":3,"rotatable":true},"led5":{"name":"LED 5 mm","group":"Indicators & displays","label":"LED","hole":{"shape":"circle","d":5.1},"cap":{"shape":"circle","d":5,"height":4,"style":"led"},"pcb":{"shape":"circle","d":5,"depth":10},"clearance":1.5},"led3":{"name":"LED 3 mm","group":"Indicators & displays","label":"LED","hole":{"shape":"circle","d":3.1},"cap":{"shape":"circle","d":3,"height":3,"style":"led"},"pcb":{"shape":"circle","d":3,"depth":10},"clearance":1},"oled":{"name":"OLED 0.96″ window","group":"Indicators & displays","label":"OLED","hole":{"shape":"rect","w":25,"h":14,"r":1},"pcb":{"shape":"rect","w":27,"h":28,"depth":8},"clearance":1.5,"rotatable":true,"allowOverNoGo":true,"display":true}}}/*END_PARTS_JSON*/;
+let TYPES = {};
+let partsSource = 'built-in';
+const partWarnings = [];
+const r2 = v => Math.round(v*100)/100;
+function normShape(sp, what){
+  if (!sp || typeof sp !== 'object') throw new Error(`${what} is missing`);
+  if (sp.shape === 'rect'){
+    const w = +sp.w, h = +sp.h, r = +sp.r || 0;
+    if (!(w > 0 && h > 0)) throw new Error(`${what} is a rect but needs w and h above 0`);
+    return {c:'rect', w, h, r: Math.min(Math.max(r,0), w/2, h/2)};
+  }
+  const d = +sp.d;
+  if (!(d > 0)) throw new Error(`${what} needs a diameter "d" above 0 (or "shape": "rect" with w and h)`);
+  return {c:'circle', d};
+}
+function deriveKeepout(shapes, clearance){
+  const circles = shapes.filter(s => s.c === 'circle'), rects = shapes.filter(s => s.c === 'rect');
+  const D = Math.max(0, ...circles.map(s => s.d));
+  if (rects.every(r => Math.hypot(r.w, r.h) <= D + 1e-9)) return {c:'circle', d: r2(D + 2*clearance)};
+  const W = Math.max(D, ...rects.map(r => r.w)), H = Math.max(D, ...rects.map(r => r.h));
+  return {c:'rect', w: r2(W + 2*clearance), h: r2(H + 2*clearance)};
+}
+const CAP_STYLES = {button:'cap', knob:'knob', lever:'lever', led:'led'};
+function buildTypes(cfg, source){
+  const out = {};
+  const parts = cfg && typeof cfg.parts === 'object' ? cfg.parts : null;
+  if (!parts){ partWarnings.push(`${source} has no "parts" section.`); return out; }
+  for (const [key, e] of Object.entries(parts)){
+    try {
+      if (!/^[A-Za-z0-9_-]+$/.test(key)) throw new Error('the key may only use letters, digits, - and _');
+      const hole = normShape(e.hole, 'hole');
+      const pcbShape = e.pcb ? normShape(e.pcb, 'pcb') : hole;
+      const depth = e.pcb && e.pcb.depth != null ? +e.pcb.depth : 10;
+      if (!(depth >= 0)) throw new Error('pcb.depth must be 0 or more');
+      let cap = null;
+      if (e.cap){
+        const cs = normShape(e.cap, 'cap');
+        cap = {...cs, height: +e.cap.height > 0 ? +e.cap.height : 4, kind: CAP_STYLES[e.cap.style] || 'cap'};
+      }
+      const clearance = e.clearance != null ? +e.clearance : 2;
+      if (!(clearance >= 0)) throw new Error('clearance must be 0 or more');
+      const ko = e.keepout ? normShape(e.keepout, 'keepout') : deriveKeepout([hole, pcbShape, ...(cap ? [cap] : [])], clearance);
+      out[key] = {
+        group: String(e.group || 'Other'), name: String(e.name || key), short: String(e.label || key.toUpperCase()),
+        cut: hole, ko, depth, body: pcbShape, cap, clearance, explicitKo: !!e.keepout,
+        screen: !!e.display, rotatable: !!e.rotatable, ignoresNoGo: !!e.allowOverNoGo,
+      };
+    } catch(err){ partWarnings.push(`${source}: "${key}" skipped, ${err.message}.`); }
+  }
+  return out;
+}
+async function loadParts(){
+  let cfg = null;
+  try {
+    const r = await fetch('parts.json', {cache:'no-cache'});
+    if (r.ok){
+      const text = await r.text();
+      try { cfg = JSON.parse(text); partsSource = 'parts.json'; }
+      catch(err){ partWarnings.push(`parts.json has a syntax error (${err.message}). Using the built-in part sizes.`); }
+    }
+  } catch(err){ /* opened as a local file or offline: use the built-in copy */ }
+  if (cfg){ TYPES = buildTypes(cfg, 'parts.json'); if (!Object.keys(TYPES).length){ partWarnings.push('parts.json has no usable parts. Using the built-in part sizes.'); cfg = null; } }
+  if (!cfg){ partsSource = 'built-in'; TYPES = buildTypes(DEFAULT_PARTS, 'built-in parts'); }
+}
 
 /* Example layouts, one per plate. GT3 style: shift-light strip, flag LEDs,
    TC/ABS encoders, thumb buttons on the grips, function buttons around the hub. */
@@ -366,7 +424,7 @@ function makeExample(plateId){
   if (!EXAMPLES[plateId]) plateId = 'bp5';
   const s = { plateId, thickness:4, gap:DEFAULT_GAP, snap:1, parts:[] };
   const prev = state; state = s;
-  for (const o of EXAMPLES[plateId]()) s.parts.push(newPart({...o, __list:s.parts}));
+  for (const o of EXAMPLES[plateId]()) if (TYPES[o.type]) s.parts.push(newPart({...o, __list:s.parts}));
   state = prev;
   return s;
 }
@@ -378,7 +436,9 @@ function loadState(json){
   s.thickness = clampNum(+s.thickness || 4, 2, 10);
   s.gap = clampNum(+s.gap || DEFAULT_GAP, 5, 60);
   s.snap = [0,0.5,1,2.5,5].includes(+s.snap) ? +s.snap : 1;
-  s.parts = s.parts.filter(p => TYPES[p.type]).map(p => ({id:String(p.id||''), type:p.type, x:+p.x||0, y:+p.y||0, rot:+p.rot||0, label:String(p.label||'')}));
+  const known = s.parts.filter(p => TYPES[p.type]);
+  if (known.length < s.parts.length) setTimeout(() => toast(`${s.parts.length - known.length} part(s) use types that are not in parts.json and were left out.`), 0);
+  s.parts = known.map(p => ({id:String(p.id||''), type:p.type, x:+p.x||0, y:+p.y||0, rot:+p.rot||0, label:String(p.label||'')}));
   let max = 0;
   for (const p of s.parts){ const m = /^p(\d+)$/.exec(p.id); if (m) max = Math.max(max, +m[1]); }
   nextId = max + 1;
@@ -622,6 +682,11 @@ function iconSvg(t){
 }
 const dimText = s => s.c==='circle' ? `Ø${s.d}` : `${s.w}×${s.h}`;
 function renderPalette(){
+  $('partsNote').textContent = partsSource === 'parts.json'
+    ? 'Part sizes come from parts.json. Check them against your parts\u2019 datasheets before printing.'
+    : 'Using the built-in part sizes (parts.json was not loaded). Check them against your datasheets before printing.';
+  $('partsWarn').hidden = !partWarnings.length;
+  $('partsWarn').innerHTML = partWarnings.map(w => `<li>${esc(w)}</li>`).join('');
   const groups = {};
   for (const [k,t] of Object.entries(TYPES)) (groups[t.group] ||= []).push([k,t]);
   let o = '';
@@ -672,9 +737,11 @@ function renderProps(){
     </div>
     <dl class="kv">
       <dt>Part</dt><dd>${esc(t.name)}</dd>
-      <dt>Cutout</dt><dd>${dimText(t.cut)} mm</dd>
+      <dt>Hole</dt><dd>${dimText(t.cut)} mm</dd>
+      <dt>Cap</dt><dd>${t.cap ? `${dimText(t.cap)} mm, ${fmt(t.cap.height)} high` : 'none'}</dd>
+      <dt>PCB</dt><dd>${dimText(t.body)} mm, ${fmt(t.depth)} deep</dd>
+      <dt>Safe space</dt><dd>${t.explicitKo ? 'set directly' : fmt(t.clearance) + ' mm'}</dd>
       <dt>Keep-out</dt><dd>${dimText(t.ko)} mm</dd>
-      <dt>Depth</dt><dd>${t.depth} mm</dd>
     </dl>
     <div class="row">
       <button class="btn sm" id="pMirror" title="Add a copy mirrored across the vertical centre line (M)">Mirror copy</button>
@@ -860,8 +927,11 @@ function rebuild3d(){
       body.position.set(p.x, p.y, -tp.depth/2); g.add(body);
       if (tp.cap){
         const col = tp.cap.kind==='led' ? '#E8432E' : tp.cap.kind==='lever' ? '#B9C0C7' : tp.cap.kind==='knob' ? '#1C2024' : '#E3E6E9';
-        const cap = new THREE.Mesh(new THREE.CylinderGeometry(tp.cap.d/2*(tp.cap.kind==='knob'?0.94:1), tp.cap.d/2, tp.cap.h, 32), mat(col, tp.cap.kind==='led'?{emissive:new THREE.Color('#7A1408')}:{}));
-        cap.rotation.x = Math.PI/2; cap.position.set(p.x, p.y, t + tp.cap.h/2); g.add(cap);
+        const capMat = mat(col, tp.cap.kind==='led'?{emissive:new THREE.Color('#7A1408')}:{});
+        let cap;
+        if (tp.cap.c === 'rect'){ cap = new THREE.Mesh(new THREE.BoxGeometry(tp.cap.w, tp.cap.h, tp.cap.height), capMat); cap.rotation.z = p.rot*Math.PI/180; }
+        else { cap = new THREE.Mesh(new THREE.CylinderGeometry(tp.cap.d/2*(tp.cap.kind==='knob'?0.94:1), tp.cap.d/2, tp.cap.height, 32), capMat); cap.rotation.x = Math.PI/2; }
+        cap.position.set(p.x, p.y, t + tp.cap.height/2); g.add(cap);
       }
       if (tp.screen){
         const sc = new THREE.Mesh(new THREE.PlaneGeometry(tp.cut.w+1, tp.cut.h+1), mat('#0B1A2A', {emissive:new THREE.Color('#0D3A5C')}));
@@ -1013,13 +1083,15 @@ let toastTimer = null;
 function toast(msg){ const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3200); }
 
 /* ---------------- Boot ---------------- */
-function boot(){
+async function boot(){
+  await loadParts();
   let saved = null;
   try { saved = localStorage.getItem(STORE_KEY); } catch(e){}
   try { if (saved) loadState(saved); else loadState(makeExample('bp5')); }
   catch(e){ loadState(makeExample('bp5')); }
   renderPalette(); initControls(); renderAll(false);
   init3d();
+  if (partWarnings.length) toast(partWarnings[0] + (partWarnings.length > 1 ? ` (+${partWarnings.length-1} more under Add part)` : ''));
 }
 boot();
 })();

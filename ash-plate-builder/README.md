@@ -24,7 +24,7 @@ To run it locally, open `index.html` in a browser. It needs internet access to l
 If any check fails (edge margin, mounting hole, no-go area or keep-out overlap), exporting the plate asks for confirmation first.
 
 ## Editing the data
-All data lives at the top of the script in `index.html`. Units are mm, the origin is the plate centre, and +Y points up.
+Back plates live at the top of the script in `index.html`. Part sizes live in `parts.json`. Units are mm, the origin is the plate centre, and +Y points up.
 
 - **`PLATES`** holds the back plates. Each one has:
   - `outline`, a closed polygon of any shape
@@ -41,13 +41,17 @@ All data lives at the top of the script in `index.html`. Units are mm, the origi
   A part type with `ignoresNoGo: true` (the OLED for now) only has to avoid `mount` holes.
 
   The distance between the front and back plates is the **Plate spacing** setting (default 20 mm). Parts deeper than that get a warning.
-- **`TYPES`** is the part library. For each part it defines:
-  - the cutout
-  - the keep-out zone
-  - the depth behind the plate
-  - the 3D preview body
-  
-  The cutout sizes are typical values, so check them against the datasheets of the parts you actually use.
+- **`parts.json`** (next to `index.html`) is the part library. Edit it on GitHub and the site picks it up on the next load, with no rebuild needed. Each part sets:
+  - `hole`: the cutout in the front plate
+  - `cap`: the button cap, knob, lever or LED on top, including its height
+  - `pcb`: the board or switch body underneath, including its depth behind the plate
+  - `clearance`: the safe space around the part. The keep-out zone is the largest of the hole, cap and PCB, plus the clearance on every side.
+  - optional `keepout`, to set the keep-out shape exactly instead
+  - `rotatable`, `allowOverNoGo` and `display`
+
+  The `_help` block at the top of the file explains every field. The sizes are typical values, so check them against your parts' datasheets.
+
+  `index.html` also carries a built-in copy of the library, used when `parts.json` can't be loaded, for example when the page is opened as a local file. To refresh that copy after editing `parts.json`, run `python3 tools/sync_parts.py`.
 
 ## Adding a back plate from CAD
 Export the back plate as a DXF in mm, with the wheel centre at the origin. Then run:
