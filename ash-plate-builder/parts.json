@@ -25,8 +25,8 @@
       "name": "Push button 12 mm", "group": "Buttons", "label": "BTN",
       "hole": { "shape": "circle", "d": 12 },
       "cap":  { "shape": "circle", "d": 14, "height": 5, "style": "button" },
-      "pcb":  { "shape": "circle", "d": 13, "depth": 20 },
-      "clearance": 2
+      "pcb":  { "shape": "rect", "w": 20, "h": 20, "r": 1, "depth": 20 },
+      "clearance": 0
     },
     "btn16": {
       "name": "Push button 16 mm", "group": "Buttons", "label": "BTN",
@@ -46,8 +46,8 @@
       "name": "Rotary switch 12-pos", "group": "Encoders & switches", "label": "ROT",
       "hole": { "shape": "circle", "d": 9.5 },
       "cap":  { "shape": "circle", "d": 28, "height": 16, "style": "knob" },
-      "pcb":  { "shape": "circle", "d": 26, "depth": 30 },
-      "clearance": 2
+      "pcb":  { "shape": "rect", "w": 27.2, "h": 27.2, "r": 1, "depth": 30 },
+      "clearance": 0
     },
     "tgl": {
       "name": "Toggle switch M6", "group": "Encoders & switches", "label": "TGL",
