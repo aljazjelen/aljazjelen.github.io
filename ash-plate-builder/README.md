@@ -49,6 +49,7 @@ Main `wheel.json` settings (the `_help` block in each file lists them all):
 - `holes.mount.diameters`: circle sizes that are front plate screws. These are cut through the front plate and keep `clearance` free around them.
 - `holes.noGo.diameters`: circle sizes that are no-go areas, such as handle bolts or the hub. These aren't cut, and parts stay `clearance` away.
 - `plateSpacing` and `frontPlateThickness`: the defaults applied when the wheel is picked.
+- `chamfer`: a 45° chamfer on the top edge of the front plate, in mm. `outline` covers the outer edge and `mountHoles` the mounting holes. Backplate 5 uses 0.8 and 0.5.
 - `example`: the layout loaded by **Load example**.
 
 A wheel without a DXF can set `outline` and `extraHoles` directly; `wheels/gt3-placeholder` is an example.
@@ -75,6 +76,9 @@ The `_help` block in the file explains every field. The sizes are typical values
 `index.html` carries a built-in copy of `parts.json` and `wheels/`. It's only used when those files can't be loaded, for example when the page is opened straight from disk.
 
 After editing, run `python3 tools/sync_builtin.py` to refresh the copy. GitHub Pages always uses the files themselves, so this is optional there.
+
+### Chamfers and the 3D engine
+The chamfered plate is built with [manifold-3d](https://github.com/elalish/manifold) 3.5.4, which is vendored in `vendor/` so the app doesn't depend on a CDN. The chamfer only changes the STL and the 3D preview; the DXF and SVG stay 2D outlines. If the engine can't load, the app falls back to a plain extrusion and says so under Export.
 
 ## Controls
 - Drag parts on the plate. They snap to the grid set by **Snap**.

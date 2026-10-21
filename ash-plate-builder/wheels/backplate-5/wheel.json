@@ -11,6 +11,7 @@
     "holes.noGo: circle diameters that are no-go areas (handle bolts, hub). Not cut; parts keep clearance away from them.",
     "holes.otherCircles: what to do with circles matching neither list: noGo, mount or ignore. holes.otherShapes: same for other closed shapes (noGo or ignore).",
     "plateSpacing / frontPlateThickness: defaults applied when this wheel is picked.",
+    "chamfer: 45° chamfer on the top edge of the front plate, in mm. outline = the outer edge, mountHoles = the mounting holes. 0 or left out = no chamfer.",
     "layers (optional): only read these DXF layers.",
     "example: the layout loaded by 'Load example' for this wheel."
   ],
@@ -19,6 +20,10 @@
   "edgeMargin": 4.5,
   "plateSpacing": 20,
   "frontPlateThickness": 4,
+  "chamfer": {
+    "outline": 0.8,
+    "mountHoles": 0.5
+  },
   "holes": {
     "mount": {
       "diameters": [3.3],
