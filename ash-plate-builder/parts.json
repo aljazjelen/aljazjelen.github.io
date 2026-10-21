@@ -25,7 +25,7 @@
       "name": "Push button 12 mm", "group": "Buttons", "label": "BTN",
       "hole": { "shape": "circle", "d": 12 },
       "cap":  { "shape": "circle", "d": 14, "height": 5, "style": "button" },
-      "pcb":  { "shape": "circle", "d": 13, "depth": 20 },
+      "pcb":  { "shape": "rect", "w": 20, "h": 20, "r": 0, "depth": 20 },
       "clearance": 2
     },
     "btn16": {
