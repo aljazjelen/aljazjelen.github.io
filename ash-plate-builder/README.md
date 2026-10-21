@@ -82,7 +82,7 @@ The chamfered plate is built with [manifold-3d](https://github.com/elalish/manif
 
 ## Controls
 - Drag parts on the plate. They snap to the grid set by **Snap**.
-- Drag the orange handle on the selected part to rotate it. It snaps to 5°; hold <kbd>Shift</kbd> for 1° steps. The keep-out zone rotates with the part.
+- Drag the blue handle on the selected part to rotate it. It snaps to 5°; hold <kbd>Shift</kbd> for 1° steps. The keep-out zone rotates with the part.
 - <kbd>Del</kbd> removes the selected part, <kbd>R</kbd> rotates it 90° (<kbd>Shift</kbd>+<kbd>R</kbd> 5°), and <kbd>M</kbd> adds a mirrored copy.
 - The arrow keys nudge the selected part; hold <kbd>Shift</kbd> to move 5× as far.
 - <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes and <kbd>Ctrl</kbd>+<kbd>Y</kbd> redoes.
