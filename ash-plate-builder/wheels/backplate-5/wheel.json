@@ -26,11 +26,11 @@
   },
   "holes": {
     "mount": {
-      "diameters": [3.3],
+      "diameters": [3.3, 4.2],
       "clearance": 2.85
     },
     "noGo": {
-      "diameters": [4.2, 46],
+      "diameters": [46],
       "clearance": 4.5
     },
     "otherCircles": "noGo",

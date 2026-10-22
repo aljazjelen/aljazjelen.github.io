@@ -47,7 +47,7 @@ Supported DXF elements are lines, arcs, circles, ellipses, polylines (including 
 Main `wheel.json` settings (the `_help` block in each file lists them all):
 - `edgeMargin`: how far parts must stay from the wheel's border. Backplate 5 uses 4.5 mm.
 - `holes.mount.diameters`: circle sizes that are front plate screws. These are cut through the front plate and keep `clearance` free around them.
-- `holes.noGo.diameters`: circle sizes that are no-go areas, such as handle bolts or the hub. These aren't cut, and parts stay `clearance` away.
+- `holes.noGo.diameters`: circle sizes that are no-go areas, such as the hub. These aren't cut, and parts stay `clearance` away.
 - `plateSpacing` and `frontPlateThickness`: the defaults applied when the wheel is picked.
 - `chamfer`: a 45° chamfer on the top edge of the front plate, in mm. `outline` covers the outer edge and `mountHoles` the mounting holes. Backplate 5 uses 0.8 and 0.5.
 - `example`: the layout loaded by **Load example**.
