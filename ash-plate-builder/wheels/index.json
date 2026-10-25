@@ -3,6 +3,7 @@
   "wheels": [
     "zeus",
     "hermes",
+    "merida",
     "ares"
   ]
 }

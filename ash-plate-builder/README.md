@@ -39,11 +39,15 @@ wheels/
   hermes/
     wheel.json
     backplate.dxf
+  merida/
+    wheel.json
+    backplate.dxf
 ```
 
-The wheels are named after Greek gods:
+There are three categories: GT3 and rally wheels, and button boxes. The plates are:
 - **Zeus · GT3** (`zeus`): 267 × 142 mm plate with 13 mounting holes, and GT3-style open grips in the preview.
 - **Hermes · Rally** (`hermes`): compact 147 × 108 mm plate with 6 mounting holes, and a rally rim in the preview.
+- **Merida · Button box** (`merida`): a 120 × 120 mm button box plate with 4 corner mounting holes and no handles.
 - **Ares · GT3 wide** (`ares`): a placeholder defined without a DXF.
 
 Layouts saved with the old folder names (`backplate-5`, `rally`, `gt3-placeholder`) still open on the right wheel.
