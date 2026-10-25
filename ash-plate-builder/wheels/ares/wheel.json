@@ -2,7 +2,7 @@
   "_help": [
     "Placeholder wheel without a DXF: the outline and holes are written here directly. See wheels/backplate-5/wheel.json for all settings."
   ],
-  "name": "GT3 wide (placeholder)",
+  "name": "Ares · GT3 wide (placeholder)",
   "edgeMargin": 5,
   "plateSpacing": 30,
   "frontPlateThickness": 4,

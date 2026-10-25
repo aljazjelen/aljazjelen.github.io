@@ -13,10 +13,10 @@
     "plateSpacing / frontPlateThickness: defaults applied when this wheel is picked.",
     "chamfer: 45° chamfer on the top edge of the front plate, in mm. outline = the outer edge, mountHoles = the mounting holes. 0 or left out = no chamfer.",
     "layers (optional): only read these DXF layers.",
-    "handles: F1-style grips behind the back plate. left.holes = the mount holes on the left side, left.path = the grip centre line (plate coordinates, from one mount hole to another); mirror copies them to the right. grip = oval cross-section width x depth; the grip's top always sits gapBelowFrontPlate mm below the underside of the front plate. Bolts go through the mount holes the grip covers: bolt = hole and head diameters, seat = material left under the bolt head. Each handle is split at mid-depth into two halves.",
+    "handles: optional, shown in the 3D preview only. style gt3 or rally; bolt = hole and head diameters, seat = material left under the bolt head. gt3: open grips on both sides. left.holes = the mount holes on the left, left.path = the grip centre line (plate coordinates); mirror copies them to the right. grip = oval cross-section width x depth; its top sits gapBelowFrontPlate mm below the underside of the front plate. rally: a round rim with a flat bottom. rim.diameter = outside diameter, rim.tube = tube diameter, rim.flatBottom = centre to the outside of the flat bottom, rim.cornerRadius = the rounding into the flat. spokes = [{holes: [[x, y], ...]}], each a pad bolted behind the back plate and swept up to the rim; spoke = width x thickness; mirror copies spokes that aren't on the centre line.",
     "example: the layout loaded by 'Load example' for this wheel."
   ],
-  "name": "Backplate 5",
+  "name": "Zeus · GT3",
   "dxf": "backplate.dxf",
   "edgeMargin": 4.5,
   "plateSpacing": 20,
@@ -38,7 +38,7 @@
     "otherShapes": "noGo"
   },
   "handles": {
-    "style": "f1-open",
+    "style": "gt3",
     "left": {
       "holes": [[-88.707, -59.618], [-92, -7], [-92, 5], [-113.393, 43.1], [-125, 50.929]],
       "path": [[-88.707, -59.618], [-108, -72], [-132, -66], [-146, -40], [-149, -5], [-145, 25], [-133, 40], [-119.2, 47]]

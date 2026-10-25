@@ -33,15 +33,20 @@ Each wheel has its own folder containing its back plate DXF and a `wheel.json` w
 ```
 wheels/
   index.json            list of wheel folders; the first one is the default
-  backplate-5/
+  zeus/
     wheel.json
     backplate.dxf
-  rally/
+  hermes/
     wheel.json
     backplate.dxf
 ```
 
-Wheels included: **Backplate 5** (F1-style, with handles in the preview), **Rally** (a compact plate with 6 mounting holes and the Ø46 hub, no handles yet) and **GT3 wide** (a placeholder without a DXF).
+The wheels are named after Greek gods:
+- **Zeus · GT3** (`zeus`): 267 × 142 mm plate with 13 mounting holes, and GT3-style open grips in the preview.
+- **Hermes · Rally** (`hermes`): compact 147 × 108 mm plate with 6 mounting holes, and a rally rim in the preview. Its default plate spacing is 30 mm, so the 12-position rotary switches fit.
+- **Ares · GT3 wide** (`ares`): a placeholder defined without a DXF.
+
+Layouts saved with the old folder names (`backplate-5`, `rally`, `gt3-placeholder`) still open on the right wheel.
 
 The DXF is read straight in the browser, with no conversion step:
 - The largest closed shape becomes the outline.
@@ -51,18 +56,18 @@ The DXF is read straight in the browser, with no conversion step:
 Supported DXF elements are lines, arcs, circles, ellipses, polylines (including arc segments) and splines. Export the drawing in mm with the wheel centre at 0,0, or set `origin` instead. For the most accurate curves, export splines with control points, which Onshape, Fusion and SolidWorks do by default.
 
 Main `wheel.json` settings (the `_help` block in each file lists them all):
-- `edgeMargin`: how far parts must stay from the wheel's border. Backplate 5 uses 4.5 mm.
+- `edgeMargin`: how far parts must stay from the wheel's border. Zeus and Hermes use 4.5 mm.
 - `holes.mount.diameters`: circle sizes that are front plate screws. These are cut through the front plate and keep `clearance` free around them.
 - `holes.noGo.diameters`: circle sizes that are no-go areas, such as the hub. These aren't cut, and parts stay `clearance` away.
 - `plateSpacing` and `frontPlateThickness`: the defaults applied when the wheel is picked.
-- `chamfer`: a 45° chamfer on the top edge of the front plate, in mm. `outline` covers the outer edge and `mountHoles` the mounting holes. Backplate 5 uses 0.5 on the outline and 1.7 on the mounting holes.
+- `chamfer`: a 45° chamfer on the top edge of the front plate, in mm. `outline` covers the outer edge and `mountHoles` the mounting holes. Zeus and Hermes use 0.5 on the outline and 1.7 on the mounting holes.
 - `example`: the layout loaded by **Load example**.
 
-A wheel without a DXF can set `outline` and `extraHoles` directly; `wheels/gt3-placeholder` is an example.
+A wheel without a DXF can set `outline` and `extraHoles` directly; `wheels/ares` is an example.
 
 To add a wheel:
 1. Create a folder.
-2. Put the DXF and a `wheel.json` in it (copy one from `backplate-5`).
+2. Put the DXF and a `wheel.json` in it (copy one from `zeus`).
 3. Add the folder name to `wheels/index.json`.
 
 Any problems with a wheel are listed under the wheel picker in the app.
@@ -102,12 +107,19 @@ The deco is a separate printed piece that sits on top of the front plate, export
 The deco settings are saved with the layout.
 
 ### Handles (3D preview only)
-A wheel can define handles in its `wheel.json`, so the style follows the wheel. For now they're a cosmetic addition to the 3D preview, to judge how the wheel looks, and aren't exported. Backplate 5 has simple F1-style grips:
-- **Grip:** a 30 × 38 mm oval tube (width in the plate's plane × depth front to back) with rounded ends, along a smooth curve through `left.path`. The curve starts at the bottom-corner mount hole, runs beside the wheel, and ends over the two top mount holes. The top of the grip always sits just below the underside of the front plate (`grip.gapBelowFrontPlate`, 0.5 mm), whatever the plate spacing.
-- **Bolting:** the grip shows bolt holes where it covers a mount hole, here the bottom hole and both top holes. The Handles panel lists the holes it doesn't cover.
+A wheel can define handles in its `wheel.json`, so the style follows the wheel. For now they're a cosmetic addition to the 3D preview, to judge how the wheel looks, and aren't exported. There are two styles:
+
+**`gt3`** (Zeus): open grips on both sides.
+- **Grip:** a 30 × 38 mm oval tube (width in the plate's plane × depth front to back) with rounded ends, along a smooth curve through `left.path`. On Zeus the curve starts at the bottom-corner mount hole, runs beside the wheel, and ends over the two top mount holes.
+- **Height:** the top of the grip always sits just below the underside of the front plate (`grip.gapBelowFrontPlate`, 0.5 mm), whatever the plate spacing.
+- **Bolting:** the grip shows bolt holes where it covers a mount hole. The Handles panel lists the holes it doesn't cover.
 - **Mirroring:** the right handle is the left one mirrored.
 
-The **Handles** panel can hide them and change the grip width and depth. To reshape a grip, edit the `path` points in `wheel.json`.
+**`rally`** (Hermes): a round rim with a flat bottom, on spokes.
+- **Rim:** `rim.diameter` is the outside diameter (340 mm) and `rim.tube` the tube diameter (30 mm). `rim.flatBottom` is the distance from the centre to the outside of the flat bottom (140 mm), and `rim.cornerRadius` rounds the flat into the circle (40 mm). The top of the rim sits just below the front plate, like the GT3 grips.
+- **Spokes:** each entry in `spokes` lists the mount holes it bolts to. A spoke is a pad behind the back plate, swept up to the rim, so the rim is dished towards the driver. The spoke runs outward from the centre through its holes. Spokes off the centre line are mirrored. Hermes has three: left, right, and a wide bottom spoke on the two bottom holes. `spoke` sets the width and thickness.
+
+The **Handles** panel can hide them and change the main sizes: grip width and depth for `gt3`, rim and tube diameter for `rally`. To reshape them, edit `wheel.json`.
 
 ### Built-in copy
 `index.html` carries a built-in copy of `parts.json` and `wheels/`. It's only used when those files can't be loaded, for example when the page is opened straight from disk.

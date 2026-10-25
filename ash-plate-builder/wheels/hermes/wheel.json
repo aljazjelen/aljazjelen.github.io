@@ -1,0 +1,67 @@
+{
+  "_help": [
+    "Settings for one wheel. The folder name is the wheel's id; list it in wheels/index.json.",
+    "All sizes in mm. The back plate DXF should be drawn in mm with the wheel centre at 0,0 (or set origin).",
+    "name: shown in the wheel list.",
+    "dxf: the back plate drawing in this folder. The largest closed shape becomes the outline; circles become holes; other closed shapes inside become no-go areas.",
+    "outline / extraHoles: use instead of (or next to) a DXF. outline = [[x,y], ...]; extraHoles = [{\"x\":0,\"y\":0,\"d\":3.3,\"role\":\"mount\"|\"noGo\"}].",
+    "origin (optional): [x, y] of the wheel centre in the DXF, if it isn't at 0,0.",
+    "edgeMargin: how far parts must stay from the outline (the wheel's border).",
+    "holes.mount: circle diameters that are front plate screw holes. They are cut through the front plate; clearance = free space around them.",
+    "holes.noGo: circle diameters that are no-go areas (handle bolts, hub). Not cut; parts keep clearance away from them.",
+    "holes.otherCircles: what to do with circles matching neither list: noGo, mount or ignore. holes.otherShapes: same for other closed shapes (noGo or ignore).",
+    "plateSpacing / frontPlateThickness: defaults applied when this wheel is picked.",
+    "chamfer: 45° chamfer on the top edge of the front plate, in mm. outline = the outer edge, mountHoles = the mounting holes. 0 or left out = no chamfer.",
+    "layers (optional): only read these DXF layers.",
+    "handles: optional, shown in the 3D preview only. style gt3 or rally; bolt = hole and head diameters, seat = material left under the bolt head. gt3: open grips on both sides. left.holes = the mount holes on the left, left.path = the grip centre line (plate coordinates); mirror copies them to the right. grip = oval cross-section width x depth; its top sits gapBelowFrontPlate mm below the underside of the front plate. rally: a round rim with a flat bottom. rim.diameter = outside diameter, rim.tube = tube diameter, rim.flatBottom = centre to the outside of the flat bottom, rim.cornerRadius = the rounding into the flat. spokes = [{holes: [[x, y], ...]}], each a pad bolted behind the back plate and swept up to the rim; spoke = width x thickness; mirror copies spokes that aren't on the centre line.",
+    "example: the layout loaded by 'Load example' for this wheel."
+  ],
+  "name": "Hermes · Rally",
+  "dxf": "backplate.dxf",
+  "edgeMargin": 4.5,
+  "plateSpacing": 30,
+  "frontPlateThickness": 4,
+  "chamfer": {
+    "outline": 0.5,
+    "mountHoles": 1.7
+  },
+  "holes": {
+    "mount": {
+      "diameters": [3.3, 4.2],
+      "clearance": 2.85
+    },
+    "noGo": {
+      "diameters": [46],
+      "clearance": 4.5
+    },
+    "otherCircles": "noGo",
+    "otherShapes": "noGo"
+  },
+  "handles": {
+    "style": "rally",
+    "rim": { "diameter": 340, "tube": 30, "flatBottom": 140, "cornerRadius": 40, "gapBelowFrontPlate": 0.5 },
+    "spokes": [
+      { "holes": [[-48.061, 10.275]] },
+      { "holes": [[-18.584, -43.664], [18.584, -43.664]] }
+    ],
+    "mirror": true,
+    "spoke": { "width": 26, "thickness": 8 },
+    "bolt": { "hole": 3.3, "head": 6, "seat": 4 }
+  },
+  "example": [
+    { "type": "btn12", "x": -35.5, "y": -22, "label": "BTN L1" },
+    { "type": "btn7", "x": -7, "y": -37, "label": "BTN L2" },
+    { "type": "btn12", "x": 35.5, "y": -22, "label": "BTN R1" },
+    { "type": "btn7", "x": 7, "y": -37, "label": "BTN R2" },
+    { "type": "led3", "x": -21, "y": 39.5, "label": "S1" },
+    { "type": "led3", "x": -15, "y": 39.5, "label": "S2" },
+    { "type": "led3", "x": -9, "y": 39.5, "label": "S3" },
+    { "type": "led3", "x": -3, "y": 39.5, "label": "S4" },
+    { "type": "led3", "x": 3, "y": 39.5, "label": "S5" },
+    { "type": "led3", "x": 9, "y": 39.5, "label": "S6" },
+    { "type": "led3", "x": 15, "y": 39.5, "label": "S7" },
+    { "type": "led3", "x": 21, "y": 39.5, "label": "S8" },
+    { "type": "rot", "x": -35, "y": 24, "rot": 315, "label": "ROT L" },
+    { "type": "rot", "x": 35, "y": 24, "rot": 45, "label": "ROT R" }
+  ]
+}
