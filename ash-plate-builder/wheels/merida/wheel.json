@@ -38,15 +38,19 @@
     "otherShapes": "noGo"
   },
   "example": [
-    { "type": "rot", "x": -27, "y": 27, "label": "ROT L" },
-    { "type": "rot", "x": 27, "y": 27, "label": "ROT R" },
-    { "type": "enc", "x": 0, "y": 40, "label": "ENC" },
-    { "type": "btn16", "x": -34, "y": -3, "label": "BTN1" },
-    { "type": "btn16", "x": 0, "y": -3, "label": "BTN2" },
-    { "type": "btn16", "x": 34, "y": -3, "label": "BTN3" },
-    { "type": "tgl", "x": -30, "y": -33, "label": "TGL1" },
-    { "type": "tgl", "x": 0, "y": -33, "label": "TGL2" },
-    { "type": "tgl", "x": 30, "y": -33, "label": "TGL3" },
-    { "type": "led5row", "x": 0, "y": -51, "row": { "n": 2 }, "label": "LEDS" }
+    { "type": "rot", "x": -27, "y": 33, "label": "ROT L" },
+    { "type": "rot", "x": 27, "y": 33, "label": "ROT R" },
+    { "type": "btn15sq", "x": -33, "y": 4, "label": "BTN1" },
+    { "type": "btn15sq", "x": -11, "y": 4, "label": "BTN2" },
+    { "type": "btn15sq", "x": 11, "y": 4, "label": "BTN3" },
+    { "type": "btn15sq", "x": 33, "y": 4, "label": "BTN4" },
+    { "type": "btn15sq", "x": -33, "y": -18, "label": "BTN5" },
+    { "type": "btn15sq", "x": -11, "y": -18, "label": "BTN6" },
+    { "type": "btn15sq", "x": 11, "y": -18, "label": "BTN7" },
+    { "type": "btn15sq", "x": 33, "y": -18, "label": "BTN8" },
+    { "type": "tgl", "x": -33, "y": -42, "label": "TGL1" },
+    { "type": "tgl", "x": -11, "y": -42, "label": "TGL2" },
+    { "type": "tgl", "x": 11, "y": -42, "label": "TGL3" },
+    { "type": "tgl", "x": 33, "y": -42, "label": "TGL4" }
   ]
 }
