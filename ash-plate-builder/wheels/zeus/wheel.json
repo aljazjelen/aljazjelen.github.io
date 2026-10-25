@@ -72,7 +72,7 @@
     { "type": "btn7", "x": 80, "y": -1, "label": "THUMB R" },
     { "type": "btn12", "x": -20, "y": -38, "label": "BACK" },
     { "type": "btn12", "x": 20, "y": -38, "label": "OK" },
-    { "type": "btn12", "x": -94, "y": 58, "rot": 355, "label": "WING L" },
-    { "type": "btn12", "x": 94, "y": 58, "rot": 5, "label": "WING R" }
+    { "type": "btn12", "x": -96.5, "y": 59, "rot": 355, "label": "WING L" },
+    { "type": "btn12", "x": 96.5, "y": 59, "rot": 5, "label": "WING R" }
   ]
 }

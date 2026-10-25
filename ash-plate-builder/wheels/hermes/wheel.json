@@ -49,9 +49,9 @@
     "bolt": { "hole": 3.3, "head": 6, "seat": 4 }
   },
   "example": [
-    { "type": "btn12", "x": -35.5, "y": -22, "label": "BTN L1" },
+    { "type": "btn12", "x": -32.5, "y": -26, "label": "BTN L1" },
     { "type": "btn7", "x": -7, "y": -37, "label": "BTN L2" },
-    { "type": "btn12", "x": 35.5, "y": -22, "label": "BTN R1" },
+    { "type": "btn12", "x": 32.5, "y": -26, "label": "BTN R1" },
     { "type": "btn7", "x": 7, "y": -37, "label": "BTN R2" },
     { "type": "led3", "x": -21, "y": 39.5, "label": "S1" },
     { "type": "led3", "x": -15, "y": 39.5, "label": "S2" },
