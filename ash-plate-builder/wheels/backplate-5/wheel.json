@@ -22,8 +22,8 @@
   "plateSpacing": 20,
   "frontPlateThickness": 4,
   "chamfer": {
-    "outline": 0.8,
-    "mountHoles": 0.5
+    "outline": 0.5,
+    "mountHoles": 1.7
   },
   "holes": {
     "mount": {

@@ -50,7 +50,7 @@ Main `wheel.json` settings (the `_help` block in each file lists them all):
 - `holes.mount.diameters`: circle sizes that are front plate screws. These are cut through the front plate and keep `clearance` free around them.
 - `holes.noGo.diameters`: circle sizes that are no-go areas, such as the hub. These aren't cut, and parts stay `clearance` away.
 - `plateSpacing` and `frontPlateThickness`: the defaults applied when the wheel is picked.
-- `chamfer`: a 45° chamfer on the top edge of the front plate, in mm. `outline` covers the outer edge and `mountHoles` the mounting holes. Backplate 5 uses 0.8 and 0.5.
+- `chamfer`: a 45° chamfer on the top edge of the front plate, in mm. `outline` covers the outer edge and `mountHoles` the mounting holes. Backplate 5 uses 0.5 on the outline and 1.7 on the mounting holes.
 - `example`: the layout loaded by **Load example**.
 
 A wheel without a DXF can set `outline` and `extraHoles` directly; `wheels/gt3-placeholder` is an example.
@@ -114,7 +114,7 @@ The chamfered plate is built with [manifold-3d](https://github.com/elalish/manif
 
 ## Views
 The app has two views, switched at the top. It remembers the last one; add `#design` or `#preview` to the link to open a specific view.
-- **2D design:** wheel selection, the parts list, the plate editor, the selected part and the checks.
+- **2D design:** wheel selection, the parts list, the plate editor, the selected part and the checks. The parts list shows its groups (Buttons, Encoders & switches, Indicators, Displays, Custom) collapsed. Click a group to open it; only one is open at a time.
 - **3D preview:** a large 3D view of the plate, deco and handles, with the Export, Deco and Handles panels.
 
 ## Controls
