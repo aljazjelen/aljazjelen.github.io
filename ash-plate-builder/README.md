@@ -36,7 +36,12 @@ wheels/
   backplate-5/
     wheel.json
     backplate.dxf
+  rally/
+    wheel.json
+    backplate.dxf
 ```
+
+Wheels included: **Backplate 5** (F1-style, with handles in the preview), **Rally** (a compact plate with 6 mounting holes and the Ø46 hub, no handles yet) and **GT3 wide** (a placeholder without a DXF).
 
 The DXF is read straight in the browser, with no conversion step:
 - The largest closed shape becomes the outline.

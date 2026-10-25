@@ -2,6 +2,7 @@
   "_help": "Wheel folders shown in the app, in this order. The first one is the default.",
   "wheels": [
     "backplate-5",
+    "rally",
     "gt3-placeholder"
   ]
 }
