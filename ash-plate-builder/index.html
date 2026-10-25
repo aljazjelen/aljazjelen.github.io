@@ -126,6 +126,9 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 #plate .dim{fill:var(--muted);font-family:var(--f-mono);font-size:3.4px;text-anchor:middle}
 #plate .dimline{stroke:var(--muted);stroke-width:.25}
 
+.customdims{display:flex;flex-direction:column;gap:8px}
+.dimgroup{display:flex;flex-direction:column;gap:4px}
+.dimtitle{font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .props .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px}
 .props .kv dt{color:var(--muted)}
 .props .kv dd{margin:0;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
@@ -635,6 +638,33 @@ function buildTypes(cfg, source){
   }
   return out;
 }
+/* Custom parts: built into the app, not parts.json. Each placed custom part keeps its own sizes in part.dims. */
+const CUSTOM = {
+  'custom-circle': { name: 'Custom circle',    defaults: { cutD: 10, koD: 14 } },
+  'custom-rect':   { name: 'Custom rectangle', defaults: { cutW: 20, cutH: 10, cutR: 0, koW: 24, koH: 14 } },
+};
+const isCustom = type => Object.prototype.hasOwnProperty.call(CUSTOM, type);
+const knownType = type => isCustom(type) || !!TYPES[type];
+// Valid sizes: the cut-out is at least 0.5 mm, the keep-out is never smaller than the cut-out.
+function cleanDims(type, d){
+  const def = CUSTOM[type].defaults, o = {};
+  for (const k of Object.keys(def)){ const v = +((d || {})[k]); o[k] = Number.isFinite(v) && v >= 0 ? r2(v) : def[k]; }
+  if (type === 'custom-circle'){ o.cutD = Math.max(o.cutD, 0.5); o.koD = Math.max(o.koD, o.cutD); }
+  else {
+    o.cutW = Math.max(o.cutW, 0.5); o.cutH = Math.max(o.cutH, 0.5); o.cutR = r2(Math.min(o.cutR, o.cutW/2, o.cutH/2));
+    o.koW = Math.max(o.koW, o.cutW); o.koH = Math.max(o.koH, o.cutH);
+  }
+  return o;
+}
+// The type data for a part: the parts.json entry, or one built from a custom part's own sizes.
+function typeOf(p){
+  if (!isCustom(p.type)) return TYPES[p.type];
+  const d = cleanDims(p.type, p.dims), circle = p.type === 'custom-circle';
+  const cut = circle ? {c:'circle', d:d.cutD} : {c:'rect', w:d.cutW, h:d.cutH, r:d.cutR};
+  const ko = circle ? {c:'circle', d:d.koD} : {c:'rect', w:d.koW, h:d.koH};
+  return { group:'Custom', name:CUSTOM[p.type].name, short:'CUST', cut, ko, depth:0, body:ko, cap:null, clearance:0,
+           explicitKo:true, screen:false, rotatable:true, ignoresNoGo:false, custom:true };
+}
 async function loadParts(){
   let cfg = null;
   try {
@@ -663,8 +693,9 @@ const $ = id => document.getElementById(id);
 const plate = () => PLATES.find(p => p.id === state.plateId) || PLATES[0];
 
 function newPart(o){
-  const t = TYPES[o.type];
   const part = { id: 'p' + (nextId++), type:o.type, x:o.x||0, y:o.y||0, rot:o.rot||0, label:o.label||'' };
+  if (isCustom(o.type)) part.dims = cleanDims(o.type, o.dims);
+  const t = typeOf(part);
   if (!part.label) part.label = autoLabel(t.short, o.__list || state.parts);
   return part;
 }
@@ -677,8 +708,8 @@ function makeExample(plateId){
   const pl = PLATES.find(p => p.id === plateId) || PLATES[0];
   const s = { plateId: pl.id, thickness: pl.thickness, gap: pl.spacing, snap:1, parts:[] };
   const prev = state; state = s;
-  for (const o of pl.example) if (o && TYPES[o.type] && Number.isFinite(+o.x) && Number.isFinite(+o.y))
-    s.parts.push(newPart({type:o.type, x:+o.x, y:+o.y, rot:+o.rot||0, label:o.label ? String(o.label) : '', __list:s.parts}));
+  for (const o of pl.example) if (o && knownType(o.type) && Number.isFinite(+o.x) && Number.isFinite(+o.y))
+    s.parts.push(newPart({type:o.type, dims:o.dims, x:+o.x, y:+o.y, rot:+o.rot||0, label:o.label ? String(o.label) : '', __list:s.parts}));
   state = prev;
   return s;
 }
@@ -691,13 +722,17 @@ function loadState(json){
   s.thickness = clampNum(+s.thickness || 4, 2, 10);
   s.gap = clampNum(+s.gap || DEFAULT_GAP, 5, 60);
   s.snap = [0,0.5,1,2.5,5].includes(+s.snap) ? +s.snap : 1;
-  const known = s.parts.filter(p => TYPES[p.type]);
+  const known = s.parts.filter(p => p && knownType(p.type));
   if (known.length < s.parts.length) setTimeout(() => toast(`${s.parts.length - known.length} part(s) use types that are not in parts.json and were left out.`), 0);
-  s.parts = known.map(p => ({id:String(p.id||''), type:p.type, x:+p.x||0, y:+p.y||0, rot:+p.rot||0, label:String(p.label||'')}));
+  s.parts = known.map(p => {
+    const q = {id:String(p.id||''), type:p.type, x:+p.x||0, y:+p.y||0, rot:+p.rot||0, label:String(p.label||'')};
+    if (isCustom(p.type)) q.dims = cleanDims(p.type, p.dims);
+    return q;
+  });
   let max = 0;
   for (const p of s.parts){ const m = /^p(\d+)$/.exec(p.id); if (m) max = Math.max(max, +m[1]); }
   nextId = max + 1;
-  for (const p of s.parts){ if (!/^p\d+$/.test(p.id)) p.id = 'p' + (nextId++); if(!p.label) p.label = autoLabel(TYPES[p.type].short, s.parts); }
+  for (const p of s.parts){ if (!/^p\d+$/.test(p.id)) p.id = 'p' + (nextId++); if(!p.label) p.label = autoLabel(typeOf(p).short, s.parts); }
   state = s;
 }
 function persist(){ try { localStorage.setItem(STORE_KEY, serialize()); } catch(e){} }
@@ -733,8 +768,8 @@ function shapeOf(spec, p){
   return {k:'p', pts:rectPts(p.x, p.y, spec.w, spec.h, p.rot, spec.r||0)};
 }
 const holeKoShape = h => h.poly ? {k:'p', pts:h.koPoly} : {k:'c', x:h.x, y:h.y, r:h.ko/2};
-const koShape  = p => shapeOf(TYPES[p.type].ko, p);
-const cutShape = p => shapeOf(TYPES[p.type].cut, p);
+const koShape  = p => shapeOf(typeOf(p).ko, p);
+const cutShape = p => shapeOf(typeOf(p).cut, p);
 
 function edgeDist(x, y, o){
   let d = Infinity;
@@ -795,7 +830,7 @@ function validate(){
   let nm = 0, nk = 0;
   const mounts = pl.holes.map(h => ({role:h.role, n: h.role==='mount' ? ++nm : ++nk, sh:holeKoShape(h)}));
   for (const [p, sh] of kos){
-    const t = TYPES[p.type];
+    const t = typeOf(p);
     if (!insideZone(sh, pl)){ issues.push({sev:'err', ids:[p.id], msg:`${p.label} crosses the ${pl.inset} mm edge margin.`}); errIds.add(p.id); }
     for (const m of mounts) if ((m.role === 'mount' || !t.ignoresNoGo) && overlap(sh, m.sh)){
       issues.push({sev:'err', ids:[p.id], msg: m.role==='mount' ? `${p.label} overlaps mounting hole ${m.n}.` : `${p.label} reaches into no-go area ${m.n} (handle bolt or hub).`});
@@ -815,22 +850,23 @@ function validate(){
 }
 const errorCount = () => issues.filter(i=>i.sev==='err').length;
 
-function isFree(type, x, y, rot, ignoreId){
+// probe: {type, dims?} of the part to place
+function isFree(probe, x, y, rot, ignoreId){
   const pl = plate();
-  const probe = {type, x, y, rot};
-  const sh = koShape(probe);
+  const part = {type: probe.type, dims: probe.dims, x, y, rot};
+  const sh = koShape(part);
   if (!insideZone(sh, pl)) return false;
-  for (const h of pl.holes) if ((h.role === 'mount' || !TYPES[type].ignoresNoGo) && overlap(sh, holeKoShape(h))) return false;
+  for (const h of pl.holes) if ((h.role === 'mount' || !typeOf(part).ignoresNoGo) && overlap(sh, holeKoShape(h))) return false;
   for (const q of state.parts) if (q.id !== ignoreId && overlap(sh, koShape(q))) return false;
   return true;
 }
-function findFreeSpot(type){
+function findFreeSpot(probe){
   const step = 2, b = plate().bbox;
   const half = Math.max(-b.minX, b.maxX, -b.minY, b.maxY);
-  if (isFree(type,0,0,0)) return {x:0,y:0};
+  if (isFree(probe,0,0,0)) return {x:0,y:0};
   for (let r=step; r<half; r+=step){
     for (let i=-r;i<=r;i+=step){
-      for (const [x,y] of [[i,r],[i,-r],[r,i],[-r,i]]) if (isFree(type,x,y,0)) return {x,y};
+      for (const [x,y] of [[i,r],[i,-r],[r,i],[-r,i]]) if (isFree(probe,x,y,0)) return {x,y};
     }
   }
   return null;
@@ -880,7 +916,7 @@ function render2d(){
   o += `<line class="dimline" x1="${b.minX}" y1="${-b.minY+4}" x2="${b.maxX}" y2="${-b.minY+4}"/><text class="dim" x="${(b.minX+b.maxX)/2}" y="${-b.minY+8.4}">${fmt(pl.width)} × ${fmt(pl.height)} mm</text>`;
   o += `<text class="dim" x="${b.minX}" y="${-b.maxY-3.5}" style="text-anchor:start">${esc(pl.name)} · ${pl.inset} mm margin</text>`;
   for (const p of state.parts){
-    const t = TYPES[p.type];
+    const t = typeOf(p);
     const cls = ['part']; if (p.id===selected) cls.push('sel'); if (errIds.has(p.id)) cls.push('err'); else if (warnIds.has(p.id)) cls.push('warn');
     const ko = koShape(p);
     const ly = ko.k==='c' ? -p.y + ko.r + 3.4 : Math.max(...ko.pts.map(([,y])=>-y)) + 3.4;
@@ -888,7 +924,7 @@ function render2d(){
     o += `<text class="lbl" x="${p.x}" y="${ly}">${esc(p.label)}</text>`;
   }
   const sp = selected && findPart(selected);
-  if (sp && TYPES[sp.type].rotatable){
+  if (sp && typeOf(sp).rotatable){
     const ko = koShape(sp);
     const R = ko.k === 'c' ? ko.r : Math.max(...ko.pts.map(([x,y]) => Math.hypot(x-sp.x, y-sp.y)));
     const a = (90 + sp.rot) * Math.PI/180, L = R + 7;
@@ -985,6 +1021,9 @@ function renderPalette(){
     for (const [k,t] of items) o += `<button class="pitem" data-type="${k}" title="Add ${t.name}">${iconSvg(t)}<span><b>${t.name}</b><i>cut ${dimText(t.cut)} · keep-out ${dimText(t.ko)}</i></span></button>`;
     o += `</div></div>`;
   }
+  o += `<div class="pgroup"><h3>Custom</h3><div class="pitems">`;
+  for (const [k, c] of Object.entries(CUSTOM)) o += `<button class="pitem" data-type="${k}" title="Add a ${c.name.toLowerCase()} with your own sizes">${iconSvg(typeOf({type:k}))}<span><b>${c.name}</b><i>your own cut-out and keep-out</i></span></button>`;
+  o += `</div></div>`;
   $('palette').innerHTML = o;
 }
 $('palette').addEventListener('click', e => {
@@ -992,9 +1031,10 @@ $('palette').addEventListener('click', e => {
   addPart(b.dataset.type);
 });
 function addPart(type, at){
-  const spot = at || findFreeSpot(type);
+  const probe = {type, dims: isCustom(type) ? cleanDims(type, {}) : undefined};
+  const spot = at || findFreeSpot(probe);
   mutate(() => {
-    const p = newPart({type, x: spot ? spot.x : 0, y: spot ? spot.y : 0});
+    const p = newPart({type, dims: probe.dims, x: spot ? spot.x : 0, y: spot ? spot.y : 0});
     state.parts.push(p); selected = p.id;
   });
   if (!spot) toast('No free space left. The part is placed in the centre; drag it somewhere clear.');
@@ -1006,7 +1046,7 @@ function renderProps(){
   $('selCount').textContent = `${state.parts.length} parts`;
   const p = selected && findPart(selected);
   if (!p){ box.innerHTML = `<p class="empty">Click a part on the plate to edit it, or add one from the list.</p>`; return; }
-  const t = TYPES[p.type];
+  const t = typeOf(p);
   const active = document.activeElement && document.activeElement.id;
   if (box.dataset.pid === p.id && box.querySelector('#pX')){
     // update values without rebuilding (keeps focus)
@@ -1014,6 +1054,7 @@ function renderProps(){
     if (active !== 'pY') $('pY').value = fmt(p.y);
     if ($('pRot') && active !== 'pRot') $('pRot').value = fmt(p.rot);
     if (active !== 'pLabel') $('pLabel').value = p.label;
+    if (p.dims) for (const el of box.querySelectorAll('[data-dim]')) if (el.id !== active) el.value = fmt(p.dims[el.dataset.dim]);
     return;
   }
   box.dataset.pid = p.id;
@@ -1025,14 +1066,14 @@ function renderProps(){
       <label class="field">Y (mm)<input type="number" id="pY" step="${step}" value="${fmt(p.y)}"></label>
       ${t.rotatable ? `<label class="field">Rotation (°)<input type="number" id="pRot" step="5" value="${fmt(p.rot)}"></label>` : ''}
     </div>
-    <dl class="kv">
+    ${t.custom ? customFields(p) : `<dl class="kv">
       <dt>Part</dt><dd>${esc(t.name)}</dd>
       <dt>Hole</dt><dd>${dimText(t.cut)} mm</dd>
       <dt>Cap</dt><dd>${t.cap ? `${dimText(t.cap)} mm, ${fmt(t.cap.height)} high` : 'none'}</dd>
       <dt>PCB</dt><dd>${dimText(t.body)} mm, ${fmt(t.depth)} deep</dd>
       <dt>Safe space</dt><dd>${t.explicitKo ? 'set directly' : fmt(t.clearance) + ' mm'}</dd>
       <dt>Keep-out</dt><dd>${dimText(t.ko)} mm</dd>
-    </dl>
+    </dl>`}
     <div class="row">
       ${t.rotatable ? `<button class="btn sm" id="pRot90" title="Rotate 90° (R). Shift+R rotates 5°.">Rotate 90°</button>` : ''}
       <button class="btn sm" id="pMirror" title="Add a copy mirrored across the vertical centre line (M)">Mirror copy</button>
@@ -1044,27 +1085,47 @@ function renderProps(){
   $('pY').addEventListener('change', e => { const v=+e.target.value; if(Number.isFinite(v)) mutate(()=>{ p.y = v; }); });
   if ($('pRot')) $('pRot').addEventListener('change', e => { const v=+e.target.value; if(Number.isFinite(v)) mutate(()=>{ p.rot = ((v%360)+360)%360; }); });
   if ($('pRot90')) $('pRot90').addEventListener('click', () => rotateSelected(90));
+  for (const el of box.querySelectorAll('[data-dim]')) el.addEventListener('change', e => setDim(p, e.target.dataset.dim, e.target));
   $('pMirror').addEventListener('click', mirrorSelected);
   $('pDup').addEventListener('click', duplicateSelected);
   $('pDel').addEventListener('click', deleteSelected);
 }
+const DIM_FIELDS = {
+  'custom-circle': [['Cut-out', [['cutD','Ø (mm)']]], ['Keep-out', [['koD','Ø (mm)']]]],
+  'custom-rect':   [['Cut-out', [['cutW','Width (mm)'], ['cutH','Height (mm)'], ['cutR','Corner r (mm)']]], ['Keep-out', [['koW','Width (mm)'], ['koH','Height (mm)']]]],
+};
+function customFields(p){
+  return `<div class="customdims">` + DIM_FIELDS[p.type].map(([title, fields]) =>
+    `<div class="dimgroup"><span class="dimtitle">${title}</span><div class="row">` +
+    fields.map(([k, label]) => `<label class="field">${label}<input type="number" id="dim-${k}" data-dim="${k}" min="0" step="0.1" value="${fmt(p.dims[k])}"></label>`).join('') +
+    `</div></div>`).join('') +
+    `<p class="note">The keep-out is the zone other parts, holes and the edge margin must stay clear of. It can't be smaller than the cut-out.</p></div>`;
+}
+function setDim(p, key, input){
+  const v = +input.value;
+  if (!Number.isFinite(v) || v < 0){ input.value = fmt(p.dims[key]); toast('Enter a size of 0 mm or more.'); return; }
+  const before = p.dims, next = cleanDims(p.type, {...p.dims, [key]: v});
+  mutate(() => { p.dims = next; });
+  if (next[key] !== r2(v)) toast(key.startsWith('ko') ? `The keep-out can't be smaller than the cut-out, so it was set to ${fmt(next[key])} mm.` : `Set to ${fmt(next[key])} mm, the nearest valid size.`);
+  else for (const k of ['koD','koW','koH']) if (k in next && next[k] !== before[k] && k !== key){ toast(`The keep-out grew to ${fmt(next[k])} mm to stay around the cut-out.`); break; }
+}
 function rotateSelected(step){
-  const p = selected && findPart(selected); if (!p || !TYPES[p.type].rotatable) return;
+  const p = selected && findPart(selected); if (!p || !typeOf(p).rotatable) return;
   mutate(() => { p.rot = (((p.rot + step) % 360) + 360) % 360; });
 }
 function mirrorSelected(){
   const p = selected && findPart(selected); if (!p) return;
   if (Math.abs(p.x) < 0.01){ toast('This part sits on the centre line, so its mirror copy would land on top of it.'); return; }
-  mutate(() => { const q = newPart({type:p.type, x:-p.x, y:p.y, rot:(360 - p.rot)%360}); state.parts.push(q); selected = q.id; });
+  mutate(() => { const q = newPart({type:p.type, dims:p.dims, x:-p.x, y:p.y, rot:(360 - p.rot)%360}); state.parts.push(q); selected = q.id; });
 }
 function duplicateSelected(){
   const p = selected && findPart(selected); if (!p) return;
-  const t = TYPES[p.type];
+  const t = typeOf(p);
   const off = (t.ko.d || Math.max(t.ko.w, t.ko.h));
   let spot = null;
-  for (const [dx,dy] of [[off,0],[-off,0],[0,-off],[0,off]]) if (isFree(p.type, p.x+dx, p.y+dy, p.rot)) { spot = {x:p.x+dx, y:p.y+dy}; break; }
-  spot ||= findFreeSpot(p.type);
-  mutate(() => { const q = newPart({type:p.type, x:spot?spot.x:p.x, y:spot?spot.y:p.y, rot:p.rot}); state.parts.push(q); selected = q.id; });
+  for (const [dx,dy] of [[off,0],[-off,0],[0,-off],[0,off]]) if (isFree(p, p.x+dx, p.y+dy, p.rot)) { spot = {x:p.x+dx, y:p.y+dy}; break; }
+  spot ||= findFreeSpot(p);
+  mutate(() => { const q = newPart({type:p.type, dims:p.dims, x:spot?spot.x:p.x, y:spot?spot.y:p.y, rot:p.rot}); state.parts.push(q); selected = q.id; });
 }
 function deleteSelected(){
   if (!selected) return;
@@ -1325,13 +1386,14 @@ function rebuild3d(){
   if (show3dParts){
     const acc = css('--accent');
     for (const p of state.parts){
-      const tp = TYPES[p.type];
+      const tp = typeOf(p);
       const bad = errIds.has(p.id);
       const bodyMat = mat(bad ? css('--err') : acc, {transparent:true, opacity:0.35, depthWrite:false});
-      let body;
-      if (tp.body.c === 'circle'){ body = new THREE.Mesh(new THREE.CylinderGeometry(tp.body.d/2, tp.body.d/2, tp.depth, 28), bodyMat); body.rotation.x = Math.PI/2; }
+      let body = null;
+      if (tp.depth <= 0) {}
+      else if (tp.body.c === 'circle'){ body = new THREE.Mesh(new THREE.CylinderGeometry(tp.body.d/2, tp.body.d/2, tp.depth, 28), bodyMat); body.rotation.x = Math.PI/2; }
       else { body = new THREE.Mesh(new THREE.BoxGeometry(tp.body.w, tp.body.h, tp.depth), bodyMat); body.rotation.z = p.rot*Math.PI/180; }
-      body.position.set(p.x, p.y, -tp.depth/2); g.add(body);
+      if (body){ body.position.set(p.x, p.y, -tp.depth/2); g.add(body); }
       if (tp.cap){
         const col = tp.cap.kind==='led' ? '#E8432E' : tp.cap.kind==='lever' ? '#B9C0C7' : tp.cap.kind==='knob' ? '#1C2024' : '#E3E6E9';
         const capMat = mat(col, tp.cap.kind==='led'?{emissive:new THREE.Color('#7A1408')}:{});
@@ -1412,9 +1474,9 @@ function svgText(){
 function bomCsv(){
   const rows = [['label','part','x_mm','y_mm','rotation_deg','cutout_mm','keepout_mm','depth_mm']];
   const sorted = [...state.parts].sort((a,b) => a.label.localeCompare(b.label, undefined, {numeric:true}));
-  for (const p of sorted){ const t = TYPES[p.type]; rows.push([p.label, t.name, fmt(p.x), fmt(p.y), fmt(p.rot), dimText(t.cut), dimText(t.ko), t.depth]); }
+  for (const p of sorted){ const t = typeOf(p); rows.push([p.label, t.name, fmt(p.x), fmt(p.y), fmt(p.rot), dimText(t.cut), dimText(t.ko), t.depth]); }
   rows.push([]); rows.push(['part','quantity']);
-  const q = {}; for (const p of state.parts) q[TYPES[p.type].name] = (q[TYPES[p.type].name]||0)+1;
+  const q = {}; for (const p of state.parts){ const t = typeOf(p), k = t.custom ? `${t.name} ${dimText(t.cut)}` : t.name; q[k] = (q[k]||0)+1; }
   for (const [k,v] of Object.entries(q)) rows.push([k, v]);
   return rows.map(r => r.map(c => /[",\n]/.test(String(c)) ? `"${String(c).replace(/"/g,'""')}"` : c).join(',')).join('\n') + '\n';
 }

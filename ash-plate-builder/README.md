@@ -72,6 +72,13 @@ The part library. For each part it sets:
 
 The `_help` block in the file explains every field. The sizes are typical values, so check them against your parts' datasheets.
 
+### Custom parts
+For a one-off part that isn't in `parts.json`, use **Custom circle** or **Custom rectangle** under *Custom* in the parts list. Each one you place has its own sizes, which you set in the side panel when it's selected:
+- the cut-out: a diameter, or a width, height and corner radius
+- the keep-out: the zone other parts, holes and the edge margin must stay clear of. It can't be smaller than the cut-out.
+
+Custom parts rotate, mirror and duplicate like any other part. They're saved with the layout and listed with their sizes in the parts list (CSV). They have no depth, so the plate-spacing check doesn't apply to them.
+
 ### Built-in copy
 `index.html` carries a built-in copy of `parts.json` and `wheels/`. It's only used when those files can't be loaded, for example when the page is opened straight from disk.
 
