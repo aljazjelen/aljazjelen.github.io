@@ -82,9 +82,11 @@ Custom parts rotate, mirror and duplicate like any other part. They're saved wit
 
 ### Deco
 The deco is a separate printed piece that sits on top of the front plate, exported as its own STL (`-deco.stl`). It uses the same coordinates as the plate STL, so importing both into a slicer lines them up, for example for a multi-colour print. It's generated from the layout. For now it has one feature, set in the **Deco** panel:
-- **Rings around buttons:** a ring around every part whose cap style is `button`. Defaults are 2 mm high and 4 mm wide, with a 1 mm 45° chamfer on the top outer edge and a 0.5 mm gap to the button cap.
+- **Rings around buttons:** a ring around every part whose cap style is `button`. The ring's inner edge hugs the button body, at the button's `hole` size from `parts.json`. Defaults are 2 mm high and 4 mm wide, with a 1 mm 45° chamfer on the top outer edge.
+- **Sleeve:** each ring has a sleeve, part of the same piece, that reaches down into the button hole between the button and the front plate. It locates the deco on the plate. The front plate's button holes grow by twice the sleeve wall to make room, so the default 0.5 mm wall gives a Ø17 plate hole for a 16 mm button. Default depth is 3 mm, limited to the plate thickness. Set the depth to 0 for no sleeve; the plate holes then stay at the button size.
 - Rings that touch are merged into one piece.
-- The deco stays on the flat top of the plate, inside the outline chamfer, and leaves every cut-out, cap and mounting hole clear.
+- The deco stays on the flat top of the plate, inside the outline chamfer. It leaves other parts' cut-outs and caps (plus 0.5 mm) and the mounting holes clear.
+- The sleeve and the plate hole have the same nominal size, so add printing clearance in the wall setting if your printer needs it.
 
 The deco settings are saved with the layout.
 

@@ -226,7 +226,10 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
           </div>
           <div class="row">
             <label class="field">Chamfer 45° (mm)<input type="number" id="decoC" min="0" step="0.1"></label>
-            <label class="field">Gap to cap (mm)<input type="number" id="decoG" min="0" max="5" step="0.1"></label>
+          </div>
+          <div class="row">
+            <label class="field" title="Sleeve that goes into the button hole. The plate hole grows by twice this.">Sleeve wall (mm)<input type="number" id="decoS" min="0" step="0.1"></label>
+            <label class="field" title="How far the sleeve reaches into the plate. 0 = no sleeve.">Sleeve depth (mm)<input type="number" id="decoD" min="0" step="0.5"></label>
           </div>
           <p class="note" id="decoNote"></p>
         </div>
@@ -709,17 +712,26 @@ const $ = id => document.getElementById(id);
 const plate = () => PLATES.find(p => p.id === state.plateId) || PLATES[0];
 
 /* Deco: a separate printed piece that sits on top of the front plate. For now: rings around buttons. */
-const DECO_DEFAULTS = { rings: true, height: 2, width: 4, chamfer: 1, gap: 0.5 };
+// Ring: sits on the plate around the button body. Sleeve: same piece, goes down into the button hole between the
+// button and the plate; the plate's button hole grows by 2 × wall so the sleeve fits.
+const DECO_DEFAULTS = { rings: true, height: 2, width: 4, chamfer: 1, wall: 0.5, depth: 3 };
 function cleanDeco(d){
   d = d && typeof d === 'object' ? d : {};
   const num = (v, def) => (v === undefined || v === null || v === '' || !Number.isFinite(+v)) ? def : +v;
   const height = clampNum(num(d.height, DECO_DEFAULTS.height), 0.4, 10), width = clampNum(num(d.width, DECO_DEFAULTS.width), 0.5, 20);
   return { rings: d.rings === undefined ? DECO_DEFAULTS.rings : !!d.rings, height, width,
            chamfer: clampNum(num(d.chamfer, DECO_DEFAULTS.chamfer), 0, Math.min(height, width)),
-           gap: clampNum(num(d.gap, DECO_DEFAULTS.gap), 0, 5) };
+           wall: clampNum(num(d.wall, DECO_DEFAULTS.wall), 0, Math.max(0, width - 0.5)),
+           depth: clampNum(num(d.depth, DECO_DEFAULTS.depth), 0, 20) };
 }
 // Parts that get a ring: buttons, i.e. parts whose cap style is "button" with a round cap.
-const isButton = p => { const t = typeOf(p); return !!(t.cap && t.cap.kind === 'cap' && t.cap.c === 'circle'); };
+const isButton = p => { const t = typeOf(p); return !!(t.cap && t.cap.kind === 'cap' && t.cap.c === 'circle' && t.cut.c === 'circle'); };
+const sleeveWall = () => { const d = cleanDeco(state.deco); return d.rings && d.depth > 0 ? d.wall : 0; };
+// The cut-out in the front plate: a button's hole grows by the sleeve wall on each side when the deco has sleeves.
+function plateCutShape(p){
+  const sh = cutShape(p), w = sleeveWall();
+  return w > 0 && sh.k === 'c' && isButton(p) ? {...sh, r: sh.r + w} : sh;
+}
 function newPart(o){
   const part = { id: 'p' + (nextId++), type:o.type, x:o.x||0, y:o.y||0, rot:o.rot||0, label:o.label||'' };
   if (isCustom(o.type)) part.dims = cleanDims(o.type, o.dims);
@@ -1217,7 +1229,7 @@ function initControls(){
     syncInputs();
   });
   $('thick').addEventListener('change', e => { const v = clampNum(+e.target.value||4, 2, 10); e.target.value = v; mutate(() => { state.thickness = v; }); });
-  const decoInputs = {decoOn:'rings', decoH:'height', decoW:'width', decoC:'chamfer', decoG:'gap'};
+  const decoInputs = {decoOn:'rings', decoH:'height', decoW:'width', decoC:'chamfer', decoS:'wall', decoD:'depth'};
   for (const [id, key] of Object.entries(decoInputs)) $(id).addEventListener('change', e => {
     const v = e.target.type === 'checkbox' ? e.target.checked : +e.target.value;
     mutate(() => { state.deco = cleanDeco({...state.deco, [key]: v}); });
@@ -1253,8 +1265,8 @@ function initControls(){
 function syncDeco(){
   const d = cleanDeco(state.deco), a = document.activeElement;
   $('decoOn').checked = d.rings;
-  for (const [id, v] of [['decoH', d.height], ['decoW', d.width], ['decoC', d.chamfer], ['decoG', d.gap]]) if ($(id) !== a) $(id).value = v;
-  for (const id of ['decoH','decoW','decoC','decoG']) $(id).disabled = !d.rings;
+  for (const [id, v] of [['decoH', d.height], ['decoW', d.width], ['decoC', d.chamfer], ['decoS', d.wall], ['decoD', d.depth]]) if ($(id) !== a) $(id).value = v;
+  for (const id of ['decoH','decoW','decoC','decoS','decoD']) $(id).disabled = !d.rings;
 }
 function decoUnavailable(){
   if (!cleanDeco(state.deco).rings) return 'Rings are turned off.';
@@ -1266,7 +1278,9 @@ function decoUnavailable(){
 function renderDecoNote(){
   syncDeco();
   const d = cleanDeco(state.deco), n = state.parts.filter(isButton).length, why = decoUnavailable();
-  $('decoNote').textContent = why || `${n} ring${n === 1 ? '' : 's'}, ${fmt(d.height)} mm high, ${fmt(d.width)} mm wide. Exported as its own STL in the same position as the plate, so both files line up for a multi-colour print.`;
+  const w = sleeveWall(), dep = Math.min(d.depth, state.thickness);
+  const sleeve = w > 0 ? ` Each ring has a ${fmt(w)} mm sleeve reaching ${fmt(dep)} mm into the plate${d.depth > state.thickness ? ' (limited to the plate thickness)' : ''}, so the front plate's button holes are ${fmt(2*w)} mm larger.` : ' No sleeve.';
+  $('decoNote').textContent = why || `${n} ring${n === 1 ? '' : 's'}, ${fmt(d.height)} mm high, ${fmt(d.width)} mm wide.${sleeve} Exported as its own STL in the same position as the plate.`;
   $('exDeco').disabled = !!why;
 }
 function syncInputs(){ syncDeco(); $('plateSel').value = state.plateId; $('thick').value = state.thickness; $('gap').value = state.gap; $('snapSel').value = String(state.snap); }
@@ -1284,7 +1298,7 @@ function plateShape(){
     shape.holes.push(path);
   };
   for (const m of pl.holes) if (m.role === 'mount') addHole({k:'c', x:m.x, y:m.y, r:m.d/2});
-  for (const p of state.parts) addHole(cutShape(p));
+  for (const p of state.parts) addHole(plateCutShape(p));
   return shape;
 }
 function outlineShape(o){
@@ -1367,14 +1381,24 @@ function mfBase(pl, t){
 function mfPlate(){
   const pl = plate(), t = state.thickness, base = mfBase(pl, t), { Manifold, CrossSection } = MF;
   if (!state.parts.length) return base.translate([0, 0, 0]);
-  const cs = new CrossSection(state.parts.map(p => shapePoly(cutShape(p))), 'Positive');
+  const cs = new CrossSection(state.parts.map(p => shapePoly(plateCutShape(p))), 'Positive');
   const cut = Manifold.extrude(cs, t + 2).translate([0, 0, -1]);
   const res = base.subtract(cut);
   cs.delete(); cut.delete();
   return res;
 }
-// The deco piece: a ring around every button, 45° chamfer on the ring's top outer edge, merged where rings
-// overlap, kept on the flat top of the plate and clear of every cut-out, cap and mounting hole.
+// The deco piece, one ring per button, revolved from this cross-section (r = radius from the button axis,
+// z = height above the plate's top face):
+//
+//        ri          ro-c ro
+//    z=h  ┌───────────┐╲          ← 45° chamfer on the top outer edge
+//         │   ring    │ │
+//    z=0  │   ┌───────┘─┘  ← sits on the plate
+//         │sl.│               ri = button hole radius (the button body passes through)
+//  z=-dep └───┘               rs = ri + wall = the plate's enlarged hole radius
+//         ri  rs   (the sleeve is 0.02 mm under rs so its facets stay inside the plate hole)
+//
+// Rings merge where they touch, stay inside the outline's chamfer, and keep other parts and mounting holes clear.
 function mfDeco(){
   const ds = cleanDeco(state.deco);
   if (!ds.rings || !MF) return null;
@@ -1384,26 +1408,34 @@ function mfDeco(){
   const T = x => (trash.push(x), x);
   try {
     const pl = plate(), t = state.thickness, ch = chamferFor(pl, t), h = ds.height, c = ds.chamfer;
-    const rings = buttons.map(p => {
-      const tp = typeOf(p), ri = Math.max(tp.cap.d, tp.cut.c === 'circle' ? tp.cut.d : 0)/2 + ds.gap, ro = ri + ds.width;
-      // cross-section of the ring (x = radius, y = height), revolved around the button's axis
-      const prof = c > 0 ? [[ri,0],[ro,0],[ro,h-c],[ro-c,h],[ri,h]] : [[ri,0],[ro,0],[ro,h],[ri,h]];
-      return T(T(Manifold.revolve(T(new CrossSection([prof])), 72)).translate([p.x, p.y, t]));
+    const dep = ds.wall > 0 ? Math.min(ds.depth, t) : 0;
+    const rings = buttons.map((p, i) => {
+      // rs - 0.02: the sleeve's facets stay inside the plate hole's facets (both are polygons of the same circle)
+      const ri = typeOf(p).cut.d/2, rs = ri + ds.wall - 0.02, ro = ri + ds.width;
+      const top = c > 0 ? [[ro, 0], [ro, h-c], [ro-c, h], [ri, h]] : [[ro, 0], [ro, h], [ri, h]];
+      const prof = dep > 0 ? [[ri, -dep], [rs, -dep], [rs, 0], ...top] : [[ri, 0], ...top];
+      // each ring is turned by a different small angle so the facet corners of touching rings never line up
+      return T(T(T(Manifold.revolve(T(new CrossSection([prof])), 72)).rotate([0, 0, (i * 1.37) % 5])).translate([p.x, p.y, t]));
     });
     let deco = T(Manifold.union(rings));
-    // stay on the flat top: inside the outline, inward of its chamfer
+    const z0 = t - dep - 1, zh = dep + h + 2;
+    // the ring part stays on the flat top: inside the outline, inward of its chamfer
     const top = T(T(new CrossSection([pl.outline])).offset(-ch.outline, 'Round'));
-    deco = T(deco.intersect(T(T(Manifold.extrude(top, h + 2)).translate([0, 0, t - 1]))));
-    // keep openings clear: every part's cut-out and cap (plus the gap) and mounting holes with their chamfer
+    deco = T(deco.intersect(T(T(Manifold.extrude(top, zh)).translate([0, 0, z0]))));
+    // keep openings clear: other parts' cut-outs and caps (+0.5 mm), button bodies, mounting holes with their chamfer
     const open = [];
-    for (const p of state.parts){ const tp = typeOf(p); open.push(shapePoly(cutShape(p))); if (tp.cap && tp.cap.c === 'circle') open.push(circlePoly(p.x, p.y, tp.cap.d/2)); }
-    // 0.01 mm less than the ring's inner edge, so a button's opening doesn't coincide with its own ring wall
-    let ocs = T(new CrossSection(open, 'Positive'));
-    const grow = ds.gap - 0.01;
-    if (grow > 0) ocs = T(ocs.offset(grow, 'Round'));
+    for (const p of state.parts){
+      if (isButton(p)) continue;
+      const tp = typeOf(p);
+      open.push(shapePoly(cutShape(p)));
+      if (tp.cap && tp.cap.c === 'circle') open.push(circlePoly(p.x, p.y, tp.cap.d/2));
+    }
+    // button bodies, 0.01 mm under the ring's inner radius so they don't coincide with the ring's own wall
+    const bodies = buttons.map(p => circlePoly(p.x, p.y, typeOf(p).cut.d/2 - 0.01));
     const mounts = pl.holes.filter(m => m.role === 'mount').map(m => circlePoly(m.x, m.y, m.d/2 + ch.mount + 0.5));
-    if (mounts.length) ocs = T(CrossSection.union(ocs, T(new CrossSection(mounts, 'Positive'))));
-    deco = T(deco.subtract(T(T(Manifold.extrude(ocs, h + 2)).translate([0, 0, t - 1]))));
+    let ocs = T(new CrossSection([...bodies, ...mounts], 'Positive'));
+    if (open.length) ocs = T(CrossSection.union(ocs, T(T(new CrossSection(open, 'Positive')).offset(0.5, 'Round'))));
+    deco = T(deco.subtract(T(T(Manifold.extrude(ocs, zh)).translate([0, 0, z0]))));
     if (deco.isEmpty()) return null;
     return deco.translate([0, 0, 0]);
   } finally { for (const x of trash) x.delete(); }
@@ -1540,7 +1572,7 @@ function stlFromGeometry(geo, hdr){
 function cutEntities(){
   const pl = plate();
   const out = { outline: pl.outline, cuts: [], mounts: pl.holes.filter(m => m.role === 'mount').map(m => ({k:'c', x:m.x, y:m.y, r:m.d/2})) };
-  for (const p of state.parts) out.cuts.push(cutShape(p));
+  for (const p of state.parts) out.cuts.push(plateCutShape(p));
   return out;
 }
 function dxfText(){
