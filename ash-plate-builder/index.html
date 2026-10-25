@@ -131,6 +131,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .rowcount{font-size:13px;color:var(--ink);text-align:center}
 #plate .cut{fill:var(--hole);stroke:var(--hole-edge);stroke-width:.3}
 #plate .capfill{fill:var(--cap);stroke:var(--cap-edge);stroke-width:.35}
+#plate .cbline{fill:none;stroke:var(--plate-ink);stroke-width:.25;stroke-dasharray:2 .8;opacity:.6;pointer-events:none}
 #plate .holeline{fill:none;stroke:var(--plate-ink);stroke-width:.25;stroke-dasharray:.6 .6;opacity:.75;pointer-events:none}
 #plate .nogo{fill:url(#nogoHatch);stroke:var(--zone);stroke-width:.3}
 #plate .hatch{stroke:var(--zone);stroke-width:.5;opacity:.55}
@@ -724,7 +725,7 @@ async function loadWheels(){
 
 /* Part library. Loaded from parts.json next to this page (its "_help" explains every field).
    DEFAULT_PARTS is a built-in copy of that file, used when parts.json can't be loaded (e.g. the page is opened as a local file). */
-const DEFAULT_PARTS = /*PARTS_JSON*/{"_help":["Part library for the ASH Front Plate Builder. All sizes in mm.","Each entry under 'parts' is one part type; its key (e.g. 'btn16') is stored in saved layouts, so don't rename keys that are in use.","Shapes: { \"shape\": \"circle\", \"d\": 16 } or { \"shape\": \"rect\", \"w\": 25, \"h\": 14, \"r\": 1 } (r = corner radius, optional).","name / group / label: shown in the parts list; label is the prefix for auto names (BTN1, BTN2...).","hole: exactly what is cut in the front plate: the whole body for some parts, only the shaft for others (rotary, encoder). For buttons with a deco ring, make it larger than the cap: the deco sleeve fills the gap, so its wall is (hole - cap) / 2.","cap: the element you see and press: button cap, knob, lever, LED. height is only used for the 3D preview. style: button | knob | lever | led. Leave cap out for flush parts like a display. For buttons, the cap passes through the deco ring and sleeve.","pcb: the board or switch body under the plate. depth = how far it reaches behind the plate (checked against Plate spacing).","clearance: safe space around the part. The keep-out zone = the largest of hole, cap and pcb, plus clearance on every side.","keepout (optional): set an exact keep-out shape instead of the computed one.","Every part can be rotated; set rotatable: false to lock one. allowOverNoGo: true lets a part sit over the back plate's no-go areas (it must still avoid mounting holes).","display: true draws a screen in the 3D preview.","deco: false keeps a part out of the deco: no ring around it (the rotary switch uses this).","row (optional): makes a symmetric row of identical elements, e.g. LEDs. pitch = default centre-to-centre spacing, maxPerSide = how many can be added on each side of the middle one. The part's position is the middle element; the keep-out becomes one rounded strip around the whole row."],"version":1,"parts":{"btn7":{"name":"Push button 7 mm","group":"Buttons/Rotaries","label":"BTN","hole":{"shape":"circle","d":10},"cap":{"shape":"circle","d":9,"height":4,"style":"button"},"pcb":{"shape":"circle","d":9,"depth":15},"clearance":1.5},"btn12":{"name":"Push button 12 mm","group":"Buttons/Rotaries","label":"BTN","hole":{"shape":"circle","d":15},"cap":{"shape":"circle","d":14,"height":5,"style":"button"},"pcb":{"shape":"rect","w":20,"h":20,"r":1,"depth":15},"clearance":0},"btn16":{"name":"Push button 16 mm","group":"Buttons/Rotaries","label":"BTN","hole":{"shape":"circle","d":19},"cap":{"shape":"circle","d":18,"height":6,"style":"button"},"pcb":{"shape":"circle","d":17,"depth":15},"clearance":2},"btn15sq":{"name":"Square button 15 mm","group":"Buttons/Rotaries","label":"BTN","hole":{"shape":"rect","w":16,"h":16,"r":1},"cap":{"shape":"rect","w":15,"h":15,"height":5,"style":"button"},"pcb":{"shape":"rect","w":20,"h":20,"r":1,"depth":15},"clearance":0},"rot":{"name":"Rotary switch 12-pos","group":"Buttons/Rotaries","label":"ROT","hole":{"shape":"circle","d":9.5},"cap":{"shape":"circle","d":28,"height":10,"style":"knob"},"pcb":{"shape":"rect","w":27.2,"h":27.2,"r":1,"depth":15},"clearance":0,"deco":false},"enc":{"name":"Encoder EC11","group":"Encoders & switches","label":"ENC","hole":{"shape":"circle","d":7.2},"cap":{"shape":"circle","d":20,"height":8,"style":"knob"},"pcb":{"shape":"rect","w":12,"h":13,"depth":15},"clearance":2},"tgl":{"name":"Toggle switch M6","group":"Encoders & switches","label":"TGL","hole":{"shape":"circle","d":6.2},"cap":{"shape":"circle","d":3,"height":11,"style":"lever"},"pcb":{"shape":"rect","w":8,"h":13,"depth":15},"clearance":3},"led5":{"name":"Single LED 5 mm","group":"Indicators","label":"LED","hole":{"shape":"circle","d":5.1},"cap":{"shape":"circle","d":5,"height":4,"style":"led"},"pcb":{"shape":"circle","d":5,"depth":15},"clearance":1.5},"led3":{"name":"Single LED 3 mm","group":"Indicators","label":"LED","hole":{"shape":"circle","d":3.1},"cap":{"shape":"circle","d":3,"height":3,"style":"led"},"pcb":{"shape":"circle","d":3,"depth":15},"clearance":1},"led5row":{"name":"Multiple LED 5 mm","group":"Indicators","label":"LEDS","hole":{"shape":"circle","d":5.1},"cap":{"shape":"circle","d":5,"height":4,"style":"led"},"pcb":{"shape":"circle","d":5,"depth":15},"clearance":1.5,"row":{"pitch":8,"maxPerSide":5}},"oled":{"name":"OLED 0.96″ window","group":"Displays","label":"OLED","hole":{"shape":"rect","w":25,"h":14,"r":1},"pcb":{"shape":"rect","w":27,"h":28,"depth":8},"clearance":1.5,"allowOverNoGo":true,"display":true},"vocore43":{"name":"VoCore 4.3″ display","group":"Displays","label":"DISP","hole":{"shape":"rect","w":93.6,"h":56.2,"r":0.5},"pcb":{"shape":"rect","w":104.3,"h":61.3,"depth":10},"clearance":1.5,"allowOverNoGo":true,"display":true}}}/*END_PARTS_JSON*/;
+const DEFAULT_PARTS = /*PARTS_JSON*/{"_help":["Part library for the ASH Front Plate Builder. All sizes in mm.","Each entry under 'parts' is one part type; its key (e.g. 'btn16') is stored in saved layouts, so don't rename keys that are in use.","Shapes: { \"shape\": \"circle\", \"d\": 16 } or { \"shape\": \"rect\", \"w\": 25, \"h\": 14, \"r\": 1 } (r = corner radius, optional).","name / group / label: shown in the parts list; label is the prefix for auto names (BTN1, BTN2...).","hole: exactly what is cut in the front plate: the whole body for some parts, only the shaft for others (rotary, encoder). For buttons with a deco ring, make it larger than the cap: the deco sleeve fills the gap, so its wall is (hole - cap) / 2.","cap: the element you see and press: button cap, knob, lever, LED. height is only used for the 3D preview. style: button | knob | lever | led. Leave cap out for flush parts like a display. For buttons, the cap passes through the deco ring and sleeve.","pcb: the board or switch body under the plate. depth = how far it reaches behind the plate (checked against Plate spacing).","clearance: safe space around the part. The keep-out zone = the largest of hole, cap and pcb, plus clearance on every side.","keepout (optional): set an exact keep-out shape instead of the computed one.","Every part can be rotated; set rotatable: false to lock one. allowOverNoGo: true lets a part sit over the back plate's no-go areas (it must still avoid mounting holes).","display: true draws a screen in the 3D preview.","counterbore (optional): a wider blind pocket cut from the top of the plate around the hole, e.g. { \"shape\": \"circle\", \"d\": 16, \"depth\": 2 }. The hole still goes all the way through; at least 0.4 mm of plate is always left under the pocket.","deco: false keeps a part out of the deco: no ring around it (the rotary switch uses this).","row (optional): makes a symmetric row of identical elements, e.g. LEDs. pitch = default centre-to-centre spacing, maxPerSide = how many can be added on each side of the middle one. The part's position is the middle element; the keep-out becomes one rounded strip around the whole row."],"version":1,"parts":{"btn7":{"name":"Push button 7 mm","group":"Buttons/Rotaries","label":"BTN","hole":{"shape":"circle","d":10},"cap":{"shape":"circle","d":9,"height":4,"style":"button"},"pcb":{"shape":"circle","d":9,"depth":15},"clearance":1.5},"btn12":{"name":"Push button 12 mm","group":"Buttons/Rotaries","label":"BTN","hole":{"shape":"circle","d":15},"cap":{"shape":"circle","d":14,"height":5,"style":"button"},"pcb":{"shape":"rect","w":20,"h":20,"r":1,"depth":15},"clearance":0},"btn16":{"name":"Push button 16 mm","group":"Buttons/Rotaries","label":"BTN","hole":{"shape":"circle","d":19},"cap":{"shape":"circle","d":18,"height":6,"style":"button"},"pcb":{"shape":"circle","d":17,"depth":15},"clearance":2},"btn15sq":{"name":"Square button 15 mm","group":"Buttons/Rotaries","label":"BTN","hole":{"shape":"rect","w":16,"h":16,"r":1},"cap":{"shape":"rect","w":15,"h":15,"height":5,"style":"button"},"pcb":{"shape":"rect","w":20,"h":20,"r":1,"depth":15},"clearance":0},"rot":{"name":"Rotary switch 12-pos","group":"Buttons/Rotaries","label":"ROT","hole":{"shape":"circle","d":9.5},"cap":{"shape":"circle","d":28,"height":10,"style":"knob"},"counterbore":{"shape":"circle","d":16,"depth":2},"pcb":{"shape":"rect","w":27.2,"h":27.2,"r":1,"depth":15},"clearance":0,"deco":false},"enc":{"name":"Encoder EC11","group":"Encoders & switches","label":"ENC","hole":{"shape":"circle","d":7.2},"cap":{"shape":"circle","d":20,"height":8,"style":"knob"},"pcb":{"shape":"rect","w":12,"h":13,"depth":15},"clearance":2},"tgl":{"name":"Toggle switch M6","group":"Encoders & switches","label":"TGL","hole":{"shape":"circle","d":6.2},"cap":{"shape":"circle","d":3,"height":11,"style":"lever"},"pcb":{"shape":"rect","w":8,"h":13,"depth":15},"clearance":3},"led5":{"name":"Single LED 5 mm","group":"Indicators","label":"LED","hole":{"shape":"circle","d":5.1},"cap":{"shape":"circle","d":5,"height":4,"style":"led"},"pcb":{"shape":"circle","d":5,"depth":15},"clearance":1.5},"led3":{"name":"Single LED 3 mm","group":"Indicators","label":"LED","hole":{"shape":"circle","d":3.1},"cap":{"shape":"circle","d":3,"height":3,"style":"led"},"pcb":{"shape":"circle","d":3,"depth":15},"clearance":1},"led5row":{"name":"Multiple LED 5 mm","group":"Indicators","label":"LEDS","hole":{"shape":"circle","d":5.1},"cap":{"shape":"circle","d":5,"height":4,"style":"led"},"pcb":{"shape":"circle","d":5,"depth":15},"clearance":1.5,"row":{"pitch":8,"maxPerSide":5}},"oled":{"name":"OLED 0.96″ window","group":"Displays","label":"OLED","hole":{"shape":"rect","w":25,"h":14,"r":1},"pcb":{"shape":"rect","w":27,"h":28,"depth":8},"clearance":1.5,"allowOverNoGo":true,"display":true},"vocore43":{"name":"VoCore 4.3″ display","group":"Displays","label":"DISP","hole":{"shape":"rect","w":93.6,"h":56.2,"r":0.5},"pcb":{"shape":"rect","w":104.3,"h":61.3,"depth":10},"clearance":1.5,"allowOverNoGo":true,"display":true}}}/*END_PARTS_JSON*/;
 let TYPES = {};
 let partsSource = 'built-in';
 const partWarnings = [];
@@ -766,7 +767,14 @@ function buildTypes(cfg, source){
       }
       const clearance = e.clearance != null ? +e.clearance : 2;
       if (!(clearance >= 0)) throw new Error('clearance must be 0 or more');
-      const ko = e.keepout ? normShape(e.keepout, 'keepout') : deriveKeepout([hole, pcbShape, ...(cap ? [cap] : [])], clearance);
+      // counterbore: a wider blind pocket from the top of the plate around the hole, `depth` mm deep
+      let counterbore = null;
+      if (e.counterbore){
+        const cb = normShape(e.counterbore, 'counterbore'), depth = +e.counterbore.depth;
+        if (!(depth > 0)) throw new Error('counterbore needs a depth above 0');
+        counterbore = {...cb, depth};
+      }
+      const ko = e.keepout ? normShape(e.keepout, 'keepout') : deriveKeepout([hole, pcbShape, ...(cap ? [cap] : []), ...(counterbore ? [counterbore] : [])], clearance);
       // row: a symmetric row of identical elements (e.g. LEDs) along the part's own x axis, centred on the middle one
       let row = null;
       if (e.row){
@@ -778,7 +786,7 @@ function buildTypes(cfg, source){
       out[key] = {
         group: String(e.group || 'Other'), name: String(e.name || key), short: String(e.label || key.toUpperCase()),
         cut: hole, ko, depth, body: pcbShape, cap, clearance, explicitKo: !!e.keepout,
-        screen: !!e.display, rotatable: e.rotatable !== false, ignoresNoGo: !!e.allowOverNoGo, row, noDeco: e.deco === false,
+        screen: !!e.display, rotatable: e.rotatable !== false, ignoresNoGo: !!e.allowOverNoGo, row, noDeco: e.deco === false, counterbore,
       };
     } catch(err){ partWarnings.push(`${source}: "${key}" skipped, ${err.message}.`); }
   }
@@ -989,6 +997,8 @@ function elemsOf(p){
 }
 const capShapes = p => elemsOf(p).map(capShape);
 const cutShapes = p => elemsOf(p).map(plateCutShape);
+// Counterbores: [{sh, depth}] for every element of a part that has one in parts.json.
+const counterbores = p => { const cb = typeOf(p).counterbore; return cb ? elemsOf(p).map(e => ({sh: shapeOf(cb, e), depth: cb.depth})) : []; };
 
 function edgeDist(x, y, o){
   let d = Infinity;
@@ -1139,7 +1149,7 @@ function render2d(){
     const cls = ['part']; if (p.id===selected) cls.push('sel'); if (errIds.has(p.id)) cls.push('err'); else if (warnIds.has(p.id)) cls.push('warn');
     const ko = koShape(p);
     const ly = ko.k==='c' ? -p.y + ko.r + 3.4 : Math.max(...ko.pts.map(([,y])=>-y)) + 3.4;
-    o += `<g class="${cls.join(' ')}" data-id="${p.id}">${shapeSvg(ko,'ko')}${capShapes(p).map(sh => shapeSvg(sh,'capfill')).join('')}${cutShapes(p).map(sh => shapeSvg(sh,'holeline')).join('')}</g>`;
+    o += `<g class="${cls.join(' ')}" data-id="${p.id}">${shapeSvg(ko,'ko')}${capShapes(p).map(sh => shapeSvg(sh,'capfill')).join('')}${cutShapes(p).map(sh => shapeSvg(sh,'holeline')).join('')}${counterbores(p).map(c => shapeSvg(c.sh,'cbline')).join('')}</g>`;
     o += `<text class="lbl" x="${p.x}" y="${ly}">${esc(p.label)}</text>`;
   }
   const sp = selected && findPart(selected);
@@ -1329,6 +1339,7 @@ function renderProps(){
     ${t.custom ? customFields(p) : `<dl class="kv">
       <dt>Part</dt><dd>${esc(t.name)}</dd>
       <dt>Hole</dt><dd>${dimText(t.cut)} mm</dd>
+      ${t.counterbore ? `<dt>Counterbore</dt><dd>${dimText(t.counterbore)} mm, ${fmt(Math.min(t.counterbore.depth, state.thickness - 0.4))} deep from the top</dd>` : ''}
       <dt>Cap</dt><dd>${t.cap ? `${dimText(t.cap)} mm, ${fmt(t.cap.height)} high` : 'none'}</dd>
       <dt>PCB</dt><dd>${dimText(t.body)} mm, ${fmt(t.depth)} deep</dd>
       <dt>Safe space</dt><dd>${t.explicitKo ? 'set directly' : fmt(t.clearance) + ' mm'}</dd>
@@ -1692,8 +1703,14 @@ function mfPlate(){
   if (!state.parts.length) return base.translate([0, 0, 0]);
   const cs = new CrossSection(state.parts.flatMap(p => cutShapes(p).map(shapePoly)), 'Positive');
   const cut = Manifold.extrude(cs, t + 2).translate([0, 0, -1]);
-  const res = base.subtract(cut);
+  let res = base.subtract(cut);
   cs.delete(); cut.delete();
+  // counterbores: blind pockets from the top, always leaving at least 0.4 mm of plate underneath
+  for (const { sh, depth } of state.parts.flatMap(counterbores)){
+    const d = Math.min(depth, t - 0.4), c = new CrossSection([shapePoly(sh)], 'Positive');
+    const pocket = Manifold.extrude(c, d + 1).translate([0, 0, t - d]), next = res.subtract(pocket);
+    c.delete(); pocket.delete(); res.delete(); res = next;
+  }
   return res;
 }
 // A flat shape (CrossSection) extruded from z0 to z0 + h with a 45° chamfer of size c on its top edge, built
@@ -2211,6 +2228,7 @@ function cutEntities(){
   const pl = plate();
   const out = { outline: pl.outline, cuts: [], mounts: pl.holes.filter(m => m.role === 'mount').map(m => ({k:'c', x:m.x, y:m.y, r:m.d/2})) };
   for (const p of state.parts) out.cuts.push(...cutShapes(p));
+  out.counterbores = state.parts.flatMap(counterbores).map(c => c.sh);
   return out;
 }
 function dxfText(){
@@ -2223,6 +2241,7 @@ function dxfText(){
   poly('OUTLINE', E.outline);
   for (const c of E.cuts) c.k==='c' ? circ('CUTOUTS', c) : poly('CUTOUTS', c.pts);
   for (const m of E.mounts) circ('MOUNTING', m);
+  for (const c of E.counterbores) c.k==='c' ? circ('COUNTERBORE', c) : poly('COUNTERBORE', c.pts);   // blind pockets from the top, not through-cuts
   L.push('0','ENDSEC','0','EOF');
   return L.join('\n') + '\n';
 }

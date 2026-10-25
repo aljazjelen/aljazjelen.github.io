@@ -17,7 +17,7 @@ To run it locally, open `index.html` in a browser. It needs internet access to l
 |---|---|
 | `.stl` | Front plate for 3D printing (binary STL, mm) |
 | `-deco.stl` | The deco piece on its own, in the same position as the plate |
-| `.dxf` | Cut outline with layers `OUTLINE`, `CUTOUTS` and `MOUNTING` (mm) |
+| `.dxf` | Cut outline with layers `OUTLINE`, `CUTOUTS` and `MOUNTING` (mm), plus `COUNTERBORE` for blind pockets |
 | `.svg` | Same outline at 1:1 in mm, for laser cutting |
 | `-parts.csv` | Every part with its position, plus quantities per part type |
 | `-layout.json` | The layout itself; reopen it with **Open layout** |
@@ -83,6 +83,7 @@ The part library. For each part it sets:
 - `pcb`: the board or switch body underneath, including its depth behind the plate
 - `clearance`: the safe space around the part. The keep-out zone is the largest of the hole, cap and PCB, plus the clearance on every side.
 - optional `keepout`, to set the keep-out shape exactly instead
+- optional `counterbore`, a wider blind pocket cut from the top of the plate around the hole, with its own `depth`. The hole still goes all the way through, and at least 0.4 mm of plate is left under the pocket. The rotary switch uses Ø16 × 2 mm. Counterbores are in the STL, and in the DXF on their own `COUNTERBORE` layer; the SVG only has through-cuts.
 - `allowOverNoGo` and `display`, plus `rotatable: false` to lock rotation (every part rotates by default)
 - optional `row`, for a symmetric row of identical elements such as LEDs: `pitch` is the default centre-to-centre spacing, `maxPerSide` how many can be added on each side of the middle one
 
