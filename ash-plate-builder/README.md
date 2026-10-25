@@ -85,7 +85,9 @@ The deco is a separate printed piece that sits on top of the front plate, export
 - **Rings around buttons:** a ring around every part whose cap style is `button`. The ring's inner edge hugs the button body, at the button's `hole` size from `parts.json`. Defaults are 2 mm high and 4 mm wide, with a 1 mm 45° chamfer on the top outer edge.
 - **Sleeve:** each ring has a sleeve, part of the same piece, that reaches down into the button hole between the button and the front plate. It locates the deco on the plate. The front plate's button holes grow by twice the sleeve wall to make room, so the default 0.5 mm wall gives a Ø17 plate hole for a 16 mm button. Default depth is 3 mm, limited to the plate thickness. Set the depth to 0 for no sleeve; the plate holes then stay at the button size.
 - **Bridges:** buttons whose rings are at most 6 mm apart, edge to edge, are joined automatically by a bar. You can change the distance or turn bridges off.
-  - The bar is as wide as the ring minus the chamfer on each side, and the joints are rounded with a 1.5 mm radius.
+  - **Bar width** sets how wide the bar is. Leave it empty for the widest allowed: the smaller ring's diameter minus the chamfer on both sides, for example 22 mm for two 16 mm buttons and 18 mm for two 12 mm buttons. Any value is kept between 2 mm and that maximum, per pair.
+  - The joints are rounded with a 1.5 mm radius, so across a short gap a narrow bar looks wider in the middle.
+  - A bar narrower than twice the chamfer ends in a ridge on top, with no flat top.
   - The chamfer runs continuously around the whole outline.
   - A bridge that would cover another part or a mounting hole is skipped, and the Deco panel says which.
 - Rings that touch are merged into one piece.

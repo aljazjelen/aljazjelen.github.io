@@ -234,6 +234,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
           <label class="check"><input type="checkbox" id="decoB"> Connect nearby buttons</label>
           <div class="row">
             <label class="field" title="Buttons whose rings are at most this far apart, edge to edge, are joined by a bar.">Connect when gap ≤ (mm)<input type="number" id="decoBG" min="0" max="30" step="0.5"></label>
+            <label class="field" title="Width of the bar between two rings. Leave empty for the widest allowed: the smaller ring's diameter minus the chamfer on both sides. At least 2 mm.">Bar width (mm)<input type="number" id="decoBW" min="2" step="0.5" placeholder="max"></label>
           </div>
           <p class="note" id="decoNote"></p>
         </div>
@@ -720,7 +721,8 @@ const plate = () => PLATES.find(p => p.id === state.plateId) || PLATES[0];
 // button and the plate; the plate's button hole grows by 2 × wall so the sleeve fits.
 // Bridges: buttons whose rings are at most bridgeGap apart (edge to edge) are joined by a bar.
 const DECO_DEFAULTS = { rings: true, height: 2, width: 4, chamfer: 1, wall: 0.5, depth: 3, bridges: true, bridgeGap: 6 };
-const DECO_SMOOTH = 1.5;   // mm: radius of the rounded transition where a bar meets a ring
+const DECO_SMOOTH = 1.5;
+const BRIDGE_MIN_W = 2;    // mm: narrowest bar   // mm: radius of the rounded transition where a bar meets a ring
 function cleanDeco(d){
   d = d && typeof d === 'object' ? d : {};
   const num = (v, def) => (v === undefined || v === null || v === '' || !Number.isFinite(+v)) ? def : +v;
@@ -730,7 +732,9 @@ function cleanDeco(d){
            wall: clampNum(num(d.wall, DECO_DEFAULTS.wall), 0, Math.max(0, width - 0.5)),
            depth: clampNum(num(d.depth, DECO_DEFAULTS.depth), 0, 20),
            bridges: d.bridges === undefined ? DECO_DEFAULTS.bridges : !!d.bridges,
-           bridgeGap: clampNum(num(d.bridgeGap, DECO_DEFAULTS.bridgeGap), 0, 30) };
+           bridgeGap: clampNum(num(d.bridgeGap, DECO_DEFAULTS.bridgeGap), 0, 30),
+           // bar width in mm; null = as wide as allowed. Each bridge clamps it to [2, smaller ring Ø − 2 × chamfer].
+           bridgeWidth: num(d.bridgeWidth, null) === null || +d.bridgeWidth <= 0 ? null : clampNum(+d.bridgeWidth, BRIDGE_MIN_W, 60) };
 }
 // Parts that get a ring: buttons, i.e. parts whose cap style is "button" with a round cap.
 const isButton = p => { const t = typeOf(p); return !!(t.cap && t.cap.kind === 'cap' && t.cap.c === 'circle' && t.cut.c === 'circle'); };
@@ -1237,9 +1241,9 @@ function initControls(){
     syncInputs();
   });
   $('thick').addEventListener('change', e => { const v = clampNum(+e.target.value||4, 2, 10); e.target.value = v; mutate(() => { state.thickness = v; }); });
-  const decoInputs = {decoOn:'rings', decoH:'height', decoW:'width', decoC:'chamfer', decoS:'wall', decoD:'depth', decoB:'bridges', decoBG:'bridgeGap'};
+  const decoInputs = {decoOn:'rings', decoH:'height', decoW:'width', decoC:'chamfer', decoS:'wall', decoD:'depth', decoB:'bridges', decoBG:'bridgeGap', decoBW:'bridgeWidth'};
   for (const [id, key] of Object.entries(decoInputs)) $(id).addEventListener('change', e => {
-    const v = e.target.type === 'checkbox' ? e.target.checked : +e.target.value;
+    const v = e.target.type === 'checkbox' ? e.target.checked : (e.target.id === 'decoBW' && e.target.value.trim() === '') ? null : +e.target.value;
     mutate(() => { state.deco = cleanDeco({...state.deco, [key]: v}); });
     syncInputs();
   });
@@ -1272,8 +1276,8 @@ function initControls(){
 }
 function syncDeco(){
   const d = cleanDeco(state.deco), a = document.activeElement;
-  $('decoOn').checked = d.rings; $('decoB').checked = d.bridges; $('decoB').disabled = !d.rings; $('decoBG').disabled = !d.rings || !d.bridges;
-  for (const [id, v] of [['decoH', d.height], ['decoW', d.width], ['decoC', d.chamfer], ['decoS', d.wall], ['decoD', d.depth], ['decoBG', d.bridgeGap]]) if ($(id) !== a) $(id).value = v;
+  $('decoOn').checked = d.rings; $('decoB').checked = d.bridges; $('decoB').disabled = !d.rings; $('decoBG').disabled = $('decoBW').disabled = !d.rings || !d.bridges;
+  for (const [id, v] of [['decoH', d.height], ['decoW', d.width], ['decoC', d.chamfer], ['decoS', d.wall], ['decoD', d.depth], ['decoBG', d.bridgeGap], ['decoBW', d.bridgeWidth === null ? '' : d.bridgeWidth]]) if ($(id) !== a) $(id).value = v;
   for (const id of ['decoH','decoW','decoC','decoS','decoD']) $(id).disabled = !d.rings;
 }
 function decoUnavailable(){
@@ -1291,7 +1295,11 @@ function renderDecoNote(){
   let bridges = '';
   if (!why && d.bridges){
     const br = decoBridges(d);
-    bridges = ` ${br.pairs.length} bridge${br.pairs.length === 1 ? '' : 's'} between buttons up to ${fmt(d.bridgeGap)} mm apart.` + (br.skipped.length ? ` Not connected: ${br.skipped.join(', ')}.` : '');
+    const widths = [...new Set(br.pairs.map(q => fmt(q.w)))];
+    bridges = ` ${br.pairs.length} bridge${br.pairs.length === 1 ? '' : 's'} between buttons up to ${fmt(d.bridgeGap)} mm apart` +
+      (widths.length ? `, ${widths.join(' / ')} mm wide${d.bridgeWidth === null ? ' (the maximum)' : ''}` : '') + '.' +
+      (br.limited.length ? ` Narrowed to the maximum for ${br.limited.map(q => `${q.pair} (${fmt(q.w)} mm)`).join(', ')}.` : '') +
+      (br.skipped.length ? ` Not connected: ${br.skipped.join(', ')}.` : '');
   }
   $('decoNote').textContent = why || `${n} ring${n === 1 ? '' : 's'}, ${fmt(d.height)} mm high, ${fmt(d.width)} mm wide.${bridges}${sleeve} Exported as its own STL in the same position as the plate.`;
   $('exDeco').disabled = !!why;
@@ -1454,7 +1462,7 @@ function chamferedPrism(fp, z0, h, c){
 }
 // Which buttons get joined by a bridge, and which bridges were skipped because they would cover something.
 function decoBridges(ds){
-  const buttons = state.parts.filter(isButton), pairs = [], skipped = [];
+  const buttons = state.parts.filter(isButton), pairs = [], skipped = [], limited = [];
   if (!ds.bridges) return { pairs, skipped };
   const pl = plate(), ch = chamferFor(pl, state.thickness);
   const ro = p => typeOf(p).cut.d/2 + ds.width;
@@ -1469,16 +1477,20 @@ function decoBridges(ds){
   for (let i = 0; i < buttons.length; i++) for (let j = i + 1; j < buttons.length; j++){
     const A = buttons[i], B = buttons[j], dist = Math.hypot(B.x - A.x, B.y - A.y);
     if (dist - ro(A) - ro(B) > ds.bridgeGap + 1e-9) continue;
-    const hw = Math.max(Math.min(ro(A), ro(B)) - ds.chamfer, Math.min(typeOf(A).cut.d, typeOf(B).cut.d)/2 + 0.5);
+    // widest allowed bar: the smaller ring's diameter minus the chamfer on both sides
+    const maxW = Math.max(BRIDGE_MIN_W, 2*Math.min(ro(A), ro(B)) - 2*ds.chamfer);
+    const w = ds.bridgeWidth === null ? maxW : clampNum(ds.bridgeWidth, BRIDGE_MIN_W, maxW);
+    if (ds.bridgeWidth !== null && ds.bridgeWidth > maxW + 1e-9) limited.push({pair: `${A.label}–${B.label}`, w: maxW});
+    const hw = w/2;
     const ux = (B.x - A.x)/dist, uy = (B.y - A.y)/dist, nx = -uy*hw, ny = ux*hw;
     const bar = [[A.x + nx, A.y + ny], [A.x - nx, A.y - ny], [B.x - nx, B.y - ny], [B.x + nx, B.y + ny]];
     // only the part of the bar between the two rings matters for blocking
     const inner = [[A.x + ux*ro(A) + nx, A.y + uy*ro(A) + ny], [A.x + ux*ro(A) - nx, A.y + uy*ro(A) - ny], [B.x - ux*ro(B) - nx, B.y - uy*ro(B) - ny], [B.x - ux*ro(B) + nx, B.y - uy*ro(B) + ny]];
     const hit = dist > ro(A) + ro(B) ? blockers.find(k => k.id !== A.id && k.id !== B.id && overlap({k:'p', pts: ccw(inner)}, k.sh)) : null;
     if (hit) skipped.push(`${A.label}–${B.label} (would cover ${hit.label})`);
-    else pairs.push({A, B, bar: ccw(bar)});
+    else pairs.push({A, B, bar: ccw(bar), w});
   }
-  return { pairs, skipped };
+  return { pairs, skipped, limited };
 }
 // The deco piece. Seen from above it is one outline: a disc of radius ri + width around every button, plus a bar
 // between buttons that are close together, with the joints rounded (DECO_SMOOTH). That outline is clipped to the
