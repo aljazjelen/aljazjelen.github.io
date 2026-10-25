@@ -57,23 +57,31 @@
       "clearance": 3
     },
     "led5": {
-      "name": "LED 5 mm", "group": "Indicators & displays", "label": "LED",
+      "name": "LED 5 mm", "group": "Indicators", "label": "LED",
       "hole": { "shape": "circle", "d": 5.1 },
       "cap":  { "shape": "circle", "d": 5, "height": 4, "style": "led" },
       "pcb":  { "shape": "circle", "d": 5, "depth": 10 },
       "clearance": 1.5
     },
     "led3": {
-      "name": "LED 3 mm", "group": "Indicators & displays", "label": "LED",
+      "name": "LED 3 mm", "group": "Indicators", "label": "LED",
       "hole": { "shape": "circle", "d": 3.1 },
       "cap":  { "shape": "circle", "d": 3, "height": 3, "style": "led" },
       "pcb":  { "shape": "circle", "d": 3, "depth": 10 },
       "clearance": 1
     },
     "oled": {
-      "name": "OLED 0.96″ window", "group": "Indicators & displays", "label": "OLED",
+      "name": "OLED 0.96″ window", "group": "Displays", "label": "OLED",
       "hole": { "shape": "rect", "w": 25, "h": 14, "r": 1 },
       "pcb":  { "shape": "rect", "w": 27, "h": 28, "depth": 8 },
+      "clearance": 1.5,
+      "allowOverNoGo": true,
+      "display": true
+    },
+    "vocore43": {
+      "name": "VoCore 4.3″ display", "group": "Displays", "label": "DISP",
+      "hole": { "shape": "rect", "w": 93.6, "h": 56.2, "r": 0.5 },
+      "pcb":  { "shape": "rect", "w": 104.3, "h": 61.3, "depth": 10 },
       "clearance": 1.5,
       "allowOverNoGo": true,
       "display": true
