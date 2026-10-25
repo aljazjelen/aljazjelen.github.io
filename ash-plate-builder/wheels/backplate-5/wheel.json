@@ -13,7 +13,7 @@
     "plateSpacing / frontPlateThickness: defaults applied when this wheel is picked.",
     "chamfer: 45° chamfer on the top edge of the front plate, in mm. outline = the outer edge, mountHoles = the mounting holes. 0 or left out = no chamfer.",
     "layers (optional): only read these DXF layers.",
-    "handles: F1-style grips behind the back plate. left.holes = the mount holes on the left side, left.path = the grip centre line (plate coordinates, from one mount hole to another); mirror copies them to the right. grip = oval cross-section width x depth, pad = mounting pad thickness and margin around the holes, bolt = hole and head diameters. Each handle is split at mid-depth into two halves.",
+    "handles: F1-style grips behind the back plate. left.holes = the mount holes on the left side, left.path = the grip centre line (plate coordinates, from one mount hole to another); mirror copies them to the right. grip = oval cross-section width x depth. Bolts go through the mount holes the grip covers: bolt = hole and head diameters, seat = material left under the bolt head. Each handle is split at mid-depth into two halves.",
     "example: the layout loaded by 'Load example' for this wheel."
   ],
   "name": "Backplate 5",
@@ -41,12 +41,11 @@
     "style": "f1-open",
     "left": {
       "holes": [[-88.707, -59.618], [-92, -7], [-92, 5], [-113.393, 43.1], [-125, 50.929]],
-      "path": [[-88.707, -59.618], [-112, -72], [-142, -66], [-160, -38], [-163, 2], [-156, 36], [-140, 52], [-125, 50.929]]
+      "path": [[-88.707, -59.618], [-108, -72], [-132, -66], [-146, -40], [-149, -5], [-145, 25], [-133, 40], [-119.2, 47]]
     },
     "mirror": true,
     "grip": { "width": 30, "depth": 38 },
-    "pad": { "thickness": 6, "margin": 7 },
-    "bolt": { "hole": 4.2, "head": 8 }
+    "bolt": { "hole": 4.2, "head": 8, "seat": 6 }
   },
   "example": [
     { "type": "led3", "x": -40, "y": 44, "label": "SL1" },

@@ -99,10 +99,10 @@ The deco settings are saved with the layout.
 
 ### Handles
 A wheel can define handles in its `wheel.json`, so the style follows the wheel. Backplate 5 has simple F1-style grips:
-- **Mounting:** a 6 mm pad behind the back plate covers the side's 5 mount holes. Bolt holes go through the whole handle, with Ø8 pockets from the back for the bolt heads.
-- **Grip:** a 30 × 38 mm oval tube (width in the plate's plane × depth front to back) along a smooth curve through `left.path`. The curve runs from the bottom-corner hole, out beside the wheel, to the wing-tip hole, leaving about 50 mm for your hand.
+- **Grip:** a 30 × 38 mm oval tube (width in the plate's plane × depth front to back) with rounded ends, along a smooth curve through `left.path`. The curve starts at the bottom-corner mount hole, runs beside the wheel, and ends over the two top mount holes, leaving about 37 mm for your hand.
+- **Bolting:** there's no separate mounting pad. Bolts go through the mount holes the grip covers, here the bottom hole and both top holes, with a hole through the whole grip and a Ø8 pocket from the back that leaves 6 mm under the bolt head. The Handles panel lists any of the side's mount holes the grip doesn't cover.
 - **Mirroring:** the right handle is the left one mirrored.
-- **Halves:** each handle is split at mid-depth into a front half, with the pad, and a back half.
+- **Halves:** each handle is split at mid-depth into a front and a back half.
 
 The **Handles** panel can turn them off and change the grip width and depth. **Handles .zip** exports the four halves in the plate's coordinates. To shape a grip, edit the `path` points in `wheel.json`. If a curve bends more tightly than the grip is wide, the app reports it.
 
