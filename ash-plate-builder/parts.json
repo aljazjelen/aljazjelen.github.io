@@ -4,8 +4,8 @@
     "Each entry under 'parts' is one part type; its key (e.g. 'btn16') is stored in saved layouts, so don't rename keys that are in use.",
     "Shapes: { \"shape\": \"circle\", \"d\": 16 } or { \"shape\": \"rect\", \"w\": 25, \"h\": 14, \"r\": 1 } (r = corner radius, optional).",
     "name / group / label: shown in the parts list; label is the prefix for auto names (BTN1, BTN2...).",
-    "hole: the cutout in the front plate.",
-    "cap: the element you see and press: button cap, knob, lever, LED. height is only used for the 3D preview. style: button | knob | lever | led. Leave cap out for flush parts like a display. For buttons, the deco ring and sleeve fit around the cap, so the plate hole becomes at least cap + 2 x sleeve wall (never smaller than hole).",
+    "hole: exactly what is cut in the front plate: the whole body for some parts, only the shaft for others (rotary, encoder). For buttons with a deco ring, make it larger than the cap: the deco sleeve fills the gap, so its wall is (hole - cap) / 2.",
+    "cap: the element you see and press: button cap, knob, lever, LED. height is only used for the 3D preview. style: button | knob | lever | led. Leave cap out for flush parts like a display. For buttons, the cap passes through the deco ring and sleeve.",
     "pcb: the board or switch body under the plate. depth = how far it reaches behind the plate (checked against Plate spacing).",
     "clearance: safe space around the part. The keep-out zone = the largest of hole, cap and pcb, plus clearance on every side.",
     "keepout (optional): set an exact keep-out shape instead of the computed one.",
@@ -16,21 +16,21 @@
   "parts": {
     "btn7": {
       "name": "Push button 7 mm", "group": "Buttons", "label": "BTN",
-      "hole": { "shape": "circle", "d": 7 },
+      "hole": { "shape": "circle", "d": 10 },
       "cap":  { "shape": "circle", "d": 9, "height": 4, "style": "button" },
       "pcb":  { "shape": "circle", "d": 9, "depth": 15 },
       "clearance": 1.5
     },
     "btn12": {
       "name": "Push button 12 mm", "group": "Buttons", "label": "BTN",
-      "hole": { "shape": "circle", "d": 12 },
+      "hole": { "shape": "circle", "d": 15 },
       "cap":  { "shape": "circle", "d": 14, "height": 5, "style": "button" },
       "pcb":  { "shape": "rect", "w": 20, "h": 20, "r": 1, "depth": 20 },
       "clearance": 0
     },
     "btn16": {
       "name": "Push button 16 mm", "group": "Buttons", "label": "BTN",
-      "hole": { "shape": "circle", "d": 16 },
+      "hole": { "shape": "circle", "d": 19 },
       "cap":  { "shape": "circle", "d": 18, "height": 6, "style": "button" },
       "pcb":  { "shape": "circle", "d": 17, "depth": 24 },
       "clearance": 2

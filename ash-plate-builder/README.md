@@ -64,7 +64,7 @@ Any problems with a wheel are listed under the wheel picker in the app.
 
 ### Parts: `parts.json`
 The part library. For each part it sets:
-- `hole`: the cutout in the front plate
+- `hole`: exactly what's cut in the front plate. That's the whole body for some parts and only the shaft for others, like the rotary switch. For buttons with a deco ring, make it larger than the cap; the deco sleeve fills the gap.
 - `cap`: the button cap, knob, lever or LED on top, including its height
 - `pcb`: the board or switch body underneath, including its depth behind the plate
 - `clearance`: the safe space around the part. The keep-out zone is the largest of the hole, cap and PCB, plus the clearance on every side.
@@ -83,7 +83,7 @@ Custom parts rotate, mirror and duplicate like any other part. They're saved wit
 ### Deco
 The deco is a separate printed piece that sits on top of the front plate, exported as its own STL (`-deco.stl`). It uses the same coordinates as the plate STL, so importing both into a slicer lines them up, for example for a multi-colour print. It's generated from the layout. For now it has one feature, set in the **Deco** panel:
 - **Rings around buttons:** a ring around every part whose cap style is `button`. Its opening is the button's element (the `cap` in `parts.json`), so the cap passes through. Defaults are 2 mm high and 4 mm wide, with a 1 mm 45° chamfer on the top outer edge.
-- **Sleeve:** each ring has a sleeve, part of the same piece, that reaches down into the button hole around the cap. It locates the deco on the plate. The front plate's button hole becomes at least cap + 2 × sleeve wall, and never smaller than the part's `hole`. With the default 0.5 mm wall that's Ø10 for the 7 mm button (cap Ø9), Ø15 for the 12 mm button (cap Ø14) and Ø19 for the 16 mm button (cap Ø18). Default depth is 3 mm, limited to the plate thickness. Set the depth to 0 for no sleeve; the plate holes then stay at the part's `hole` size. If an enlarged hole outgrows the part's keep-out zone, the checks warn about it.
+- **Sleeve:** each ring has a sleeve, part of the same piece, that goes down into the button's hole and fills the gap between the cap and the hole. It locates the deco on the plate. The sleeve's wall is (hole − cap) / 2: the 12 mm button has a Ø14 cap in a Ø15 hole, so its wall is 0.5 mm. The plate hole is never enlarged; it's always the `hole` from `parts.json`. A button whose hole leaves less than 0.3 mm around the cap gets no sleeve, and the Deco panel says so. Default sleeve depth is 3 mm, limited to the plate thickness, and 0 turns sleeves off.
 - **Bridges:** buttons whose rings are at most 6 mm apart, edge to edge, are joined automatically by a bar. You can change the distance or turn bridges off.
   - **Bar width** sets how wide the bar is. Leave it empty for the widest allowed: the smaller ring's diameter minus the chamfer on both sides, for example 24 mm for two 16 mm buttons and 20 mm for two 12 mm buttons. Any value is kept between 2 mm and that maximum, per pair.
   - The joints are rounded with a 1.5 mm radius, so across a short gap a narrow bar looks wider in the middle.
@@ -92,7 +92,7 @@ The deco is a separate printed piece that sits on top of the front plate, export
   - A bridge that would cover another part or a mounting hole is skipped, and the Deco panel says which.
 - Rings that touch are merged into one piece.
 - The deco stays on the flat top of the plate, inside the outline chamfer. It leaves other parts' cut-outs and caps (plus 0.5 mm) and the mounting holes clear.
-- The sleeve and the plate hole have the same nominal size, so add printing clearance in the wall setting if your printer needs it.
+- The sleeve and the plate hole have the same nominal size. For printing clearance, make the `hole` slightly larger in `parts.json`.
 
 The deco settings are saved with the layout.
 
@@ -107,7 +107,7 @@ The chamfered plate is built with [manifold-3d](https://github.com/elalish/manif
 ## Controls
 In the editor:
 - the black shapes are the caps (button caps, knobs, levers, LEDs), as seen from the front; parts without a cap, like the display, show their cut-out
-- the dotted line inside is the actual hole in the front plate, including the sleeve enlargement
+- the dotted line is the hole cut in the front plate (`hole` in `parts.json`)
 - the dashed line around a part is its keep-out zone
 - light circles are mounting holes; hatched areas are no-go zones
 
