@@ -126,6 +126,8 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 #plate .gl.s{stroke:var(--grid-strong);stroke-width:.3}
 #plate .zone{fill:none;stroke:var(--zone);stroke-width:.4;stroke-dasharray:2 1.5}
 #plate .ko{fill:var(--ko-fill);stroke:var(--ko);stroke-width:.35;stroke-dasharray:1.2 .9}
+.rowctl{align-items:center;justify-content:space-between}
+.rowcount{font-size:13px;color:var(--ink);text-align:center}
 #plate .cut{fill:var(--hole);stroke:var(--hole-edge);stroke-width:.3}
 #plate .capfill{fill:var(--cap);stroke:var(--cap-edge);stroke-width:.35}
 #plate .holeline{fill:none;stroke:var(--plate-ink);stroke-width:.25;stroke-dasharray:.6 .6;opacity:.75;pointer-events:none}
@@ -696,7 +698,7 @@ async function loadWheels(){
 
 /* Part library. Loaded from parts.json next to this page (its "_help" explains every field).
    DEFAULT_PARTS is a built-in copy of that file, used when parts.json can't be loaded (e.g. the page is opened as a local file). */
-const DEFAULT_PARTS = /*PARTS_JSON*/{"_help":["Part library for the ASH Front Plate Builder. All sizes in mm.","Each entry under 'parts' is one part type; its key (e.g. 'btn16') is stored in saved layouts, so don't rename keys that are in use.","Shapes: { \"shape\": \"circle\", \"d\": 16 } or { \"shape\": \"rect\", \"w\": 25, \"h\": 14, \"r\": 1 } (r = corner radius, optional).","name / group / label: shown in the parts list; label is the prefix for auto names (BTN1, BTN2...).","hole: exactly what is cut in the front plate: the whole body for some parts, only the shaft for others (rotary, encoder). For buttons with a deco ring, make it larger than the cap: the deco sleeve fills the gap, so its wall is (hole - cap) / 2.","cap: the element you see and press: button cap, knob, lever, LED. height is only used for the 3D preview. style: button | knob | lever | led. Leave cap out for flush parts like a display. For buttons, the cap passes through the deco ring and sleeve.","pcb: the board or switch body under the plate. depth = how far it reaches behind the plate (checked against Plate spacing).","clearance: safe space around the part. The keep-out zone = the largest of hole, cap and pcb, plus clearance on every side.","keepout (optional): set an exact keep-out shape instead of the computed one.","Every part can be rotated; set rotatable: false to lock one. allowOverNoGo: true lets a part sit over the back plate's no-go areas (it must still avoid mounting holes).","display: true draws a screen in the 3D preview."],"version":1,"parts":{"btn7":{"name":"Push button 7 mm","group":"Buttons","label":"BTN","hole":{"shape":"circle","d":10},"cap":{"shape":"circle","d":9,"height":4,"style":"button"},"pcb":{"shape":"circle","d":9,"depth":15},"clearance":1.5},"btn12":{"name":"Push button 12 mm","group":"Buttons","label":"BTN","hole":{"shape":"circle","d":15},"cap":{"shape":"circle","d":14,"height":5,"style":"button"},"pcb":{"shape":"rect","w":20,"h":20,"r":1,"depth":15},"clearance":0},"btn16":{"name":"Push button 16 mm","group":"Buttons","label":"BTN","hole":{"shape":"circle","d":19},"cap":{"shape":"circle","d":18,"height":6,"style":"button"},"pcb":{"shape":"circle","d":17,"depth":15},"clearance":2},"enc":{"name":"Encoder EC11","group":"Encoders & switches","label":"ENC","hole":{"shape":"circle","d":7.2},"cap":{"shape":"circle","d":20,"height":8,"style":"knob"},"pcb":{"shape":"rect","w":12,"h":13,"depth":15},"clearance":2},"rot":{"name":"Rotary switch 12-pos","group":"Encoders & switches","label":"ROT","hole":{"shape":"circle","d":9.5},"cap":{"shape":"circle","d":28,"height":10,"style":"knob"},"pcb":{"shape":"rect","w":27.2,"h":27.2,"r":1,"depth":15},"clearance":0},"tgl":{"name":"Toggle switch M6","group":"Encoders & switches","label":"TGL","hole":{"shape":"circle","d":6.2},"cap":{"shape":"circle","d":3,"height":11,"style":"lever"},"pcb":{"shape":"rect","w":8,"h":13,"depth":15},"clearance":3},"led5":{"name":"LED 5 mm","group":"Indicators","label":"LED","hole":{"shape":"circle","d":5.1},"cap":{"shape":"circle","d":5,"height":4,"style":"led"},"pcb":{"shape":"circle","d":5,"depth":15},"clearance":1.5},"led3":{"name":"LED 3 mm","group":"Indicators","label":"LED","hole":{"shape":"circle","d":3.1},"cap":{"shape":"circle","d":3,"height":3,"style":"led"},"pcb":{"shape":"circle","d":3,"depth":15},"clearance":1},"oled":{"name":"OLED 0.96″ window","group":"Displays","label":"OLED","hole":{"shape":"rect","w":25,"h":14,"r":1},"pcb":{"shape":"rect","w":27,"h":28,"depth":8},"clearance":1.5,"allowOverNoGo":true,"display":true},"vocore43":{"name":"VoCore 4.3″ display","group":"Displays","label":"DISP","hole":{"shape":"rect","w":93.6,"h":56.2,"r":0.5},"pcb":{"shape":"rect","w":104.3,"h":61.3,"depth":10},"clearance":1.5,"allowOverNoGo":true,"display":true}}}/*END_PARTS_JSON*/;
+const DEFAULT_PARTS = /*PARTS_JSON*/{"_help":["Part library for the ASH Front Plate Builder. All sizes in mm.","Each entry under 'parts' is one part type; its key (e.g. 'btn16') is stored in saved layouts, so don't rename keys that are in use.","Shapes: { \"shape\": \"circle\", \"d\": 16 } or { \"shape\": \"rect\", \"w\": 25, \"h\": 14, \"r\": 1 } (r = corner radius, optional).","name / group / label: shown in the parts list; label is the prefix for auto names (BTN1, BTN2...).","hole: exactly what is cut in the front plate: the whole body for some parts, only the shaft for others (rotary, encoder). For buttons with a deco ring, make it larger than the cap: the deco sleeve fills the gap, so its wall is (hole - cap) / 2.","cap: the element you see and press: button cap, knob, lever, LED. height is only used for the 3D preview. style: button | knob | lever | led. Leave cap out for flush parts like a display. For buttons, the cap passes through the deco ring and sleeve.","pcb: the board or switch body under the plate. depth = how far it reaches behind the plate (checked against Plate spacing).","clearance: safe space around the part. The keep-out zone = the largest of hole, cap and pcb, plus clearance on every side.","keepout (optional): set an exact keep-out shape instead of the computed one.","Every part can be rotated; set rotatable: false to lock one. allowOverNoGo: true lets a part sit over the back plate's no-go areas (it must still avoid mounting holes).","display: true draws a screen in the 3D preview.","row (optional): makes a symmetric row of identical elements, e.g. LEDs. pitch = default centre-to-centre spacing, maxPerSide = how many can be added on each side of the middle one. The part's position is the middle element; the keep-out becomes one rounded strip around the whole row."],"version":1,"parts":{"btn7":{"name":"Push button 7 mm","group":"Buttons","label":"BTN","hole":{"shape":"circle","d":10},"cap":{"shape":"circle","d":9,"height":4,"style":"button"},"pcb":{"shape":"circle","d":9,"depth":15},"clearance":1.5},"btn12":{"name":"Push button 12 mm","group":"Buttons","label":"BTN","hole":{"shape":"circle","d":15},"cap":{"shape":"circle","d":14,"height":5,"style":"button"},"pcb":{"shape":"rect","w":20,"h":20,"r":1,"depth":15},"clearance":0},"btn16":{"name":"Push button 16 mm","group":"Buttons","label":"BTN","hole":{"shape":"circle","d":19},"cap":{"shape":"circle","d":18,"height":6,"style":"button"},"pcb":{"shape":"circle","d":17,"depth":15},"clearance":2},"enc":{"name":"Encoder EC11","group":"Encoders & switches","label":"ENC","hole":{"shape":"circle","d":7.2},"cap":{"shape":"circle","d":20,"height":8,"style":"knob"},"pcb":{"shape":"rect","w":12,"h":13,"depth":15},"clearance":2},"rot":{"name":"Rotary switch 12-pos","group":"Encoders & switches","label":"ROT","hole":{"shape":"circle","d":9.5},"cap":{"shape":"circle","d":28,"height":10,"style":"knob"},"pcb":{"shape":"rect","w":27.2,"h":27.2,"r":1,"depth":15},"clearance":0},"tgl":{"name":"Toggle switch M6","group":"Encoders & switches","label":"TGL","hole":{"shape":"circle","d":6.2},"cap":{"shape":"circle","d":3,"height":11,"style":"lever"},"pcb":{"shape":"rect","w":8,"h":13,"depth":15},"clearance":3},"led5":{"name":"Single LED 5 mm","group":"Indicators","label":"LED","hole":{"shape":"circle","d":5.1},"cap":{"shape":"circle","d":5,"height":4,"style":"led"},"pcb":{"shape":"circle","d":5,"depth":15},"clearance":1.5},"led3":{"name":"Single LED 3 mm","group":"Indicators","label":"LED","hole":{"shape":"circle","d":3.1},"cap":{"shape":"circle","d":3,"height":3,"style":"led"},"pcb":{"shape":"circle","d":3,"depth":15},"clearance":1},"led5row":{"name":"Multiple LED 5 mm","group":"Indicators","label":"LEDS","hole":{"shape":"circle","d":5.1},"cap":{"shape":"circle","d":5,"height":4,"style":"led"},"pcb":{"shape":"circle","d":5,"depth":15},"clearance":1.5,"row":{"pitch":8,"maxPerSide":5}},"oled":{"name":"OLED 0.96″ window","group":"Displays","label":"OLED","hole":{"shape":"rect","w":25,"h":14,"r":1},"pcb":{"shape":"rect","w":27,"h":28,"depth":8},"clearance":1.5,"allowOverNoGo":true,"display":true},"vocore43":{"name":"VoCore 4.3″ display","group":"Displays","label":"DISP","hole":{"shape":"rect","w":93.6,"h":56.2,"r":0.5},"pcb":{"shape":"rect","w":104.3,"h":61.3,"depth":10},"clearance":1.5,"allowOverNoGo":true,"display":true}}}/*END_PARTS_JSON*/;
 let TYPES = {};
 let partsSource = 'built-in';
 const partWarnings = [];
@@ -739,10 +741,18 @@ function buildTypes(cfg, source){
       const clearance = e.clearance != null ? +e.clearance : 2;
       if (!(clearance >= 0)) throw new Error('clearance must be 0 or more');
       const ko = e.keepout ? normShape(e.keepout, 'keepout') : deriveKeepout([hole, pcbShape, ...(cap ? [cap] : [])], clearance);
+      // row: a symmetric row of identical elements (e.g. LEDs) along the part's own x axis, centred on the middle one
+      let row = null;
+      if (e.row){
+        if (hole.c !== 'circle') throw new Error('row needs a round hole');
+        const minPitch = r2(Math.max(hole.d, cap && cap.c === 'circle' ? cap.d : 0, pcbShape.c === 'circle' ? pcbShape.d : 0) + 0.5);
+        const pitch = +e.row.pitch, max = Math.round(+e.row.maxPerSide);
+        row = { pitch: pitch >= minPitch ? r2(pitch) : minPitch, minPitch, maxPerSide: max >= 1 ? Math.min(max, 20) : 5 };
+      }
       out[key] = {
         group: String(e.group || 'Other'), name: String(e.name || key), short: String(e.label || key.toUpperCase()),
         cut: hole, ko, depth, body: pcbShape, cap, clearance, explicitKo: !!e.keepout,
-        screen: !!e.display, rotatable: e.rotatable !== false, ignoresNoGo: !!e.allowOverNoGo,
+        screen: !!e.display, rotatable: e.rotatable !== false, ignoresNoGo: !!e.allowOverNoGo, row,
       };
     } catch(err){ partWarnings.push(`${source}: "${key}" skipped, ${err.message}.`); }
   }
@@ -766,9 +776,23 @@ function cleanDims(type, d){
   }
   return o;
 }
+// A row part's own settings: elements on each side of the middle one (n) and the centre-to-centre spacing (pitch).
+function cleanRow(base, r){
+  r = r && typeof r === 'object' ? r : {};
+  const n = Number.isFinite(+r.n) ? clampNum(Math.round(+r.n), 0, base.row.maxPerSide) : 0;
+  const pitch = Number.isFinite(+r.pitch) && +r.pitch > 0 ? r2(clampNum(+r.pitch, base.row.minPitch, 50)) : base.row.pitch;
+  return { n, pitch };
+}
 // The type data for a part: the parts.json entry, or one built from a custom part's own sizes.
+// For a row part the keep-out grows into one rounded strip around the whole row.
 function typeOf(p){
-  if (!isCustom(p.type)) return TYPES[p.type];
+  if (!isCustom(p.type)){
+    const base = TYPES[p.type];
+    if (!base || !base.row) return base;
+    const r = cleanRow(base, p.row), k = base.ko, span = 2*r.n*r.pitch;
+    const ko = !r.n ? k : k.c === 'circle' ? {c:'rect', w: r2(span + k.d), h: k.d, r: k.d/2} : {c:'rect', w: r2(span + k.w), h: k.h, r: k.r || 0};
+    return { ...base, ko, rowN: r.n, rowPitch: r.pitch, count: 2*r.n + 1 };
+  }
   const d = cleanDims(p.type, p.dims), circle = p.type === 'custom-circle';
   const cut = circle ? {c:'circle', d:d.cutD} : {c:'rect', w:d.cutW, h:d.cutH, r:d.cutR};
   const ko = circle ? {c:'circle', d:d.koD} : {c:'rect', w:d.koW, h:d.koH};
@@ -840,6 +864,7 @@ const plateCutShape = p => cutShape(p);
 function newPart(o){
   const part = { id: 'p' + (nextId++), type:o.type, x:o.x||0, y:o.y||0, rot:o.rot||0, label:o.label||'' };
   if (isCustom(o.type)) part.dims = cleanDims(o.type, o.dims);
+  if (TYPES[o.type] && TYPES[o.type].row) part.row = cleanRow(TYPES[o.type], o.row);
   const t = typeOf(part);
   if (!part.label) part.label = autoLabel(t.short, o.__list || state.parts);
   return part;
@@ -854,7 +879,7 @@ function makeExample(plateId){
   const s = { plateId: pl.id, thickness: pl.thickness, gap: pl.spacing, snap:1, deco: {...DECO_DEFAULTS}, handles: cleanHandles({}), parts:[] };
   const prev = state; state = s;
   for (const o of pl.example) if (o && knownType(o.type) && Number.isFinite(+o.x) && Number.isFinite(+o.y))
-    s.parts.push(newPart({type:o.type, dims:o.dims, x:+o.x, y:+o.y, rot:+o.rot||0, label:o.label ? String(o.label) : '', __list:s.parts}));
+    s.parts.push(newPart({type:o.type, dims:o.dims, row:o.row, x:+o.x, y:+o.y, rot:+o.rot||0, label:o.label ? String(o.label) : '', __list:s.parts}));
   state = prev;
   return s;
 }
@@ -874,6 +899,7 @@ function loadState(json){
   s.parts = known.map(p => {
     const q = {id:String(p.id||''), type:p.type, x:+p.x||0, y:+p.y||0, rot:+p.rot||0, label:String(p.label||'')};
     if (isCustom(p.type)) q.dims = cleanDims(p.type, p.dims);
+    if (TYPES[p.type] && TYPES[p.type].row) q.row = cleanRow(TYPES[p.type], p.row);
     return q;
   });
   let max = 0;
@@ -919,6 +945,16 @@ const holeKoShape = h => h.poly ? {k:'p', pts:h.koPoly} : {k:'c', x:h.x, y:h.y, 
 const capShape = p => { const t = typeOf(p); return shapeOf(t.cap || t.cut, p); };
 const koShape  = p => shapeOf(typeOf(p).ko, p);
 const cutShape = p => shapeOf(typeOf(p).cut, p);
+// The physical elements of a part: itself, or for a row part every element of the row (same id, own position).
+function elemsOf(p){
+  const t = typeOf(p);
+  if (!t.rowN) return [p];
+  const a = p.rot*Math.PI/180, c = Math.cos(a), s = Math.sin(a), out = [];
+  for (let k = -t.rowN; k <= t.rowN; k++) out.push({...p, x: p.x + k*t.rowPitch*c, y: p.y + k*t.rowPitch*s});
+  return out;
+}
+const capShapes = p => elemsOf(p).map(capShape);
+const cutShapes = p => elemsOf(p).map(plateCutShape);
 
 function edgeDist(x, y, o){
   let d = Infinity;
@@ -1002,7 +1038,7 @@ const errorCount = () => issues.filter(i=>i.sev==='err').length;
 // probe: {type, dims?} of the part to place
 function isFree(probe, x, y, rot, ignoreId){
   const pl = plate();
-  const part = {type: probe.type, dims: probe.dims, x, y, rot};
+  const part = {type: probe.type, dims: probe.dims, row: probe.row, x, y, rot};
   const sh = koShape(part);
   if (!insideZone(sh, pl)) return false;
   for (const h of pl.holes) if ((h.role === 'mount' || !typeOf(part).ignoresNoGo) && overlap(sh, holeKoShape(h))) return false;
@@ -1069,7 +1105,7 @@ function render2d(){
     const cls = ['part']; if (p.id===selected) cls.push('sel'); if (errIds.has(p.id)) cls.push('err'); else if (warnIds.has(p.id)) cls.push('warn');
     const ko = koShape(p);
     const ly = ko.k==='c' ? -p.y + ko.r + 3.4 : Math.max(...ko.pts.map(([,y])=>-y)) + 3.4;
-    o += `<g class="${cls.join(' ')}" data-id="${p.id}">${shapeSvg(ko,'ko')}${shapeSvg(capShape(p),'capfill')}${shapeSvg(plateCutShape(p),'holeline')}</g>`;
+    o += `<g class="${cls.join(' ')}" data-id="${p.id}">${shapeSvg(ko,'ko')}${capShapes(p).map(sh => shapeSvg(sh,'capfill')).join('')}${cutShapes(p).map(sh => shapeSvg(sh,'holeline')).join('')}</g>`;
     o += `<text class="lbl" x="${p.x}" y="${ly}">${esc(p.label)}</text>`;
   }
   const sp = selected && findPart(selected);
@@ -1146,6 +1182,11 @@ svg.addEventListener('pointerleave', () => { if(!drag) $('readout').textContent 
 
 /* ---------------- Palette ---------------- */
 function iconSvg(t){
+  if (t.row){   // a row of three
+    const f = t.cap || t.cut, P = t.row.pitch, k = t.ko.d || t.ko.h, sc = 30/Math.max(32, 2*P + k), h = k*sc;
+    return `<svg viewBox="0 0 34 34" aria-hidden="true"><rect x="${17 - (P + k/2)*sc}" y="${17 - h/2}" width="${(2*P + k)*sc}" height="${h}" rx="${h/2}" fill="none" stroke="var(--accent)" stroke-width="1" stroke-dasharray="2 1.5"/>` +
+      [-1, 0, 1].map(i => `<circle cx="${17 + i*P*sc}" cy="17" r="${f.d/2*sc}" fill="var(--ink)"/>`).join('') + `</svg>`;
+  }
   const sc = 30/Math.max(32, t.ko.d || Math.max(t.ko.w,t.ko.h));
   const f = t.cap || t.cut;   // the cap, as on the plate
   const cut = f.c==='circle' ? `<circle cx="17" cy="17" r="${f.d/2*sc}" fill="var(--ink)"/>` : `<rect x="${17-f.w/2*sc}" y="${17-f.h/2*sc}" width="${f.w*sc}" height="${f.h*sc}" fill="var(--ink)"/>`;
@@ -1167,7 +1208,7 @@ function renderPalette(){
   for (const [k,t] of Object.entries(TYPES)) (groups[t.group] ||= []).push([k,t]);
   // One collapsible section per group; only one is open at a time (remembered per viewer).
   const sections = Object.entries(groups).map(([g, items]) => [g, items.map(([k, t]) =>
-    `<button class="pitem" data-type="${k}" title="Add ${t.name}">${iconSvg(t)}<span><b>${t.name}</b><i>cut ${dimText(t.cut)} · keep-out ${dimText(t.ko)}</i></span></button>`)]);
+    `<button class="pitem" data-type="${k}" title="Add ${t.name}">${iconSvg(t)}<span><b>${t.name}</b><i>${t.row ? `cut ${dimText(t.cut)} each · 1 to ${2*t.row.maxPerSide + 1} in a row` : `cut ${dimText(t.cut)} · keep-out ${dimText(t.ko)}`}</i></span></button>`)]);
   sections.push(['Custom', Object.entries(CUSTOM).map(([k, c]) =>
     `<button class="pitem" data-type="${k}" title="Add a ${c.name.toLowerCase()} with your own sizes">${iconSvg(typeOf({type:k}))}<span><b>${c.name}</b><i>your own cut-out and keep-out</i></span></button>`)]);
   let open = null;
@@ -1235,13 +1276,14 @@ function renderProps(){
       <label class="field">Y (mm)<input type="number" id="pY" step="${step}" value="${fmt(p.y)}"></label>
       ${t.rotatable ? `<label class="field">Rotation (°)<input type="number" id="pRot" step="5" value="${fmt(p.rot)}"></label>` : ''}
     </div>
+    ${t.row ? rowFields(p, t) : ''}
     ${t.custom ? customFields(p) : `<dl class="kv">
       <dt>Part</dt><dd>${esc(t.name)}</dd>
       <dt>Hole</dt><dd>${dimText(t.cut)} mm</dd>
       <dt>Cap</dt><dd>${t.cap ? `${dimText(t.cap)} mm, ${fmt(t.cap.height)} high` : 'none'}</dd>
       <dt>PCB</dt><dd>${dimText(t.body)} mm, ${fmt(t.depth)} deep</dd>
       <dt>Safe space</dt><dd>${t.explicitKo ? 'set directly' : fmt(t.clearance) + ' mm'}</dd>
-      <dt>Keep-out</dt><dd>${dimText(t.ko)} mm</dd>
+      <dt>Keep-out</dt><dd>${dimText(t.ko)} mm${t.row ? ', around the whole row' : ''}</dd>
     </dl>`}
     <div class="row">
       ${t.rotatable ? `<button class="btn sm" id="pRot90" title="Rotate 90° (R). Shift+R rotates 5°.">Rotate 90°</button>` : ''}
@@ -1255,9 +1297,27 @@ function renderProps(){
   if ($('pRot')) $('pRot').addEventListener('change', e => { const v=+e.target.value; if(Number.isFinite(v)) mutate(()=>{ p.rot = ((v%360)+360)%360; }); });
   if ($('pRot90')) $('pRot90').addEventListener('click', () => rotateSelected(90));
   for (const el of box.querySelectorAll('[data-dim]')) el.addEventListener('change', e => setDim(p, e.target.dataset.dim, e.target));
+  if (t.row){
+    const setRow = r => { mutate(() => { p.row = cleanRow(TYPES[p.type], {...p.row, ...r}); }); box.dataset.pid = ''; renderProps(); };
+    $('pRowLess').addEventListener('click', () => setRow({n: t.rowN - 1}));
+    $('pRowMore').addEventListener('click', () => setRow({n: t.rowN + 1}));
+    $('pRowPitch').addEventListener('change', e => { const v = +e.target.value; if (Number.isFinite(v)) setRow({pitch: v}); });
+  }
   $('pMirror').addEventListener('click', mirrorSelected);
   $('pDup').addEventListener('click', duplicateSelected);
   $('pDel').addEventListener('click', deleteSelected);
+}
+// Row parts: add or remove one element on each side, and set the spacing. X/Y is the middle element.
+function rowFields(p, t){
+  const max = t.row.maxPerSide, word = t.short === 'LEDS' || /LED/i.test(t.name) ? 'LED' : 'element';
+  return `<div class="dimgroup"><span class="dimtitle">Row</span>
+    <div class="row rowctl">
+      <button class="btn sm" id="pRowLess" ${t.rowN <= 0 ? 'disabled' : ''} title="Remove one ${word} on each side">− ${word}s</button>
+      <span class="rowcount" id="pRowCount"><b>${t.count}</b> ${word}${t.count === 1 ? '' : 's'}</span>
+      <button class="btn sm" id="pRowMore" ${t.rowN >= max ? 'disabled' : ''} title="Add one ${word} on each side">+ ${word}s</button>
+    </div>
+    <label class="field">Spacing, centre to centre (mm)<input type="number" id="pRowPitch" min="${t.row.minPitch}" max="50" step="0.5" value="${fmt(t.rowPitch)}"></label>
+    <p class="note">Each step adds or removes one ${word} on both sides, up to ${max} per side (${2*max + 1} in total). X and Y are the centre of the middle ${word}; rotation turns the whole row.</p></div>`;
 }
 const DIM_FIELDS = {
   'custom-circle': [['Cut-out', [['cutD','Ø (mm)']]], ['Keep-out', [['koD','Ø (mm)']]]],
@@ -1285,7 +1345,7 @@ function rotateSelected(step){
 function mirrorSelected(){
   const p = selected && findPart(selected); if (!p) return;
   if (Math.abs(p.x) < 0.01){ toast('This part sits on the centre line, so its mirror copy would land on top of it.'); return; }
-  mutate(() => { const q = newPart({type:p.type, dims:p.dims, x:-p.x, y:p.y, rot:(360 - p.rot)%360}); state.parts.push(q); selected = q.id; });
+  mutate(() => { const q = newPart({type:p.type, dims:p.dims, row:p.row, x:-p.x, y:p.y, rot:(360 - p.rot)%360}); state.parts.push(q); selected = q.id; });
 }
 function duplicateSelected(){
   const p = selected && findPart(selected); if (!p) return;
@@ -1294,7 +1354,7 @@ function duplicateSelected(){
   let spot = null;
   for (const [dx,dy] of [[off,0],[-off,0],[0,-off],[0,off]]) if (isFree(p, p.x+dx, p.y+dy, p.rot)) { spot = {x:p.x+dx, y:p.y+dy}; break; }
   spot ||= findFreeSpot(p);
-  mutate(() => { const q = newPart({type:p.type, dims:p.dims, x:spot?spot.x:p.x, y:spot?spot.y:p.y, rot:p.rot}); state.parts.push(q); selected = q.id; });
+  mutate(() => { const q = newPart({type:p.type, dims:p.dims, row:p.row, x:spot?spot.x:p.x, y:spot?spot.y:p.y, rot:p.rot}); state.parts.push(q); selected = q.id; });
 }
 function deleteSelected(){
   if (!selected) return;
@@ -1481,7 +1541,7 @@ function plateShape(){
     shape.holes.push(path);
   };
   for (const m of pl.holes) if (m.role === 'mount') addHole({k:'c', x:m.x, y:m.y, r:m.d/2});
-  for (const p of state.parts) addHole(plateCutShape(p));
+  for (const p of state.parts) for (const sh of cutShapes(p)) addHole(sh);
   return shape;
 }
 function outlineShape(o){
@@ -1570,7 +1630,7 @@ function mfBase(pl, t){
 function mfPlate(){
   const pl = plate(), t = state.thickness, base = mfBase(pl, t), { Manifold, CrossSection } = MF;
   if (!state.parts.length) return base.translate([0, 0, 0]);
-  const cs = new CrossSection(state.parts.map(p => shapePoly(plateCutShape(p))), 'Positive');
+  const cs = new CrossSection(state.parts.flatMap(p => cutShapes(p).map(shapePoly)), 'Positive');
   const cut = Manifold.extrude(cs, t + 2).translate([0, 0, -1]);
   const res = base.subtract(cut);
   cs.delete(); cut.delete();
@@ -1630,7 +1690,7 @@ function decoBridges(ds){
   const ro = p => elementR(p) + ds.width;
   // things a bar must not cover: other parts' cut-outs and caps (+0.5 mm) and mounting holes with their chamfer
   const blockers = [];
-  for (const q of state.parts){
+  for (const q of state.parts.flatMap(elemsOf)){
     const tq = typeOf(q), cs = cutShape(q);
     blockers.push({id: q.id, label: q.label, sh: cs.k === 'c' ? {...cs, r: cs.r + 0.5} : cs});
     if (tq.cap && tq.cap.c === 'circle') blockers.push({id: q.id, label: q.label, sh: {k:'c', x:q.x, y:q.y, r: tq.cap.d/2 + 0.5}});
@@ -1711,7 +1771,7 @@ function mfDeco(){
     // 4. cut out button bodies, other parts and mounting holes through the whole piece
     const z0 = t - dep - 1, zh = dep + h + 2;
     const open = [];
-    for (const p of state.parts){
+    for (const p of state.parts.flatMap(elemsOf)){
       if (isButton(p)) continue;
       const tp = typeOf(p);
       open.push(shapePoly(cutShape(p)));
@@ -2015,7 +2075,7 @@ function rebuild3d(){
   }
   if (show3dParts){
     const acc = css('--accent');
-    for (const p of state.parts){
+    for (const p of state.parts.flatMap(elemsOf)){
       const tp = typeOf(p);
       const bad = errIds.has(p.id);
       const bodyMat = mat(bad ? css('--err') : acc, {transparent:true, opacity:0.35, depthWrite:false});
@@ -2075,7 +2135,7 @@ function stlFromGeometry(geo, hdr){
 function cutEntities(){
   const pl = plate();
   const out = { outline: pl.outline, cuts: [], mounts: pl.holes.filter(m => m.role === 'mount').map(m => ({k:'c', x:m.x, y:m.y, r:m.d/2})) };
-  for (const p of state.parts) out.cuts.push(plateCutShape(p));
+  for (const p of state.parts) out.cuts.push(...cutShapes(p));
   return out;
 }
 function dxfText(){
@@ -2103,9 +2163,10 @@ function svgText(){
 function bomCsv(){
   const rows = [['label','part','x_mm','y_mm','rotation_deg','cutout_mm','keepout_mm','depth_mm']];
   const sorted = [...state.parts].sort((a,b) => a.label.localeCompare(b.label, undefined, {numeric:true}));
-  for (const p of sorted){ const t = typeOf(p); rows.push([p.label, t.name, fmt(p.x), fmt(p.y), fmt(p.rot), dimText(t.cut), dimText(t.ko), t.depth]); }
+  for (const p of sorted){ const t = typeOf(p); rows.push([p.label, t.count ? `${t.name} (${t.count} in a row, ${fmt(t.rowPitch)} mm apart)` : t.name, fmt(p.x), fmt(p.y), fmt(p.rot), (t.count ? `${t.count} × ` : '') + dimText(t.cut), dimText(t.ko), t.depth]); }
   rows.push([]); rows.push(['part','quantity']);
-  const q = {}; for (const p of state.parts){ const t = typeOf(p), k = t.custom ? `${t.name} ${dimText(t.cut)}` : t.name; q[k] = (q[k]||0)+1; }
+  // rows count every element, so the quantity of "Multiple LED 5 mm" is the number of LEDs
+  const q = {}; for (const p of state.parts){ const t = typeOf(p), k = t.custom ? `${t.name} ${dimText(t.cut)}` : t.name; q[k] = (q[k]||0) + (t.count || 1); }
   for (const [k,v] of Object.entries(q)) rows.push([k, v]);
   return rows.map(r => r.map(c => /[",\n]/.test(String(c)) ? `"${String(c).replace(/"/g,'""')}"` : c).join(',')).join('\n') + '\n';
 }

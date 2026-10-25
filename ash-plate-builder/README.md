@@ -80,8 +80,15 @@ The part library. For each part it sets:
 - `clearance`: the safe space around the part. The keep-out zone is the largest of the hole, cap and PCB, plus the clearance on every side.
 - optional `keepout`, to set the keep-out shape exactly instead
 - `allowOverNoGo` and `display`, plus `rotatable: false` to lock rotation (every part rotates by default)
+- optional `row`, for a symmetric row of identical elements such as LEDs: `pitch` is the default centre-to-centre spacing, `maxPerSide` how many can be added on each side of the middle one
 
 The `_help` block in the file explains every field. The sizes are typical values, so check them against your parts' datasheets.
+
+### LED rows
+The *Indicators* group has **Single LED 5 mm**, **Single LED 3 mm** and **Multiple LED 5 mm**. A Multiple LED part starts as one LED. In the **Selected part** panel, **+ LEDs** adds one LED on each side and **− LEDs** removes one from each side, up to 5 per side (11 in total). You can also set the spacing there, 8 mm by default.
+- The part's X and Y are the centre of the middle LED. Rotating the part turns the whole row.
+- The keep-out is one rounded strip around the whole row.
+- Every LED gets its own hole in the STL, DXF and SVG. The parts list (CSV) gives the row's LED count and spacing, and the quantity counts LEDs.
 
 ### Custom parts
 For a one-off part that isn't in `parts.json`, use **Custom circle** or **Custom rectangle** under *Custom* in the parts list. Each one you place has its own sizes, which you set in the side panel when it's selected:

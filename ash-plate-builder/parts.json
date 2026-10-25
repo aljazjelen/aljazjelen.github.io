@@ -10,7 +10,8 @@
     "clearance: safe space around the part. The keep-out zone = the largest of hole, cap and pcb, plus clearance on every side.",
     "keepout (optional): set an exact keep-out shape instead of the computed one.",
     "Every part can be rotated; set rotatable: false to lock one. allowOverNoGo: true lets a part sit over the back plate's no-go areas (it must still avoid mounting holes).",
-    "display: true draws a screen in the 3D preview."
+    "display: true draws a screen in the 3D preview.",
+    "row (optional): makes a symmetric row of identical elements, e.g. LEDs. pitch = default centre-to-centre spacing, maxPerSide = how many can be added on each side of the middle one. The part's position is the middle element; the keep-out becomes one rounded strip around the whole row."
   ],
   "version": 1,
   "parts": {
@@ -57,18 +58,26 @@
       "clearance": 3
     },
     "led5": {
-      "name": "LED 5 mm", "group": "Indicators", "label": "LED",
+      "name": "Single LED 5 mm", "group": "Indicators", "label": "LED",
       "hole": { "shape": "circle", "d": 5.1 },
       "cap":  { "shape": "circle", "d": 5, "height": 4, "style": "led" },
       "pcb":  { "shape": "circle", "d": 5, "depth": 15 },
       "clearance": 1.5
     },
     "led3": {
-      "name": "LED 3 mm", "group": "Indicators", "label": "LED",
+      "name": "Single LED 3 mm", "group": "Indicators", "label": "LED",
       "hole": { "shape": "circle", "d": 3.1 },
       "cap":  { "shape": "circle", "d": 3, "height": 3, "style": "led" },
       "pcb":  { "shape": "circle", "d": 3, "depth": 15 },
       "clearance": 1
+    },
+    "led5row": {
+      "name": "Multiple LED 5 mm", "group": "Indicators", "label": "LEDS",
+      "hole": { "shape": "circle", "d": 5.1 },
+      "cap":  { "shape": "circle", "d": 5, "height": 4, "style": "led" },
+      "pcb":  { "shape": "circle", "d": 5, "depth": 15 },
+      "clearance": 1.5,
+      "row": { "pitch": 8, "maxPerSide": 5 }
     },
     "oled": {
       "name": "OLED 0.96″ window", "group": "Displays", "label": "OLED",
