@@ -217,6 +217,21 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
         <div class="body" id="issuesBox"></div>
       </section>
       <section class="card">
+        <h2>Deco</h2>
+        <div class="body">
+          <label class="check"><input type="checkbox" id="decoOn"> Rings around buttons</label>
+          <div class="row">
+            <label class="field">Height (mm)<input type="number" id="decoH" min="0.4" max="10" step="0.1"></label>
+            <label class="field">Width (mm)<input type="number" id="decoW" min="0.5" max="20" step="0.1"></label>
+          </div>
+          <div class="row">
+            <label class="field">Chamfer 45° (mm)<input type="number" id="decoC" min="0" step="0.1"></label>
+            <label class="field">Gap to cap (mm)<input type="number" id="decoG" min="0" max="5" step="0.1"></label>
+          </div>
+          <p class="note" id="decoNote"></p>
+        </div>
+      </section>
+      <section class="card">
         <h2><span class="grow">3D preview</span><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="partsChk" checked> Parts</label></h2>
         <div class="body"><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
           <p class="note">Drag to orbit, scroll or pinch to zoom. Translucent bodies show depth behind the plate; the lower slab is the back plate.</p></div>
@@ -227,11 +242,12 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
           <div class="exports">
             <button class="btn primary wide" id="exAll">Download everything <em>.zip</em></button>
             <button class="btn" id="exStl">Front plate <em>.stl</em></button>
+            <button class="btn" id="exDeco">Deco <em>.stl</em></button>
             <button class="btn" id="exDxf">Cut outline <em>.dxf</em></button>
             <button class="btn" id="exSvg">Cut outline <em>.svg</em></button>
             <button class="btn" id="exBom">Parts list <em>.csv</em></button>
             <button class="btn" id="exJson">Save layout <em>.json</em></button>
-            <button class="btn" id="imJson">Open layout <em>.json</em></button>
+            <button class="btn wide" id="imJson">Open layout <em>.json</em></button>
           </div>
           <input type="file" id="fileIn" accept=".json,application/json" hidden>
           <p class="note" id="exNote"></p>
@@ -692,6 +708,18 @@ let showKO = true, show3dParts = true;
 const $ = id => document.getElementById(id);
 const plate = () => PLATES.find(p => p.id === state.plateId) || PLATES[0];
 
+/* Deco: a separate printed piece that sits on top of the front plate. For now: rings around buttons. */
+const DECO_DEFAULTS = { rings: true, height: 2, width: 4, chamfer: 1, gap: 0.5 };
+function cleanDeco(d){
+  d = d && typeof d === 'object' ? d : {};
+  const num = (v, def) => (v === undefined || v === null || v === '' || !Number.isFinite(+v)) ? def : +v;
+  const height = clampNum(num(d.height, DECO_DEFAULTS.height), 0.4, 10), width = clampNum(num(d.width, DECO_DEFAULTS.width), 0.5, 20);
+  return { rings: d.rings === undefined ? DECO_DEFAULTS.rings : !!d.rings, height, width,
+           chamfer: clampNum(num(d.chamfer, DECO_DEFAULTS.chamfer), 0, Math.min(height, width)),
+           gap: clampNum(num(d.gap, DECO_DEFAULTS.gap), 0, 5) };
+}
+// Parts that get a ring: buttons, i.e. parts whose cap style is "button" with a round cap.
+const isButton = p => { const t = typeOf(p); return !!(t.cap && t.cap.kind === 'cap' && t.cap.c === 'circle'); };
 function newPart(o){
   const part = { id: 'p' + (nextId++), type:o.type, x:o.x||0, y:o.y||0, rot:o.rot||0, label:o.label||'' };
   if (isCustom(o.type)) part.dims = cleanDims(o.type, o.dims);
@@ -706,7 +734,7 @@ function autoLabel(short, list){
 }
 function makeExample(plateId){
   const pl = PLATES.find(p => p.id === plateId) || PLATES[0];
-  const s = { plateId: pl.id, thickness: pl.thickness, gap: pl.spacing, snap:1, parts:[] };
+  const s = { plateId: pl.id, thickness: pl.thickness, gap: pl.spacing, snap:1, deco: {...DECO_DEFAULTS}, parts:[] };
   const prev = state; state = s;
   for (const o of pl.example) if (o && knownType(o.type) && Number.isFinite(+o.x) && Number.isFinite(+o.y))
     s.parts.push(newPart({type:o.type, dims:o.dims, x:+o.x, y:+o.y, rot:+o.rot||0, label:o.label ? String(o.label) : '', __list:s.parts}));
@@ -721,6 +749,7 @@ function loadState(json){
   if (!PLATES.some(p=>p.id===s.plateId)) s.plateId = PLATES[0].id;
   s.thickness = clampNum(+s.thickness || 4, 2, 10);
   s.gap = clampNum(+s.gap || DEFAULT_GAP, 5, 60);
+  s.deco = cleanDeco(s.deco);
   s.snap = [0,0.5,1,2.5,5].includes(+s.snap) ? +s.snap : 1;
   const known = s.parts.filter(p => p && knownType(p.type));
   if (known.length < s.parts.length) setTimeout(() => toast(`${s.parts.length - known.length} part(s) use types that are not in parts.json and were left out.`), 0);
@@ -1170,7 +1199,7 @@ function renderHeader(){
 }
 
 function renderAll(rebuild3d = true){
-  validate(); render2d(); renderProps(); renderIssues(); renderHeader();
+  validate(); render2d(); renderProps(); renderIssues(); renderHeader(); renderDecoNote();
   if (rebuild3d) schedule3d();
 }
 function afterChange(){ renderAll(true); persist(); }
@@ -1188,6 +1217,12 @@ function initControls(){
     syncInputs();
   });
   $('thick').addEventListener('change', e => { const v = clampNum(+e.target.value||4, 2, 10); e.target.value = v; mutate(() => { state.thickness = v; }); });
+  const decoInputs = {decoOn:'rings', decoH:'height', decoW:'width', decoC:'chamfer', decoG:'gap'};
+  for (const [id, key] of Object.entries(decoInputs)) $(id).addEventListener('change', e => {
+    const v = e.target.type === 'checkbox' ? e.target.checked : +e.target.value;
+    mutate(() => { state.deco = cleanDeco({...state.deco, [key]: v}); });
+    syncInputs();
+  });
   $('gap').addEventListener('change', e => { const v = clampNum(+e.target.value||DEFAULT_GAP, 5, 60); e.target.value = v; mutate(() => { state.gap = v; }); });
   $('snapSel').addEventListener('change', e => { state.snap = +e.target.value; persist(); renderProps(); });
   $('koChk').addEventListener('change', e => { showKO = e.target.checked; render2d(); });
@@ -1215,7 +1250,26 @@ function initControls(){
     }
   });
 }
-function syncInputs(){ $('plateSel').value = state.plateId; $('thick').value = state.thickness; $('gap').value = state.gap; $('snapSel').value = String(state.snap); }
+function syncDeco(){
+  const d = cleanDeco(state.deco), a = document.activeElement;
+  $('decoOn').checked = d.rings;
+  for (const [id, v] of [['decoH', d.height], ['decoW', d.width], ['decoC', d.chamfer], ['decoG', d.gap]]) if ($(id) !== a) $(id).value = v;
+  for (const id of ['decoH','decoW','decoC','decoG']) $(id).disabled = !d.rings;
+}
+function decoUnavailable(){
+  if (!cleanDeco(state.deco).rings) return 'Rings are turned off.';
+  if (mfState === 'loading') return 'The 3D engine is still loading.';
+  if (mfState === 'failed') return 'The 3D engine could not load, so the deco can\'t be built. Reload the page to try again.';
+  if (!state.parts.some(isButton)) return 'Add a button to get a ring.';
+  return '';
+}
+function renderDecoNote(){
+  syncDeco();
+  const d = cleanDeco(state.deco), n = state.parts.filter(isButton).length, why = decoUnavailable();
+  $('decoNote').textContent = why || `${n} ring${n === 1 ? '' : 's'}, ${fmt(d.height)} mm high, ${fmt(d.width)} mm wide. Exported as its own STL in the same position as the plate, so both files line up for a multi-colour print.`;
+  $('exDeco').disabled = !!why;
+}
+function syncInputs(){ syncDeco(); $('plateSel').value = state.plateId; $('thick').value = state.thickness; $('gap').value = state.gap; $('snapSel').value = String(state.snap); }
 
 /* ---------------- 3D preview ---------------- */
 let three = null, rebuildTimer = null;
@@ -1254,7 +1308,7 @@ async function loadManifold(){
     const wasm = await mod.default({ locateFile: () => url('vendor/manifold.wasm') });
     wasm.setup(); MF = wasm; mfState = 'ready';
   } catch(e){ mfState = 'failed'; console.warn('manifold-3d could not load; plates are exported without chamfers.', e); }
-  renderHeader(); renderIssues(); schedule3d();
+  renderHeader(); renderIssues(); renderDecoNote(); schedule3d();
 }
 function circlePoly(x, y, r){
   const n = Math.max(32, Math.ceil(Math.PI / Math.acos(Math.max(-1, 1 - 0.01/r))));
@@ -1319,6 +1373,45 @@ function mfPlate(){
   cs.delete(); cut.delete();
   return res;
 }
+// The deco piece: a ring around every button, 45° chamfer on the ring's top outer edge, merged where rings
+// overlap, kept on the flat top of the plate and clear of every cut-out, cap and mounting hole.
+function mfDeco(){
+  const ds = cleanDeco(state.deco);
+  if (!ds.rings || !MF) return null;
+  const buttons = state.parts.filter(isButton);
+  if (!buttons.length) return null;
+  const { Manifold, CrossSection } = MF, trash = [];
+  const T = x => (trash.push(x), x);
+  try {
+    const pl = plate(), t = state.thickness, ch = chamferFor(pl, t), h = ds.height, c = ds.chamfer;
+    const rings = buttons.map(p => {
+      const tp = typeOf(p), ri = Math.max(tp.cap.d, tp.cut.c === 'circle' ? tp.cut.d : 0)/2 + ds.gap, ro = ri + ds.width;
+      // cross-section of the ring (x = radius, y = height), revolved around the button's axis
+      const prof = c > 0 ? [[ri,0],[ro,0],[ro,h-c],[ro-c,h],[ri,h]] : [[ri,0],[ro,0],[ro,h],[ri,h]];
+      return T(T(Manifold.revolve(T(new CrossSection([prof])), 72)).translate([p.x, p.y, t]));
+    });
+    let deco = T(Manifold.union(rings));
+    // stay on the flat top: inside the outline, inward of its chamfer
+    const top = T(T(new CrossSection([pl.outline])).offset(-ch.outline, 'Round'));
+    deco = T(deco.intersect(T(T(Manifold.extrude(top, h + 2)).translate([0, 0, t - 1]))));
+    // keep openings clear: every part's cut-out and cap (plus the gap) and mounting holes with their chamfer
+    const open = [];
+    for (const p of state.parts){ const tp = typeOf(p); open.push(shapePoly(cutShape(p))); if (tp.cap && tp.cap.c === 'circle') open.push(circlePoly(p.x, p.y, tp.cap.d/2)); }
+    // 0.01 mm less than the ring's inner edge, so a button's opening doesn't coincide with its own ring wall
+    let ocs = T(new CrossSection(open, 'Positive'));
+    const grow = ds.gap - 0.01;
+    if (grow > 0) ocs = T(ocs.offset(grow, 'Round'));
+    const mounts = pl.holes.filter(m => m.role === 'mount').map(m => circlePoly(m.x, m.y, m.d/2 + ch.mount + 0.5));
+    if (mounts.length) ocs = T(CrossSection.union(ocs, T(new CrossSection(mounts, 'Positive'))));
+    deco = T(deco.subtract(T(T(Manifold.extrude(ocs, h + 2)).translate([0, 0, t - 1]))));
+    if (deco.isEmpty()) return null;
+    return deco.translate([0, 0, 0]);
+  } finally { for (const x of trash) x.delete(); }
+}
+function decoGeometry(){
+  try { const m = mfDeco(); if (!m) return null; const g = mfToGeometry(m); m.delete(); return g; }
+  catch(e){ console.warn('Deco could not be built.', e); return null; }
+}
 function mfToGeometry(m){
   const mesh = m.getMesh(), np = mesh.numProp, tv = mesh.triVerts, vp = mesh.vertProperties;
   const pos = new Float32Array(tv.length * 3);
@@ -1370,6 +1463,8 @@ function rebuild3d(){
   let geo;
   try { geo = frontPlateGeometry(); } catch(e){ geo = null; }
   if (geo) g.add(new THREE.Mesh(geo, mat(css('--plate'))));
+  const dgeo = decoGeometry();
+  if (dgeo) g.add(new THREE.Mesh(dgeo, mat(css('--accent'), {roughness: 0.55})));
   const backShape = outlineShape(pl.outline);
   for (const m of pl.holes){
     const ph = new THREE.Path();
@@ -1422,13 +1517,12 @@ new MutationObserver(() => schedule3d()).observe(document.documentElement, {attr
 
 /* ---------------- Exports ---------------- */
 const baseName = () => `ash-front-plate-${plate().id}`;
-function stlBinary(){
-  const geo = frontPlateGeometry();
+function stlBinary(){ return stlFromGeometry(frontPlateGeometry(), 'ASH front plate - Immersion Dynamics'); }
+function stlFromGeometry(geo, hdr){
   const pos = geo.attributes.position.array;
   const idx = geo.index ? geo.index.array : null;
   const n = idx ? idx.length/3 : pos.length/9;
   const buf = new ArrayBuffer(84 + 50*n), dv = new DataView(buf);
-  const hdr = 'ASH front plate - Immersion Dynamics';
   for (let i=0;i<Math.min(80,hdr.length);i++) dv.setUint8(i, hdr.charCodeAt(i));
   dv.setUint32(80, n, true);
   let o = 84;
@@ -1524,6 +1618,12 @@ $('cfCancel').addEventListener('click', () => { $('confirm').hidden = true; });
 $('confirm').addEventListener('click', e => { if (e.target === $('confirm')) $('confirm').hidden = true; });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('confirm').hidden){ $('confirm').hidden = true; e.stopImmediatePropagation(); } }, true);
 $('exStl').addEventListener('click', () => { if (needThree()) guarded(() => saveFile(baseName()+'.stl', stlBinary())); });
+$('exDeco').addEventListener('click', () => {
+  if (!needThree()) return;
+  const geo = decoGeometry();
+  if (!geo){ toast(decoUnavailable() || 'There is no deco to export.'); return; }
+  guarded(() => saveFile(baseName()+'-deco.stl', stlFromGeometry(geo, 'ASH deco - Immersion Dynamics')));
+});
 $('exDxf').addEventListener('click', () => guarded(() => saveFile(baseName()+'.dxf', dxfText())));
 $('exSvg').addEventListener('click', () => guarded(() => saveFile(baseName()+'.svg', svgText())));
 $('exBom').addEventListener('click', () => saveFile(baseName()+'-parts.csv', bomCsv()));
@@ -1533,6 +1633,7 @@ async function exportAll(){
   if (!window.JSZip){ toast('The zip library did not load. Use the single-file buttons instead.'); return; }
   const z = new JSZip(), b = baseName();
   z.file(b+'.stl', stlBinary()); z.file(b+'.dxf', dxfText()); z.file(b+'.svg', svgText());
+  const dgeo = decoGeometry(); if (dgeo) z.file(b+'-deco.stl', stlFromGeometry(dgeo, 'ASH deco - Immersion Dynamics'));
   z.file(b+'-parts.csv', bomCsv()); z.file(b+'-layout.json', layoutJson());
   saveFile(b+'.zip', await z.generateAsync({type:'blob'}));
 }

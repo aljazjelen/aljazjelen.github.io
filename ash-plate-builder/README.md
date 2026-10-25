@@ -16,6 +16,7 @@ To run it locally, open `index.html` in a browser. It needs internet access to l
 | File | Use |
 |---|---|
 | `.stl` | Front plate for 3D printing (binary STL, mm) |
+| `-deco.stl` | The deco piece on its own, in the same position as the plate |
 | `.dxf` | Cut outline with layers `OUTLINE`, `CUTOUTS` and `MOUNTING` (mm) |
 | `.svg` | Same outline at 1:1 in mm, for laser cutting |
 | `-parts.csv` | Every part with its position, plus quantities per part type |
@@ -78,6 +79,14 @@ For a one-off part that isn't in `parts.json`, use **Custom circle** or **Custom
 - the keep-out: the zone other parts, holes and the edge margin must stay clear of. It can't be smaller than the cut-out.
 
 Custom parts rotate, mirror and duplicate like any other part. They're saved with the layout and listed with their sizes in the parts list (CSV). They have no depth, so the plate-spacing check doesn't apply to them.
+
+### Deco
+The deco is a separate printed piece that sits on top of the front plate, exported as its own STL (`-deco.stl`). It uses the same coordinates as the plate STL, so importing both into a slicer lines them up, for example for a multi-colour print. It's generated from the layout. For now it has one feature, set in the **Deco** panel:
+- **Rings around buttons:** a ring around every part whose cap style is `button`. Defaults are 2 mm high and 4 mm wide, with a 1 mm 45° chamfer on the top outer edge and a 0.5 mm gap to the button cap.
+- Rings that touch are merged into one piece.
+- The deco stays on the flat top of the plate, inside the outline chamfer, and leaves every cut-out, cap and mounting hole clear.
+
+The deco settings are saved with the layout.
 
 ### Built-in copy
 `index.html` carries a built-in copy of `parts.json` and `wheels/`. It's only used when those files can't be loaded, for example when the page is opened straight from disk.
