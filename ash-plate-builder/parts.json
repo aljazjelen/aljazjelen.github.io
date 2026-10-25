@@ -8,7 +8,7 @@
     "cap: the element you see and press: button cap, knob, lever, LED. height is only used for the 3D preview. style: button | knob | lever | led. Leave cap out for flush parts like a display. For buttons, the cap passes through the deco ring and sleeve.",
     "pcb: the board or switch body under the plate. depth = how far it reaches behind the plate (checked against Plate spacing).",
     "clearance: safe space around the part. The keep-out zone = the largest of hole, cap and pcb, plus clearance on every side.",
-    "keepout (optional): set an exact keep-out shape instead of the computed one.",
+    "keepout (optional): set an exact keep-out shape instead of the computed one. The keep-out is the only thing the fit checks use (edge margin, mounting holes, no-go areas, other parts), so the hole, cap or counterbore may reach beyond it.",
     "Every part can be rotated; set rotatable: false to lock one. allowOverNoGo: true lets a part sit over the back plate's no-go areas (it must still avoid mounting holes).",
     "display: true draws a screen in the 3D preview.",
     "counterbore (optional): a wider blind pocket cut from the top of the plate around the hole, e.g. { \"shape\": \"circle\", \"d\": 32, \"depth\": 1 }. The hole still goes all the way through; at least 0.4 mm of plate is always left under the pocket.",
@@ -51,6 +51,7 @@
       "cap":  { "shape": "circle", "d": 28, "height": 10, "style": "knob" },
       "counterbore": { "shape": "circle", "d": 32, "depth": 1 },
       "pcb":  { "shape": "rect", "w": 27.2, "h": 27.2, "r": 1, "depth": 15 },
+      "keepout": { "shape": "rect", "w": 27.5, "h": 27.5 },
       "clearance": 0,
       "deco": false
     },
