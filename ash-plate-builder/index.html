@@ -231,6 +231,10 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
             <label class="field" title="Sleeve that goes into the button hole. The plate hole grows by twice this.">Sleeve wall (mm)<input type="number" id="decoS" min="0" step="0.1"></label>
             <label class="field" title="How far the sleeve reaches into the plate. 0 = no sleeve.">Sleeve depth (mm)<input type="number" id="decoD" min="0" step="0.5"></label>
           </div>
+          <label class="check"><input type="checkbox" id="decoB"> Connect nearby buttons</label>
+          <div class="row">
+            <label class="field" title="Buttons whose rings are at most this far apart, edge to edge, are joined by a bar.">Connect when gap ≤ (mm)<input type="number" id="decoBG" min="0" max="30" step="0.5"></label>
+          </div>
           <p class="note" id="decoNote"></p>
         </div>
       </section>
@@ -714,7 +718,9 @@ const plate = () => PLATES.find(p => p.id === state.plateId) || PLATES[0];
 /* Deco: a separate printed piece that sits on top of the front plate. For now: rings around buttons. */
 // Ring: sits on the plate around the button body. Sleeve: same piece, goes down into the button hole between the
 // button and the plate; the plate's button hole grows by 2 × wall so the sleeve fits.
-const DECO_DEFAULTS = { rings: true, height: 2, width: 4, chamfer: 1, wall: 0.5, depth: 3 };
+// Bridges: buttons whose rings are at most bridgeGap apart (edge to edge) are joined by a bar.
+const DECO_DEFAULTS = { rings: true, height: 2, width: 4, chamfer: 1, wall: 0.5, depth: 3, bridges: true, bridgeGap: 6 };
+const DECO_SMOOTH = 1.5;   // mm: radius of the rounded transition where a bar meets a ring
 function cleanDeco(d){
   d = d && typeof d === 'object' ? d : {};
   const num = (v, def) => (v === undefined || v === null || v === '' || !Number.isFinite(+v)) ? def : +v;
@@ -722,7 +728,9 @@ function cleanDeco(d){
   return { rings: d.rings === undefined ? DECO_DEFAULTS.rings : !!d.rings, height, width,
            chamfer: clampNum(num(d.chamfer, DECO_DEFAULTS.chamfer), 0, Math.min(height, width)),
            wall: clampNum(num(d.wall, DECO_DEFAULTS.wall), 0, Math.max(0, width - 0.5)),
-           depth: clampNum(num(d.depth, DECO_DEFAULTS.depth), 0, 20) };
+           depth: clampNum(num(d.depth, DECO_DEFAULTS.depth), 0, 20),
+           bridges: d.bridges === undefined ? DECO_DEFAULTS.bridges : !!d.bridges,
+           bridgeGap: clampNum(num(d.bridgeGap, DECO_DEFAULTS.bridgeGap), 0, 30) };
 }
 // Parts that get a ring: buttons, i.e. parts whose cap style is "button" with a round cap.
 const isButton = p => { const t = typeOf(p); return !!(t.cap && t.cap.kind === 'cap' && t.cap.c === 'circle' && t.cut.c === 'circle'); };
@@ -1229,7 +1237,7 @@ function initControls(){
     syncInputs();
   });
   $('thick').addEventListener('change', e => { const v = clampNum(+e.target.value||4, 2, 10); e.target.value = v; mutate(() => { state.thickness = v; }); });
-  const decoInputs = {decoOn:'rings', decoH:'height', decoW:'width', decoC:'chamfer', decoS:'wall', decoD:'depth'};
+  const decoInputs = {decoOn:'rings', decoH:'height', decoW:'width', decoC:'chamfer', decoS:'wall', decoD:'depth', decoB:'bridges', decoBG:'bridgeGap'};
   for (const [id, key] of Object.entries(decoInputs)) $(id).addEventListener('change', e => {
     const v = e.target.type === 'checkbox' ? e.target.checked : +e.target.value;
     mutate(() => { state.deco = cleanDeco({...state.deco, [key]: v}); });
@@ -1264,8 +1272,8 @@ function initControls(){
 }
 function syncDeco(){
   const d = cleanDeco(state.deco), a = document.activeElement;
-  $('decoOn').checked = d.rings;
-  for (const [id, v] of [['decoH', d.height], ['decoW', d.width], ['decoC', d.chamfer], ['decoS', d.wall], ['decoD', d.depth]]) if ($(id) !== a) $(id).value = v;
+  $('decoOn').checked = d.rings; $('decoB').checked = d.bridges; $('decoB').disabled = !d.rings; $('decoBG').disabled = !d.rings || !d.bridges;
+  for (const [id, v] of [['decoH', d.height], ['decoW', d.width], ['decoC', d.chamfer], ['decoS', d.wall], ['decoD', d.depth], ['decoBG', d.bridgeGap]]) if ($(id) !== a) $(id).value = v;
   for (const id of ['decoH','decoW','decoC','decoS','decoD']) $(id).disabled = !d.rings;
 }
 function decoUnavailable(){
@@ -1280,7 +1288,12 @@ function renderDecoNote(){
   const d = cleanDeco(state.deco), n = state.parts.filter(isButton).length, why = decoUnavailable();
   const w = sleeveWall(), dep = Math.min(d.depth, state.thickness);
   const sleeve = w > 0 ? ` Each ring has a ${fmt(w)} mm sleeve reaching ${fmt(dep)} mm into the plate${d.depth > state.thickness ? ' (limited to the plate thickness)' : ''}, so the front plate's button holes are ${fmt(2*w)} mm larger.` : ' No sleeve.';
-  $('decoNote').textContent = why || `${n} ring${n === 1 ? '' : 's'}, ${fmt(d.height)} mm high, ${fmt(d.width)} mm wide.${sleeve} Exported as its own STL in the same position as the plate.`;
+  let bridges = '';
+  if (!why && d.bridges){
+    const br = decoBridges(d);
+    bridges = ` ${br.pairs.length} bridge${br.pairs.length === 1 ? '' : 's'} between buttons up to ${fmt(d.bridgeGap)} mm apart.` + (br.skipped.length ? ` Not connected: ${br.skipped.join(', ')}.` : '');
+  }
+  $('decoNote').textContent = why || `${n} ring${n === 1 ? '' : 's'}, ${fmt(d.height)} mm high, ${fmt(d.width)} mm wide.${bridges}${sleeve} Exported as its own STL in the same position as the plate.`;
   $('exDeco').disabled = !!why;
 }
 function syncInputs(){ syncDeco(); $('plateSel').value = state.plateId; $('thick').value = state.thickness; $('gap').value = state.gap; $('snapSel').value = String(state.snap); }
@@ -1334,6 +1347,27 @@ function chamferFor(pl, t){
   const ch = pl.chamfer || {outline:0, mountHoles:0}, lim = t*0.9;    // leave some straight wall
   return { outline: Math.min(ch.outline, lim), mount: Math.min(ch.mountHoles, lim), clamped: ch.outline > lim || ch.mountHoles > lim };
 }
+// Cutters for a 45° chamfer of size c along the top edge (at height zTop) of a closed contour: a cone swept
+// along the edge removes everything within c of it. The material must be on the left of the contour's
+// direction (counter-clockwise outer edges, clockwise holes), as CrossSection.toPolygons() returns them.
+// The cones start d outside the wall and below the chamfer line so they cross the wall cleanly instead of
+// touching it along a line, which would leave zero-thickness slivers in the STL. The caller deletes them.
+function edgeChamferCutters(o, zTop, c){
+  const { Manifold } = MF, e = 0.5, seg = 16, d = 0.01, n = o.length, out = [];
+  const ring = (x, y, z, r) => Array.from({length: seg}, (_, k) => { const a = 2*Math.PI*k/seg; return [x + r*Math.cos(a), y + r*Math.sin(a), z]; });
+  const tips = o.map((p, i) => {             // each point moved d away from the material along the corner bisector
+    const a = o[(i-1+n) % n], b = o[(i+1) % n];
+    const n1 = [p[1]-a[1], a[0]-p[0]], n2 = [b[1]-p[1], p[0]-b[0]];
+    const l1 = Math.hypot(n1[0], n1[1]) || 1, l2 = Math.hypot(n2[0], n2[1]) || 1;
+    const m = [n1[0]/l1 + n2[0]/l2, n1[1]/l1 + n2[1]/l2], lm = Math.hypot(m[0], m[1]) || 1;
+    return [p[0] + m[0]/lm*d, p[1] + m[1]/lm*d];
+  });
+  for (let i = 0; i < n; i++){
+    const a = tips[i], b = tips[(i+1) % n];
+    out.push(Manifold.hull([[a[0], a[1], zTop - c - d], [b[0], b[1], zTop - c - d], ...ring(a[0], a[1], zTop + e, c + e + d), ...ring(b[0], b[1], zTop + e, c + e + d)]));
+  }
+  return out;
+}
 // Plate body with mounting holes and chamfers; depends only on the wheel and thickness, so it is cached.
 function mfBase(pl, t){
   const ch = chamferFor(pl, t), key = JSON.stringify([pl.id, t, ch]);
@@ -1348,24 +1382,9 @@ function mfBase(pl, t){
     let body = T(Manifold.extrude(cs, t));
     // The cutters start a hair (d) outside the plate wall and below the chamfer line, so they cross the
     // wall cleanly instead of touching it along a line, which would leave zero-thickness slivers in the STL.
-    const cutters = [], e = 0.5, seg = 16, d = 0.01;
-    const ring = (x, y, z, r) => Array.from({length: seg}, (_, k) => { const a = 2*Math.PI*k/seg; return [x + r*Math.cos(a), y + r*Math.sin(a), z]; });
+    const cutters = [], e = 0.5, d = 0.01;
     const c = ch.outline;
-    if (c > 0){
-      // 45° cone swept along the outline: everything within c of the top edge is removed.
-      const o = pl.outline, n = o.length;
-      const tips = o.map((p, i) => {             // each outline point moved d outward along the corner bisector
-        const a = o[(i-1+n) % n], b = o[(i+1) % n];
-        const n1 = [p[1]-a[1], a[0]-p[0]], n2 = [b[1]-p[1], p[0]-b[0]];
-        const l1 = Math.hypot(n1[0], n1[1]) || 1, l2 = Math.hypot(n2[0], n2[1]) || 1;
-        const m = [n1[0]/l1 + n2[0]/l2, n1[1]/l1 + n2[1]/l2], lm = Math.hypot(m[0], m[1]) || 1;
-        return [p[0] + m[0]/lm*d, p[1] + m[1]/lm*d];
-      });
-      for (let i = 0; i < n; i++){
-        const a = tips[i], b = tips[(i+1) % n];
-        cutters.push(T(Manifold.hull([[a[0], a[1], t - c - d], [b[0], b[1], t - c - d], ...ring(a[0], a[1], t + e, c + e + d), ...ring(b[0], b[1], t + e, c + e + d)])));
-      }
-    }
+    if (c > 0) for (const h of edgeChamferCutters(pl.outline, t, c)) cutters.push(T(h));
     const cm = ch.mount;
     if (cm > 0) for (const m of mounts){
       const r = m.d/2;
@@ -1387,18 +1406,94 @@ function mfPlate(){
   cs.delete(); cut.delete();
   return res;
 }
-// The deco piece, one ring per button, revolved from this cross-section (r = radius from the button axis,
-// z = height above the plate's top face):
+// A flat shape (CrossSection) extruded from z0 to z0 + h with a 45° chamfer of size c on its top edge, built
+// directly as a mesh: bottom face, vertical walls up to z0 + h - c, a sloped band up to the outline moved c
+// inward (each corner moved along its bisector, so every band face is exactly 45°), and the top face.
+// Returns null when the inward outline isn't valid (e.g. a neck narrower than 2c); the caller then falls back.
+function chamferedPrism(fp, z0, h, c){
+  const { Manifold, Mesh, CrossSection, triangulate } = MF;
+  const P = fp.toPolygons().filter(q => q.length >= 3);
+  if (!P.length) return null;
+  const inward = q => q.map((p, i) => {          // material is on the left of each contour's direction
+    const n = q.length, a = q[(i-1+n) % n], b = q[(i+1) % n];
+    const n1 = [a[1]-p[1], p[0]-a[0]], n2 = [p[1]-b[1], b[0]-p[0]];
+    const l1 = Math.hypot(n1[0], n1[1]) || 1, l2 = Math.hypot(n2[0], n2[1]) || 1;
+    const u1 = [n1[0]/l1, n1[1]/l1], u2 = [n2[0]/l2, n2[1]/l2];
+    const m = [u1[0] + u2[0], u1[1] + u2[1]], lm = Math.hypot(m[0], m[1]);
+    if (lm < 1e-9) return null;
+    const cos = (m[0]*u1[0] + m[1]*u1[1]) / lm;
+    if (cos < 0.25) return null;                  // corner too sharp for a clean miter
+    return [p[0] + m[0]/lm * c/cos, p[1] + m[1]/lm * c/cos];
+  });
+  const Q = c > 0 ? P.map(inward) : null;
+  if (Q){
+    if (Q.some(q => q.some(v => !v))) return null;
+    // valid only if the moved outlines don't cross: their filled area must equal their signed area
+    const signed = Q.reduce((s, q) => s + polyArea(q), 0);
+    const cs = new CrossSection(Q, 'Positive'), area = cs.area(); cs.delete();
+    if (!(signed > 0) || Math.abs(area - signed) > 1e-3 * Math.max(1, signed)) return null;
+  }
+  const verts = [], tris = [];
+  const layer = (contours, z) => { const base = verts.length/3; for (const q of contours) for (const [x, y] of q) verts.push(x, y, z); return base; };
+  const L0 = layer(P, z0), L1 = layer(P, z0 + h - (Q ? c : 0)), L2 = Q ? layer(Q, z0 + h) : L1;
+  for (const [a, b, d] of triangulate(P)) tris.push(L0 + a, L0 + d, L0 + b);          // bottom, facing down
+  for (const [a, b, d] of triangulate(Q || P)) tris.push(L2 + a, L2 + b, L2 + d);      // top, facing up
+  let off = 0;
+  for (const q of P){
+    const n = q.length;
+    for (let i = 0; i < n; i++){
+      const j = (i + 1) % n, a = off + i, b = off + j;
+      tris.push(L0 + a, L0 + b, L1 + b, L0 + a, L1 + b, L1 + a);                       // wall
+      if (Q) tris.push(L1 + a, L1 + b, L2 + b, L1 + a, L2 + b, L2 + a);                // 45° band
+    }
+    off += n;
+  }
+  const m = new Manifold(new Mesh({ numProp: 3, vertProperties: new Float32Array(verts), triVerts: new Uint32Array(tris) }));
+  if (m.status() !== 'NoError'){ m.delete(); return null; }
+  return m;
+}
+// Which buttons get joined by a bridge, and which bridges were skipped because they would cover something.
+function decoBridges(ds){
+  const buttons = state.parts.filter(isButton), pairs = [], skipped = [];
+  if (!ds.bridges) return { pairs, skipped };
+  const pl = plate(), ch = chamferFor(pl, state.thickness);
+  const ro = p => typeOf(p).cut.d/2 + ds.width;
+  // things a bar must not cover: other parts' cut-outs and caps (+0.5 mm) and mounting holes with their chamfer
+  const blockers = [];
+  for (const q of state.parts){
+    const tq = typeOf(q), cs = cutShape(q);
+    blockers.push({id: q.id, label: q.label, sh: cs.k === 'c' ? {...cs, r: cs.r + 0.5} : cs});
+    if (tq.cap && tq.cap.c === 'circle') blockers.push({id: q.id, label: q.label, sh: {k:'c', x:q.x, y:q.y, r: tq.cap.d/2 + 0.5}});
+  }
+  for (const m of pl.holes.filter(h => h.role === 'mount')) blockers.push({id: null, label: 'a mounting hole', sh: {k:'c', x:m.x, y:m.y, r: m.d/2 + ch.mount + 0.5}});
+  for (let i = 0; i < buttons.length; i++) for (let j = i + 1; j < buttons.length; j++){
+    const A = buttons[i], B = buttons[j], dist = Math.hypot(B.x - A.x, B.y - A.y);
+    if (dist - ro(A) - ro(B) > ds.bridgeGap + 1e-9) continue;
+    const hw = Math.max(Math.min(ro(A), ro(B)) - ds.chamfer, Math.min(typeOf(A).cut.d, typeOf(B).cut.d)/2 + 0.5);
+    const ux = (B.x - A.x)/dist, uy = (B.y - A.y)/dist, nx = -uy*hw, ny = ux*hw;
+    const bar = [[A.x + nx, A.y + ny], [A.x - nx, A.y - ny], [B.x - nx, B.y - ny], [B.x + nx, B.y + ny]];
+    // only the part of the bar between the two rings matters for blocking
+    const inner = [[A.x + ux*ro(A) + nx, A.y + uy*ro(A) + ny], [A.x + ux*ro(A) - nx, A.y + uy*ro(A) - ny], [B.x - ux*ro(B) - nx, B.y - uy*ro(B) - ny], [B.x - ux*ro(B) + nx, B.y - uy*ro(B) + ny]];
+    const hit = dist > ro(A) + ro(B) ? blockers.find(k => k.id !== A.id && k.id !== B.id && overlap({k:'p', pts: ccw(inner)}, k.sh)) : null;
+    if (hit) skipped.push(`${A.label}–${B.label} (would cover ${hit.label})`);
+    else pairs.push({A, B, bar: ccw(bar)});
+  }
+  return { pairs, skipped };
+}
+// The deco piece. Seen from above it is one outline: a disc of radius ri + width around every button, plus a bar
+// between buttons that are close together, with the joints rounded (DECO_SMOOTH). That outline is clipped to the
+// flat top of the plate, extruded to the ring height, and its outer edge gets the 45° chamfer all the way round.
+// Below it, every button gets a sleeve that goes into the plate's (enlarged) button hole:
 //
 //        ri          ro-c ro
-//    z=h  ┌───────────┐╲          ← 45° chamfer on the top outer edge
+//    z=h  ┌───────────┐╲          ← 45° chamfer along the whole outer edge
 //         │   ring    │ │
 //    z=0  │   ┌───────┘─┘  ← sits on the plate
 //         │sl.│               ri = button hole radius (the button body passes through)
 //  z=-dep └───┘               rs = ri + wall = the plate's enlarged hole radius
 //         ri  rs   (the sleeve is 0.02 mm under rs so its facets stay inside the plate hole)
 //
-// Rings merge where they touch, stay inside the outline's chamfer, and keep other parts and mounting holes clear.
+// Button bodies, other parts' cut-outs and caps, and mounting holes are cut out of the whole piece.
 function mfDeco(){
   const ds = cleanDeco(state.deco);
   if (!ds.rings || !MF) return null;
@@ -1409,20 +1504,37 @@ function mfDeco(){
   try {
     const pl = plate(), t = state.thickness, ch = chamferFor(pl, t), h = ds.height, c = ds.chamfer;
     const dep = ds.wall > 0 ? Math.min(ds.depth, t) : 0;
-    const rings = buttons.map((p, i) => {
-      // rs - 0.02: the sleeve's facets stay inside the plate hole's facets (both are polygons of the same circle)
-      const ri = typeOf(p).cut.d/2, rs = ri + ds.wall - 0.02, ro = ri + ds.width;
-      const top = c > 0 ? [[ro, 0], [ro, h-c], [ro-c, h], [ri, h]] : [[ro, 0], [ro, h], [ri, h]];
-      const prof = dep > 0 ? [[ri, -dep], [rs, -dep], [rs, 0], ...top] : [[ri, 0], ...top];
-      // each ring is turned by a different small angle so the facet corners of touching rings never line up
-      return T(T(T(Manifold.revolve(T(new CrossSection([prof])), 72)).rotate([0, 0, (i * 1.37) % 5])).translate([p.x, p.y, t]));
-    });
-    let deco = T(Manifold.union(rings));
+    // 1. footprint: discs + bridges, joints rounded, clipped to the flat top of the plate
+    const discs = buttons.map(p => circlePoly(p.x, p.y, typeOf(p).cut.d/2 + ds.width));
+    const bars = decoBridges(ds).pairs.map(b => b.bar);
+    let fp = T(new CrossSection([...discs, ...bars], 'Positive'));
+    if (bars.length) fp = T(T(fp.offset(DECO_SMOOTH, 'Round')).offset(-DECO_SMOOTH, 'Round'));
+    fp = T(fp.intersect(T(T(new CrossSection([pl.outline])).offset(-ch.outline, 'Round'))));
+    // Simplify to 0.02 mm: drops the very short segments the rounding leaves behind. Each segment gets its own
+    // chamfer cutter, so this keeps the build fast and avoids near-identical cutters that confuse the booleans.
+    fp = T(fp.simplify(0.02));
+    if (fp.isEmpty()) return null;
+    // 2. extrude and chamfer the outer edge (directly as a mesh; the slower cutter method is the fallback)
+    let deco = chamferedPrism(fp, t, h, c);
+    if (deco) T(deco);
+    else {
+      deco = T(T(Manifold.extrude(fp, h)).translate([0, 0, t]));
+      if (c > 0){
+        const cutters = [];
+        for (const contour of fp.toPolygons()) for (const k of edgeChamferCutters(contour, t + h, c)) cutters.push(T(k));
+        deco = T(deco.subtract(T(Manifold.union(cutters))));
+      }
+    }
+    // 3. sleeves (they reach up into the ring a little so the two overlap instead of just touching)
+    if (dep > 0){
+      const sleeves = buttons.map((p, i) => {
+        const ri = typeOf(p).cut.d/2, rs = ri + ds.wall - 0.02, top = Math.min(h/2, 1);
+        return T(T(T(Manifold.cylinder(dep + top, rs, rs, 72)).rotate([0, 0, (i * 1.37) % 5])).translate([p.x, p.y, t - dep]));
+      });
+      deco = T(Manifold.union([deco, ...sleeves]));
+    }
+    // 4. cut out button bodies, other parts and mounting holes through the whole piece
     const z0 = t - dep - 1, zh = dep + h + 2;
-    // the ring part stays on the flat top: inside the outline, inward of its chamfer
-    const top = T(T(new CrossSection([pl.outline])).offset(-ch.outline, 'Round'));
-    deco = T(deco.intersect(T(T(Manifold.extrude(top, zh)).translate([0, 0, z0]))));
-    // keep openings clear: other parts' cut-outs and caps (+0.5 mm), button bodies, mounting holes with their chamfer
     const open = [];
     for (const p of state.parts){
       if (isButton(p)) continue;
@@ -1430,8 +1542,7 @@ function mfDeco(){
       open.push(shapePoly(cutShape(p)));
       if (tp.cap && tp.cap.c === 'circle') open.push(circlePoly(p.x, p.y, tp.cap.d/2));
     }
-    // button bodies, 0.01 mm under the ring's inner radius so they don't coincide with the ring's own wall
-    const bodies = buttons.map(p => circlePoly(p.x, p.y, typeOf(p).cut.d/2 - 0.01));
+    const bodies = buttons.map(p => circlePoly(p.x, p.y, typeOf(p).cut.d/2));
     const mounts = pl.holes.filter(m => m.role === 'mount').map(m => circlePoly(m.x, m.y, m.d/2 + ch.mount + 0.5));
     let ocs = T(new CrossSection([...bodies, ...mounts], 'Positive'));
     if (open.length) ocs = T(CrossSection.union(ocs, T(T(new CrossSection(open, 'Positive')).offset(0.5, 'Round'))));
@@ -1440,9 +1551,18 @@ function mfDeco(){
     return deco.translate([0, 0, 0]);
   } finally { for (const x of trash) x.delete(); }
 }
-function decoGeometry(){
-  try { const m = mfDeco(); if (!m) return null; const g = mfToGeometry(m); m.delete(); return g; }
-  catch(e){ console.warn('Deco could not be built.', e); return null; }
+// Cached by everything the deco depends on, so it's only rebuilt when something changed. While a part is being
+// dragged the 3D preview keeps showing the last deco and catches up when the drag ends.
+const decoCache = { key: null, geo: null };
+function decoGeometry(allowStale){
+  const key = JSON.stringify([state.plateId, state.thickness, state.deco, state.parts, mfState]);
+  if (decoCache.key === key || (allowStale && decoCache.key !== null)) return decoCache.geo ? decoCache.geo.clone() : null;
+  let geo = null;
+  try { const m = mfDeco(); if (m){ geo = mfToGeometry(m); m.delete(); } }
+  catch(e){ console.warn('Deco could not be built.', e); }
+  if (decoCache.geo) decoCache.geo.dispose();
+  decoCache.key = key; decoCache.geo = geo;
+  return geo ? geo.clone() : null;
 }
 function mfToGeometry(m){
   const mesh = m.getMesh(), np = mesh.numProp, tv = mesh.triVerts, vp = mesh.vertProperties;
@@ -1495,7 +1615,7 @@ function rebuild3d(){
   let geo;
   try { geo = frontPlateGeometry(); } catch(e){ geo = null; }
   if (geo) g.add(new THREE.Mesh(geo, mat(css('--plate'))));
-  const dgeo = decoGeometry();
+  const dgeo = decoGeometry(!!(drag || rotDrag));
   if (dgeo) g.add(new THREE.Mesh(dgeo, mat(css('--accent'), {roughness: 0.55})));
   const backShape = outlineShape(pl.outline);
   for (const m of pl.holes){
