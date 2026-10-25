@@ -16,7 +16,7 @@
   --bg:#E9ECEF; --panel:#FFFFFF; --panel-2:#F4F6F8; --ink:#14181D; --muted:#5D6672; --line:#D2D7DD;
   --accent:#1F6FD1; --accent-ink:#FFFFFF; --accent-soft:#DCE9FA;
   --plate:#2E343A; --plate-ink:#C7CDD3; --grid:rgba(255,255,255,.07); --grid-strong:rgba(255,255,255,.14);
-  --zone:#8FA0B0; --ko:#6FA3E6; --ko-fill:rgba(111,163,230,.10); --hole:#E9ECEF; --hole-edge:#11151A;
+  --zone:#8FA0B0; --ko:#6FA3E6; --ko-fill:rgba(111,163,230,.10); --hole:#E9ECEF; --hole-edge:#11151A; --cap:#121519; --cap-edge:#8E99A4;
   --ok:#2B8A3E; --ok-soft:#DDF1E1; --err:#C92A2A; --err-soft:#FBE0E0; --warn:#B35C00; --warn-soft:#FCEBD5;
   --f-display:"Saira Semi Condensed","Arial Narrow",system-ui,sans-serif;
   --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -27,14 +27,14 @@
   --bg:#111417; --panel:#191D21; --panel-2:#1F2429; --ink:#E5E8EB; --muted:#8D97A2; --line:#2C3238;
   --accent:#4D9BFF; --accent-ink:#061428; --accent-soft:#16294A;
   --plate:#353C44; --plate-ink:#B8C0C8; --grid:rgba(255,255,255,.06); --grid-strong:rgba(255,255,255,.12);
-  --zone:#7D8C9B; --ko:#7DB2FF; --ko-fill:rgba(125,178,255,.10); --hole:#111417; --hole-edge:#0A0C0E;
+  --zone:#7D8C9B; --ko:#7DB2FF; --ko-fill:rgba(125,178,255,.10); --hole:#111417; --hole-edge:#0A0C0E; --cap:#0E1013; --cap-edge:#8692A0;
   --ok:#5CC977; --ok-soft:#173222; --err:#FF6B6B; --err-soft:#3A1A1A; --warn:#F0A04B; --warn-soft:#38270F;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#111417; --panel:#191D21; --panel-2:#1F2429; --ink:#E5E8EB; --muted:#8D97A2; --line:#2C3238;
   --accent:#4D9BFF; --accent-ink:#061428; --accent-soft:#16294A;
   --plate:#353C44; --plate-ink:#B8C0C8; --grid:rgba(255,255,255,.06); --grid-strong:rgba(255,255,255,.12);
-  --zone:#7D8C9B; --ko:#7DB2FF; --ko-fill:rgba(125,178,255,.10); --hole:#111417; --hole-edge:#0A0C0E;
+  --zone:#7D8C9B; --ko:#7DB2FF; --ko-fill:rgba(125,178,255,.10); --hole:#111417; --hole-edge:#0A0C0E; --cap:#0E1013; --cap-edge:#8692A0;
   --ok:#5CC977; --ok-soft:#173222; --err:#FF6B6B; --err-soft:#3A1A1A; --warn:#F0A04B; --warn-soft:#38270F;
   color-scheme:dark}
 *{box-sizing:border-box}
@@ -108,6 +108,8 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 #plate .zone{fill:none;stroke:var(--zone);stroke-width:.4;stroke-dasharray:2 1.5}
 #plate .ko{fill:var(--ko-fill);stroke:var(--ko);stroke-width:.35;stroke-dasharray:1.2 .9}
 #plate .cut{fill:var(--hole);stroke:var(--hole-edge);stroke-width:.3}
+#plate .capfill{fill:var(--cap);stroke:var(--cap-edge);stroke-width:.35}
+#plate .holeline{fill:none;stroke:var(--plate-ink);stroke-width:.25;stroke-dasharray:.6 .6;opacity:.75;pointer-events:none}
 #plate .nogo{fill:url(#nogoHatch);stroke:var(--zone);stroke-width:.3}
 #plate .hatch{stroke:var(--zone);stroke-width:.5;opacity:.55}
 #plate .nogo-hole{fill:none;stroke:var(--plate-ink);stroke-width:.3;stroke-dasharray:.8 .8;opacity:.7}
@@ -821,6 +823,8 @@ function shapeOf(spec, p){
   return {k:'p', pts:rectPts(p.x, p.y, spec.w, spec.h, p.rot, spec.r||0)};
 }
 const holeKoShape = h => h.poly ? {k:'p', pts:h.koPoly} : {k:'c', x:h.x, y:h.y, r:h.ko/2};
+// What you see from the front: the cap (button cap, knob, lever, LED); parts without a cap show their cut-out.
+const capShape = p => { const t = typeOf(p); return shapeOf(t.cap || t.cut, p); };
 const koShape  = p => shapeOf(typeOf(p).ko, p);
 const cutShape = p => shapeOf(typeOf(p).cut, p);
 
@@ -973,7 +977,7 @@ function render2d(){
     const cls = ['part']; if (p.id===selected) cls.push('sel'); if (errIds.has(p.id)) cls.push('err'); else if (warnIds.has(p.id)) cls.push('warn');
     const ko = koShape(p);
     const ly = ko.k==='c' ? -p.y + ko.r + 3.4 : Math.max(...ko.pts.map(([,y])=>-y)) + 3.4;
-    o += `<g class="${cls.join(' ')}" data-id="${p.id}">${shapeSvg(ko,'ko')}${shapeSvg(cutShape(p),'cut')}</g>`;
+    o += `<g class="${cls.join(' ')}" data-id="${p.id}">${shapeSvg(ko,'ko')}${shapeSvg(capShape(p),'capfill')}${shapeSvg(plateCutShape(p),'holeline')}</g>`;
     o += `<text class="lbl" x="${p.x}" y="${ly}">${esc(p.label)}</text>`;
   }
   const sp = selected && findPart(selected);
@@ -1051,7 +1055,8 @@ svg.addEventListener('pointerleave', () => { if(!drag) $('readout').textContent 
 /* ---------------- Palette ---------------- */
 function iconSvg(t){
   const sc = 30/Math.max(32, t.ko.d || Math.max(t.ko.w,t.ko.h));
-  const cut = t.cut.c==='circle' ? `<circle cx="17" cy="17" r="${t.cut.d/2*sc}" fill="var(--ink)"/>` : `<rect x="${17-t.cut.w/2*sc}" y="${17-t.cut.h/2*sc}" width="${t.cut.w*sc}" height="${t.cut.h*sc}" fill="var(--ink)"/>`;
+  const f = t.cap || t.cut;   // the cap, as on the plate
+  const cut = f.c==='circle' ? `<circle cx="17" cy="17" r="${f.d/2*sc}" fill="var(--ink)"/>` : `<rect x="${17-f.w/2*sc}" y="${17-f.h/2*sc}" width="${f.w*sc}" height="${f.h*sc}" fill="var(--ink)"/>`;
   const ko = t.ko.c==='circle' ? `<circle cx="17" cy="17" r="${t.ko.d/2*sc}" fill="none" stroke="var(--accent)" stroke-width="1" stroke-dasharray="2 1.5"/>` : `<rect x="${17-t.ko.w/2*sc}" y="${17-t.ko.h/2*sc}" width="${t.ko.w*sc}" height="${t.ko.h*sc}" fill="none" stroke="var(--accent)" stroke-width="1" stroke-dasharray="2 1.5"/>`;
   return `<svg viewBox="0 0 34 34" aria-hidden="true">${ko}${cut}</svg>`;
 }

@@ -105,6 +105,12 @@ After editing, run `python3 tools/sync_builtin.py` to refresh the copy. GitHub P
 The chamfered plate is built with [manifold-3d](https://github.com/elalish/manifold) 3.5.4, which is vendored in `vendor/` so the app doesn't depend on a CDN. The chamfer only changes the STL and the 3D preview; the DXF and SVG stay 2D outlines. If the engine can't load, the app falls back to a plain extrusion and says so under Export.
 
 ## Controls
+In the editor:
+- the black shapes are the caps (button caps, knobs, levers, LEDs), as seen from the front; parts without a cap, like the display, show their cut-out
+- the dotted line inside is the actual hole in the front plate, including the sleeve enlargement
+- the dashed line around a part is its keep-out zone
+- light circles are mounting holes; hatched areas are no-go zones
+
 - Drag parts on the plate. They snap to the grid set by **Snap**.
 - Drag the blue handle on the selected part to rotate it. It snaps to 5°; hold <kbd>Shift</kbd> for 1° steps. The keep-out zone rotates with the part.
 - <kbd>Del</kbd> removes the selected part, <kbd>R</kbd> rotates it 90° (<kbd>Shift</kbd>+<kbd>R</kbd> 5°), and <kbd>M</kbd> adds a mirrored copy.
