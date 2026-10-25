@@ -17,7 +17,6 @@ To run it locally, open `index.html` in a browser. It needs internet access to l
 |---|---|
 | `.stl` | Front plate for 3D printing (binary STL, mm) |
 | `-deco.stl` | The deco piece on its own, in the same position as the plate |
-| `-handles.zip` | Four STLs: left and right handle, each split into a front and a back half |
 | `.dxf` | Cut outline with layers `OUTLINE`, `CUTOUTS` and `MOUNTING` (mm) |
 | `.svg` | Same outline at 1:1 in mm, for laser cutting |
 | `-parts.csv` | Every part with its position, plus quantities per part type |
@@ -97,14 +96,13 @@ The deco is a separate printed piece that sits on top of the front plate, export
 
 The deco settings are saved with the layout.
 
-### Handles
-A wheel can define handles in its `wheel.json`, so the style follows the wheel. Backplate 5 has simple F1-style grips:
-- **Grip:** a 30 × 38 mm oval tube (width in the plate's plane × depth front to back) with rounded ends, along a smooth curve through `left.path`. The curve starts at the bottom-corner mount hole, runs beside the wheel, and ends over the two top mount holes, leaving about 37 mm for your hand.
-- **Bolting:** there's no separate mounting pad. Bolts go through the mount holes the grip covers, here the bottom hole and both top holes, with a hole through the whole grip and a Ø8 pocket from the back that leaves 6 mm under the bolt head. The Handles panel lists any of the side's mount holes the grip doesn't cover.
+### Handles (3D preview only)
+A wheel can define handles in its `wheel.json`, so the style follows the wheel. For now they're a cosmetic addition to the 3D preview, to judge how the wheel looks, and aren't exported. Backplate 5 has simple F1-style grips:
+- **Grip:** a 30 × 38 mm oval tube (width in the plate's plane × depth front to back) with rounded ends, along a smooth curve through `left.path`. The curve starts at the bottom-corner mount hole, runs beside the wheel, and ends over the two top mount holes. `grip.raise` lifts the grip towards the front plate; Backplate 5 uses 20 mm.
+- **Bolting:** the grip shows bolt holes where it covers a mount hole, here the bottom hole and both top holes. The Handles panel lists the holes it doesn't cover.
 - **Mirroring:** the right handle is the left one mirrored.
-- **Halves:** each handle is split at mid-depth into a front and a back half.
 
-The **Handles** panel can turn them off and change the grip width and depth. **Handles .zip** exports the four halves in the plate's coordinates. To shape a grip, edit the `path` points in `wheel.json`. If a curve bends more tightly than the grip is wide, the app reports it.
+The **Handles** panel can hide them and change the grip width and depth. To reshape a grip, edit the `path` points in `wheel.json`.
 
 ### Built-in copy
 `index.html` carries a built-in copy of `parts.json` and `wheels/`. It's only used when those files can't be loaded, for example when the page is opened straight from disk.

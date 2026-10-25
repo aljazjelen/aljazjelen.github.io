@@ -13,7 +13,7 @@
     "plateSpacing / frontPlateThickness: defaults applied when this wheel is picked.",
     "chamfer: 45° chamfer on the top edge of the front plate, in mm. outline = the outer edge, mountHoles = the mounting holes. 0 or left out = no chamfer.",
     "layers (optional): only read these DXF layers.",
-    "handles: F1-style grips behind the back plate. left.holes = the mount holes on the left side, left.path = the grip centre line (plate coordinates, from one mount hole to another); mirror copies them to the right. grip = oval cross-section width x depth. Bolts go through the mount holes the grip covers: bolt = hole and head diameters, seat = material left under the bolt head. Each handle is split at mid-depth into two halves.",
+    "handles: F1-style grips behind the back plate. left.holes = the mount holes on the left side, left.path = the grip centre line (plate coordinates, from one mount hole to another); mirror copies them to the right. grip = oval cross-section width x depth; raise = how far the grip sits higher (towards the front plate) than flush behind the back plate. Bolts go through the mount holes the grip covers: bolt = hole and head diameters, seat = material left under the bolt head. Each handle is split at mid-depth into two halves.",
     "example: the layout loaded by 'Load example' for this wheel."
   ],
   "name": "Backplate 5",
@@ -44,7 +44,7 @@
       "path": [[-88.707, -59.618], [-108, -72], [-132, -66], [-146, -40], [-149, -5], [-145, 25], [-133, 40], [-119.2, 47]]
     },
     "mirror": true,
-    "grip": { "width": 30, "depth": 38 },
+    "grip": { "width": 30, "depth": 38, "raise": 20 },
     "bolt": { "hole": 4.2, "head": 8, "seat": 6 }
   },
   "example": [
