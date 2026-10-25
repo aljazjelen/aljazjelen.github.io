@@ -612,7 +612,7 @@ async function loadWheels(){
 
 /* Part library. Loaded from parts.json next to this page (its "_help" explains every field).
    DEFAULT_PARTS is a built-in copy of that file, used when parts.json can't be loaded (e.g. the page is opened as a local file). */
-const DEFAULT_PARTS = /*PARTS_JSON*/{"_help":["Part library for the ASH Front Plate Builder. All sizes in mm.","Each entry under 'parts' is one part type; its key (e.g. 'btn16') is stored in saved layouts, so don't rename keys that are in use.","Shapes: { \"shape\": \"circle\", \"d\": 16 } or { \"shape\": \"rect\", \"w\": 25, \"h\": 14, \"r\": 1 } (r = corner radius, optional).","name / group / label: shown in the parts list; label is the prefix for auto names (BTN1, BTN2...).","hole: the cutout in the front plate.","cap: what sits on top of the plate (button cap, knob, lever, LED). height is only used for the 3D preview. style: button | knob | lever | led. Leave cap out for flush parts like a display.","pcb: the board or switch body under the plate. depth = how far it reaches behind the plate (checked against Plate spacing).","clearance: safe space around the part. The keep-out zone = the largest of hole, cap and pcb, plus clearance on every side.","keepout (optional): set an exact keep-out shape instead of the computed one.","Every part can be rotated; set rotatable: false to lock one. allowOverNoGo: true lets a part sit over the back plate's no-go areas (it must still avoid mounting holes).","display: true draws a screen in the 3D preview."],"version":1,"parts":{"btn7":{"name":"Push button 7 mm","group":"Buttons","label":"BTN","hole":{"shape":"circle","d":7},"cap":{"shape":"circle","d":9,"height":4,"style":"button"},"pcb":{"shape":"circle","d":9,"depth":15},"clearance":1.5},"btn12":{"name":"Push button 12 mm","group":"Buttons","label":"BTN","hole":{"shape":"circle","d":12},"cap":{"shape":"circle","d":14,"height":5,"style":"button"},"pcb":{"shape":"rect","w":20,"h":20,"r":1,"depth":20},"clearance":0},"btn16":{"name":"Push button 16 mm","group":"Buttons","label":"BTN","hole":{"shape":"circle","d":16},"cap":{"shape":"circle","d":18,"height":6,"style":"button"},"pcb":{"shape":"circle","d":17,"depth":24},"clearance":2},"enc":{"name":"Encoder EC11","group":"Encoders & switches","label":"ENC","hole":{"shape":"circle","d":7.2},"cap":{"shape":"circle","d":20,"height":15,"style":"knob"},"pcb":{"shape":"rect","w":12,"h":13,"depth":20},"clearance":2},"rot":{"name":"Rotary switch 12-pos","group":"Encoders & switches","label":"ROT","hole":{"shape":"circle","d":9.5},"cap":{"shape":"circle","d":28,"height":16,"style":"knob"},"pcb":{"shape":"rect","w":27.2,"h":27.2,"r":1,"depth":30},"clearance":0},"tgl":{"name":"Toggle switch M6","group":"Encoders & switches","label":"TGL","hole":{"shape":"circle","d":6.2},"cap":{"shape":"circle","d":3,"height":11,"style":"lever"},"pcb":{"shape":"rect","w":8,"h":13,"depth":25},"clearance":3},"led5":{"name":"LED 5 mm","group":"Indicators & displays","label":"LED","hole":{"shape":"circle","d":5.1},"cap":{"shape":"circle","d":5,"height":4,"style":"led"},"pcb":{"shape":"circle","d":5,"depth":10},"clearance":1.5},"led3":{"name":"LED 3 mm","group":"Indicators & displays","label":"LED","hole":{"shape":"circle","d":3.1},"cap":{"shape":"circle","d":3,"height":3,"style":"led"},"pcb":{"shape":"circle","d":3,"depth":10},"clearance":1},"oled":{"name":"OLED 0.96″ window","group":"Indicators & displays","label":"OLED","hole":{"shape":"rect","w":25,"h":14,"r":1},"pcb":{"shape":"rect","w":27,"h":28,"depth":8},"clearance":1.5,"allowOverNoGo":true,"display":true}}}/*END_PARTS_JSON*/;
+const DEFAULT_PARTS = /*PARTS_JSON*/{"_help":["Part library for the ASH Front Plate Builder. All sizes in mm.","Each entry under 'parts' is one part type; its key (e.g. 'btn16') is stored in saved layouts, so don't rename keys that are in use.","Shapes: { \"shape\": \"circle\", \"d\": 16 } or { \"shape\": \"rect\", \"w\": 25, \"h\": 14, \"r\": 1 } (r = corner radius, optional).","name / group / label: shown in the parts list; label is the prefix for auto names (BTN1, BTN2...).","hole: the cutout in the front plate.","cap: the element you see and press: button cap, knob, lever, LED. height is only used for the 3D preview. style: button | knob | lever | led. Leave cap out for flush parts like a display. For buttons, the deco ring and sleeve fit around the cap, so the plate hole becomes at least cap + 2 x sleeve wall (never smaller than hole).","pcb: the board or switch body under the plate. depth = how far it reaches behind the plate (checked against Plate spacing).","clearance: safe space around the part. The keep-out zone = the largest of hole, cap and pcb, plus clearance on every side.","keepout (optional): set an exact keep-out shape instead of the computed one.","Every part can be rotated; set rotatable: false to lock one. allowOverNoGo: true lets a part sit over the back plate's no-go areas (it must still avoid mounting holes).","display: true draws a screen in the 3D preview."],"version":1,"parts":{"btn7":{"name":"Push button 7 mm","group":"Buttons","label":"BTN","hole":{"shape":"circle","d":7},"cap":{"shape":"circle","d":9,"height":4,"style":"button"},"pcb":{"shape":"circle","d":9,"depth":15},"clearance":1.5},"btn12":{"name":"Push button 12 mm","group":"Buttons","label":"BTN","hole":{"shape":"circle","d":12},"cap":{"shape":"circle","d":14,"height":5,"style":"button"},"pcb":{"shape":"rect","w":20,"h":20,"r":1,"depth":20},"clearance":0},"btn16":{"name":"Push button 16 mm","group":"Buttons","label":"BTN","hole":{"shape":"circle","d":16},"cap":{"shape":"circle","d":18,"height":6,"style":"button"},"pcb":{"shape":"circle","d":17,"depth":24},"clearance":2},"enc":{"name":"Encoder EC11","group":"Encoders & switches","label":"ENC","hole":{"shape":"circle","d":7.2},"cap":{"shape":"circle","d":20,"height":8,"style":"knob"},"pcb":{"shape":"rect","w":12,"h":13,"depth":20},"clearance":2},"rot":{"name":"Rotary switch 12-pos","group":"Encoders & switches","label":"ROT","hole":{"shape":"circle","d":9.5},"cap":{"shape":"circle","d":28,"height":10,"style":"knob"},"pcb":{"shape":"rect","w":27.2,"h":27.2,"r":1,"depth":30},"clearance":0},"tgl":{"name":"Toggle switch M6","group":"Encoders & switches","label":"TGL","hole":{"shape":"circle","d":6.2},"cap":{"shape":"circle","d":3,"height":11,"style":"lever"},"pcb":{"shape":"rect","w":8,"h":13,"depth":25},"clearance":3},"led5":{"name":"LED 5 mm","group":"Indicators & displays","label":"LED","hole":{"shape":"circle","d":5.1},"cap":{"shape":"circle","d":5,"height":4,"style":"led"},"pcb":{"shape":"circle","d":5,"depth":10},"clearance":1.5},"led3":{"name":"LED 3 mm","group":"Indicators & displays","label":"LED","hole":{"shape":"circle","d":3.1},"cap":{"shape":"circle","d":3,"height":3,"style":"led"},"pcb":{"shape":"circle","d":3,"depth":10},"clearance":1},"oled":{"name":"OLED 0.96″ window","group":"Indicators & displays","label":"OLED","hole":{"shape":"rect","w":25,"h":14,"r":1},"pcb":{"shape":"rect","w":27,"h":28,"depth":8},"clearance":1.5,"allowOverNoGo":true,"display":true}}}/*END_PARTS_JSON*/;
 let TYPES = {};
 let partsSource = 'built-in';
 const partWarnings = [];
@@ -742,9 +742,14 @@ function cleanDeco(d){
 const isButton = p => { const t = typeOf(p); return !!(t.cap && t.cap.kind === 'cap' && t.cap.c === 'circle' && t.cut.c === 'circle'); };
 const sleeveWall = () => { const d = cleanDeco(state.deco); return d.rings && d.depth > 0 ? d.wall : 0; };
 // The cut-out in the front plate: a button's hole grows by the sleeve wall on each side when the deco has sleeves.
+// A button's element: the cap you see and press, which has to pass through the deco ring and sleeve.
+// Its radius is the larger of the cap and the hole.
+const elementR = p => { const t = typeOf(p); return Math.max(t.cut.d, t.cap.d)/2; };
+// The cut-out in the front plate. With deco sleeves, a button's hole must fit the sleeve around the element:
+// at least element + 2 × wall (a 12 mm button with a Ø14 cap and 0.5 mm wall gets Ø15), never smaller than its hole.
 function plateCutShape(p){
   const sh = cutShape(p), w = sleeveWall();
-  return w > 0 && sh.k === 'c' && isButton(p) ? {...sh, r: sh.r + w} : sh;
+  return w > 0 && sh.k === 'c' && isButton(p) ? {...sh, r: Math.max(sh.r, elementR(p) + w)} : sh;
 }
 function newPart(o){
   const part = { id: 'p' + (nextId++), type:o.type, x:o.x||0, y:o.y||0, rot:o.rot||0, label:o.label||'' };
@@ -892,6 +897,11 @@ function validate(){
     for (const m of mounts) if ((m.role === 'mount' || !t.ignoresNoGo) && overlap(sh, m.sh)){
       issues.push({sev:'err', ids:[p.id], msg: m.role==='mount' ? `${p.label} overlaps mounting hole ${m.n}.` : `${p.label} reaches into no-go area ${m.n} (handle bolt or hub).`});
       errIds.add(p.id);
+    }
+    const ph = plateCutShape(p);
+    if (ph.k === 'c' && ph.r > cutShape(p).r + 1e-9){
+      const k = koShape(p), room = k.k === 'c' ? k.r : Math.min(...k.pts.map((a, i) => segDist(p.x, p.y, a, k.pts[(i+1) % k.pts.length])));
+      if (ph.r > room + 1e-9){ issues.push({sev:'warn', ids:[p.id], msg:`${p.label}'s plate hole with the deco sleeve (Ø${fmt(2*ph.r)}) is larger than its keep-out zone. Raise its clearance in parts.json.`}); warnIds.add(p.id); }
     }
     if (t.depth > state.gap){ issues.push({sev:'warn', ids:[p.id], msg:`${p.label} needs ${t.depth} mm behind the plate; the plates are ${fmt(state.gap)} mm apart.`}); warnIds.add(p.id); }
   }
@@ -1296,7 +1306,9 @@ function renderDecoNote(){
   syncDeco();
   const d = cleanDeco(state.deco), n = state.parts.filter(isButton).length, why = decoUnavailable();
   const w = sleeveWall(), dep = Math.min(d.depth, state.thickness);
-  const sleeve = w > 0 ? ` Each ring has a ${fmt(w)} mm sleeve reaching ${fmt(dep)} mm into the plate${d.depth > state.thickness ? ' (limited to the plate thickness)' : ''}, so the front plate's button holes are ${fmt(2*w)} mm larger.` : ' No sleeve.';
+  const holes = [...new Map(state.parts.filter(isButton).map(p => [p.type, p])).values()]
+    .map(p => `Ø${fmt(2*plateCutShape(p).r)} for ${typeOf(p).name.replace(/^Push button /, '')}`).join(', ');
+  const sleeve = w > 0 ? ` Each ring has a ${fmt(w)} mm sleeve around the cap, reaching ${fmt(dep)} mm into the plate${d.depth > state.thickness ? ' (limited to the plate thickness)' : ''}. The front plate's button holes grow to fit it${holes ? ` (${holes})` : ''}.` : ' No sleeve.';
   let bridges = '';
   if (!why && d.bridges){
     const br = decoBridges(d);
@@ -1470,7 +1482,7 @@ function decoBridges(ds){
   const buttons = state.parts.filter(isButton), pairs = [], skipped = [], limited = [];
   if (!ds.bridges) return { pairs, skipped };
   const pl = plate(), ch = chamferFor(pl, state.thickness);
-  const ro = p => typeOf(p).cut.d/2 + ds.width;
+  const ro = p => elementR(p) + ds.width;
   // things a bar must not cover: other parts' cut-outs and caps (+0.5 mm) and mounting holes with their chamfer
   const blockers = [];
   for (const q of state.parts){
@@ -1497,7 +1509,8 @@ function decoBridges(ds){
   }
   return { pairs, skipped, limited };
 }
-// The deco piece. Seen from above it is one outline: a disc of radius ri + width around every button, plus a bar
+// The deco piece. Seen from above it is one outline: a disc of radius ri + width around every button's element
+// (its cap, which must pass through), plus a bar
 // between buttons that are close together, with the joints rounded (DECO_SMOOTH). That outline is clipped to the
 // flat top of the plate, extruded to the ring height, and its outer edge gets the 45° chamfer all the way round.
 // Below it, every button gets a sleeve that goes into the plate's (enlarged) button hole:
@@ -1506,11 +1519,11 @@ function decoBridges(ds){
 //    z=h  ┌───────────┐╲          ← 45° chamfer along the whole outer edge
 //         │   ring    │ │
 //    z=0  │   ┌───────┘─┘  ← sits on the plate
-//         │sl.│               ri = button hole radius (the button body passes through)
+//         │sl.│               ri = element radius: the cap passes through the ring and sleeve
 //  z=-dep └───┘               rs = ri + wall = the plate's enlarged hole radius
 //         ri  rs   (the sleeve is 0.02 mm under rs so its facets stay inside the plate hole)
 //
-// Button bodies, other parts' cut-outs and caps, and mounting holes are cut out of the whole piece.
+// Button elements, other parts' cut-outs and caps, and mounting holes are cut out of the whole piece.
 function mfDeco(){
   const ds = cleanDeco(state.deco);
   if (!ds.rings || !MF) return null;
@@ -1522,7 +1535,7 @@ function mfDeco(){
     const pl = plate(), t = state.thickness, ch = chamferFor(pl, t), h = ds.height, c = ds.chamfer;
     const dep = ds.wall > 0 ? Math.min(ds.depth, t) : 0;
     // 1. footprint: discs + bridges, joints rounded, clipped to the flat top of the plate
-    const discs = buttons.map(p => circlePoly(p.x, p.y, typeOf(p).cut.d/2 + ds.width));
+    const discs = buttons.map(p => circlePoly(p.x, p.y, elementR(p) + ds.width));
     const bars = decoBridges(ds).pairs.map(b => b.bar);
     let fp = T(new CrossSection([...discs, ...bars], 'Positive'));
     if (bars.length) fp = T(T(fp.offset(DECO_SMOOTH, 'Round')).offset(-DECO_SMOOTH, 'Round'));
@@ -1545,7 +1558,7 @@ function mfDeco(){
     // 3. sleeves (they reach up into the ring a little so the two overlap instead of just touching)
     if (dep > 0){
       const sleeves = buttons.map((p, i) => {
-        const ri = typeOf(p).cut.d/2, rs = ri + ds.wall - 0.02, top = Math.min(h/2, 1);
+        const ri = elementR(p), rs = ri + ds.wall - 0.02, top = Math.min(h/2, 1);
         return T(T(T(Manifold.cylinder(dep + top, rs, rs, 72)).rotate([0, 0, (i * 1.37) % 5])).translate([p.x, p.y, t - dep]));
       });
       deco = T(Manifold.union([deco, ...sleeves]));
@@ -1559,7 +1572,7 @@ function mfDeco(){
       open.push(shapePoly(cutShape(p)));
       if (tp.cap && tp.cap.c === 'circle') open.push(circlePoly(p.x, p.y, tp.cap.d/2));
     }
-    const bodies = buttons.map(p => circlePoly(p.x, p.y, typeOf(p).cut.d/2));
+    const bodies = buttons.map(p => circlePoly(p.x, p.y, elementR(p)));
     const mounts = pl.holes.filter(m => m.role === 'mount').map(m => circlePoly(m.x, m.y, m.d/2 + ch.mount + 0.5));
     let ocs = T(new CrossSection([...bodies, ...mounts], 'Positive'));
     if (open.length) ocs = T(CrossSection.union(ocs, T(T(new CrossSection(open, 'Positive')).offset(0.5, 'Round'))));
