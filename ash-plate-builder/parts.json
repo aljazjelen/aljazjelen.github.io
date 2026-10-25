@@ -36,6 +36,13 @@
       "pcb":  { "shape": "circle", "d": 17, "depth": 15 },
       "clearance": 2
     },
+    "btn15sq": {
+      "name": "Square button 15 mm", "group": "Buttons", "label": "BTN",
+      "hole": { "shape": "rect", "w": 16, "h": 16, "r": 1 },
+      "cap":  { "shape": "rect", "w": 15, "h": 15, "height": 5, "style": "button" },
+      "pcb":  { "shape": "rect", "w": 20, "h": 20, "r": 1, "depth": 15 },
+      "clearance": 0
+    },
     "enc": {
       "name": "Encoder EC11", "group": "Encoders & switches", "label": "ENC",
       "hole": { "shape": "circle", "d": 7.2 },
