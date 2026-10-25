@@ -17,6 +17,7 @@ To run it locally, open `index.html` in a browser. It needs internet access to l
 |---|---|
 | `.stl` | Front plate for 3D printing (binary STL, mm) |
 | `-deco.stl` | The deco piece on its own, in the same position as the plate |
+| `-handles.zip` | Four STLs: left and right handle, each split into a front and a back half |
 | `.dxf` | Cut outline with layers `OUTLINE`, `CUTOUTS` and `MOUNTING` (mm) |
 | `.svg` | Same outline at 1:1 in mm, for laser cutting |
 | `-parts.csv` | Every part with its position, plus quantities per part type |
@@ -95,6 +96,15 @@ The deco is a separate printed piece that sits on top of the front plate, export
 - The sleeve and the plate hole have the same nominal size. For printing clearance, make the `hole` slightly larger in `parts.json`.
 
 The deco settings are saved with the layout.
+
+### Handles
+A wheel can define handles in its `wheel.json`, so the style follows the wheel. Backplate 5 has simple F1-style grips:
+- **Mounting:** a 6 mm pad behind the back plate covers the side's 5 mount holes. Bolt holes go through the whole handle, with Ø8 pockets from the back for the bolt heads.
+- **Grip:** a 30 × 38 mm oval tube (width in the plate's plane × depth front to back) along a smooth curve through `left.path`. The curve runs from the bottom-corner hole, out beside the wheel, to the wing-tip hole, leaving about 50 mm for your hand.
+- **Mirroring:** the right handle is the left one mirrored.
+- **Halves:** each handle is split at mid-depth into a front half, with the pad, and a back half.
+
+The **Handles** panel can turn them off and change the grip width and depth. **Handles .zip** exports the four halves in the plate's coordinates. To shape a grip, edit the `path` points in `wheel.json`. If a curve bends more tightly than the grip is wide, the app reports it.
 
 ### Built-in copy
 `index.html` carries a built-in copy of `parts.json` and `wheels/`. It's only used when those files can't be loaded, for example when the page is opened straight from disk.
