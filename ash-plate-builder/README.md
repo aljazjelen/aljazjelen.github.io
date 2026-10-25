@@ -117,7 +117,7 @@ The deco is a separate printed piece that sits on top of the front plate, export
 - The deco stays on the flat top of the plate, inside the outline chamfer. It leaves other parts' cut-outs and caps (plus 0.5 mm) and the mounting holes clear.
 - The sleeve and the plate hole have the same nominal size. For printing clearance, make the `hole` slightly larger in `parts.json`.
 
-**Encoders:** a ring around the knob of every part whose cap style is `knob`, which covers the encoder and the rotary switch.
+**Encoders:** a ring around the knob of every encoder. Rotary switches get no deco (`"deco": false` in `parts.json`).
 - The ring has its own height, width and chamfer (defaults 2, 3 and 1 mm), and the **Gap to knob** (1 mm by default) is the free space between the knob and the ring, so the knob turns freely.
 - There's no sleeve, because the knob sits above the plate on its shaft.
 - Encoder rings aren't bridged.
@@ -149,7 +149,7 @@ The chamfered plate is built with [manifold-3d](https://github.com/elalish/manif
 
 ## Views
 The app has two views, switched at the top. It remembers the last one; add `#design` or `#preview` to the link to open a specific view.
-- **2D design:** wheel selection, the parts list, the plate editor, the selected part and the checks. The parts list shows its groups (Buttons, Encoders & switches, Indicators, Displays, Custom) collapsed. Click a group to open it; only one is open at a time.
+- **2D design:** wheel selection, the parts list, the plate editor, the selected part and the checks. The parts list shows its groups (Buttons/Rotaries, Encoders & switches, Indicators, Displays, Custom) collapsed. Click a group to open it; only one is open at a time.
 - **3D preview:** a large 3D view of the plate, deco and handles, with the Export, Deco and Handles panels.
 
 ## Controls
