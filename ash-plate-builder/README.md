@@ -98,7 +98,7 @@ The deco settings are saved with the layout.
 
 ### Handles (3D preview only)
 A wheel can define handles in its `wheel.json`, so the style follows the wheel. For now they're a cosmetic addition to the 3D preview, to judge how the wheel looks, and aren't exported. Backplate 5 has simple F1-style grips:
-- **Grip:** a 30 × 38 mm oval tube (width in the plate's plane × depth front to back) with rounded ends, along a smooth curve through `left.path`. The curve starts at the bottom-corner mount hole, runs beside the wheel, and ends over the two top mount holes. `grip.raise` lifts the grip towards the front plate; Backplate 5 uses 20 mm.
+- **Grip:** a 30 × 38 mm oval tube (width in the plate's plane × depth front to back) with rounded ends, along a smooth curve through `left.path`. The curve starts at the bottom-corner mount hole, runs beside the wheel, and ends over the two top mount holes. The top of the grip always sits just below the underside of the front plate (`grip.gapBelowFrontPlate`, 0.5 mm), whatever the plate spacing.
 - **Bolting:** the grip shows bolt holes where it covers a mount hole, here the bottom hole and both top holes. The Handles panel lists the holes it doesn't cover.
 - **Mirroring:** the right handle is the left one mirrored.
 
