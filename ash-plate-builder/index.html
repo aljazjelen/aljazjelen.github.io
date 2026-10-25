@@ -105,6 +105,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .pg-chev{width:12px;height:12px;color:var(--muted);transition:transform .15s}
 .pgroup.open .pg-chev{transform:rotate(180deg);color:var(--accent)}
 .pgroup .pitems{padding:0 8px 8px}
+.dsec{padding:2px 10px 10px;display:flex;flex-direction:column;gap:10px}
 .pitems{display:grid;grid-template-columns:1fr;gap:6px}
 @media (max-width:760px){.pitems{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
 .pitem{display:grid;grid-template-columns:34px 1fr;gap:8px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--panel-2);border-radius:4px;padding:6px 8px;cursor:pointer}
@@ -276,23 +277,48 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
       <section class="card">
         <h2>Deco</h2>
         <div class="body">
-          <label class="check"><input type="checkbox" id="decoOn"> Rings around buttons</label>
-          <div class="row">
-            <label class="field">Height (mm)<input type="number" id="decoH" min="0.4" max="10" step="0.1"></label>
-            <label class="field">Width (mm)<input type="number" id="decoW" min="0.5" max="20" step="0.1"></label>
+          <div class="palette" id="decoSections">
+            <div class="pgroup" data-dsec="buttons">
+              <button class="pgroup-head" type="button" aria-expanded="false" aria-controls="dsButtons" data-dsec="buttons">
+                <span class="pg-name">Buttons</span><span class="pg-count">0</span><svg class="pg-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="dsec" id="dsButtons" hidden>
+                <label class="check"><input type="checkbox" id="decoOn"> Rings around buttons</label>
+                <div class="row">
+                  <label class="field">Height (mm)<input type="number" id="decoH" min="0.4" max="10" step="0.1"></label>
+                  <label class="field">Width (mm)<input type="number" id="decoW" min="0.5" max="20" step="0.1"></label>
+                </div>
+                <div class="row">
+                  <label class="field">Chamfer 45° (mm)<input type="number" id="decoC" min="0" step="0.1"></label>
+                  <label class="field" title="How far the sleeve reaches into the plate. 0 = no sleeve. The sleeve's wall is the gap between each button's cap and its hole.">Sleeve depth (mm)<input type="number" id="decoD" min="0" step="0.5"></label>
+                </div>
+                <label class="check"><input type="checkbox" id="decoB"> Connect nearby buttons</label>
+                <div class="row">
+                  <label class="field" title="Buttons whose rings are at most this far apart, edge to edge, are joined by a bar.">Connect when gap ≤ (mm)<input type="number" id="decoBG" min="0" max="30" step="0.5"></label>
+                  <label class="field" title="Width of the bar between two rings. Leave empty for the widest allowed: the smaller ring's diameter minus the chamfer on both sides. At least 2 mm.">Bar width (mm)<input type="number" id="decoBW" min="2" step="0.5" placeholder="max"></label>
+                </div>
+                <p class="note" id="decoNote"></p>
+              </div>
+            </div>
+            <div class="pgroup" data-dsec="encoders">
+              <button class="pgroup-head" type="button" aria-expanded="false" aria-controls="dsEncoders" data-dsec="encoders">
+                <span class="pg-name">Encoders</span><span class="pg-count">0</span><svg class="pg-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <div class="dsec" id="dsEncoders" hidden>
+                <label class="check"><input type="checkbox" id="decoE"> Rings around encoders</label>
+                <div class="row">
+                  <label class="field">Height (mm)<input type="number" id="decoEH" min="0.4" max="10" step="0.1"></label>
+                  <label class="field">Width (mm)<input type="number" id="decoEW" min="0.5" max="20" step="0.1"></label>
+                </div>
+                <div class="row">
+                  <label class="field">Chamfer 45° (mm)<input type="number" id="decoEC" min="0" step="0.1"></label>
+                  <label class="field" title="Free space between the knob and the inside of the ring, so the knob turns freely.">Gap to knob (mm)<input type="number" id="decoEG" min="0" max="10" step="0.25"></label>
+                </div>
+                <p class="note" id="decoENote"></p>
+              </div>
+            </div>
           </div>
-          <div class="row">
-            <label class="field">Chamfer 45° (mm)<input type="number" id="decoC" min="0" step="0.1"></label>
-          </div>
-          <div class="row">
-            <label class="field" title="How far the sleeve reaches into the plate. 0 = no sleeve. The sleeve's wall is the gap between each button's cap and its hole.">Sleeve depth (mm)<input type="number" id="decoD" min="0" step="0.5"></label>
-          </div>
-          <label class="check"><input type="checkbox" id="decoB"> Connect nearby buttons</label>
-          <div class="row">
-            <label class="field" title="Buttons whose rings are at most this far apart, edge to edge, are joined by a bar.">Connect when gap ≤ (mm)<input type="number" id="decoBG" min="0" max="30" step="0.5"></label>
-            <label class="field" title="Width of the bar between two rings. Leave empty for the widest allowed: the smaller ring's diameter minus the chamfer on both sides. At least 2 mm.">Bar width (mm)<input type="number" id="decoBW" min="2" step="0.5" placeholder="max"></label>
-          </div>
-          <p class="note" id="decoNote"></p>
+          <p class="note" id="decoAll"></p>
         </div>
       </section>
       <section class="card" id="handlesCard">
@@ -830,20 +856,26 @@ const plate = () => PLATES.find(p => p.id === state.plateId) || PLATES[0];
 // Ring: sits on the plate around the button's cap. Sleeve: same piece, goes down into the button's hole and fills
 // the gap between the cap and the hole, so its wall is (hole − cap) / 2. The hole in parts.json is exactly what's cut.
 // Bridges: buttons whose rings are at most bridgeGap apart (edge to edge) are joined by a bar.
-const DECO_DEFAULTS = { rings: true, height: 2, width: 4, chamfer: 1, depth: 3, bridges: true, bridgeGap: 6 };
+const DECO_DEFAULTS = { rings: true, height: 2, width: 4, chamfer: 1, depth: 3, bridges: true, bridgeGap: 6,
+                        encRings: true, encHeight: 2, encWidth: 3, encChamfer: 1, encGap: 1 };
 const DECO_SMOOTH = 1.5;
 const BRIDGE_MIN_W = 2;    // mm: narrowest bar   // mm: radius of the rounded transition where a bar meets a ring
 function cleanDeco(d){
   d = d && typeof d === 'object' ? d : {};
   const num = (v, def) => (v === undefined || v === null || v === '' || !Number.isFinite(+v)) ? def : +v;
   const height = clampNum(num(d.height, DECO_DEFAULTS.height), 0.4, 10), width = clampNum(num(d.width, DECO_DEFAULTS.width), 0.5, 20);
+  const encHeight = clampNum(num(d.encHeight, DECO_DEFAULTS.encHeight), 0.4, 10), encWidth = clampNum(num(d.encWidth, DECO_DEFAULTS.encWidth), 0.5, 20);
   return { rings: d.rings === undefined ? DECO_DEFAULTS.rings : !!d.rings, height, width,
            chamfer: clampNum(num(d.chamfer, DECO_DEFAULTS.chamfer), 0, Math.min(height, width)),
            depth: clampNum(num(d.depth, DECO_DEFAULTS.depth), 0, 20),
            bridges: d.bridges === undefined ? DECO_DEFAULTS.bridges : !!d.bridges,
            bridgeGap: clampNum(num(d.bridgeGap, DECO_DEFAULTS.bridgeGap), 0, 30),
            // bar width in mm; null = as wide as allowed. Each bridge clamps it to [2, smaller ring Ø − 2 × chamfer].
-           bridgeWidth: num(d.bridgeWidth, null) === null || +d.bridgeWidth <= 0 ? null : clampNum(+d.bridgeWidth, BRIDGE_MIN_W, 60) };
+           bridgeWidth: num(d.bridgeWidth, null) === null || +d.bridgeWidth <= 0 ? null : clampNum(+d.bridgeWidth, BRIDGE_MIN_W, 60),
+           // encoders: a ring around each knob, gap = free space between the knob and the ring so the knob turns freely
+           encRings: d.encRings === undefined ? DECO_DEFAULTS.encRings : !!d.encRings, encHeight, encWidth,
+           encChamfer: clampNum(num(d.encChamfer, DECO_DEFAULTS.encChamfer), 0, Math.min(encHeight, encWidth)),
+           encGap: clampNum(num(d.encGap, DECO_DEFAULTS.encGap), 0, 10) };
 }
 // Handles: show/export, and optional grip size overrides (null = the wheel's own size).
 function cleanHandles(h){
@@ -853,6 +885,8 @@ function cleanHandles(h){
 }
 // Parts that get a ring: buttons, i.e. parts whose cap style is "button" with a round cap.
 const isButton = p => { const t = typeOf(p); return !!(t.cap && t.cap.kind === 'cap' && t.cap.c === 'circle' && t.cut.c === 'circle'); };
+// Parts that get an encoder ring: every part with a round knob (encoder, rotary switch).
+const isEncoder = p => { const t = typeOf(p); return !!(t.cap && t.cap.kind === 'knob' && t.cap.c === 'circle'); };
 const SLEEVE_MIN_WALL = 0.3;   // mm: below this the gap between cap and hole is too thin for a sleeve
 // The cut-out in the front plate: a button's hole grows by the sleeve wall on each side when the deco has sleeves.
 // A button's element: the cap you see and press, which passes through the deco ring and sleeve.
@@ -1225,6 +1259,21 @@ function renderPalette(){
   }).join('');
 }
 const PALETTE_KEY = 'ash-front-plate-open-group';
+const DECO_SEC_KEY = 'ash-front-plate-open-deco';
+function openDecoSection(name){
+  for (const head of $('decoSections').querySelectorAll('.pgroup-head')){
+    const isOpen = head.dataset.dsec === name;
+    head.setAttribute('aria-expanded', String(isOpen));
+    head.closest('.pgroup').classList.toggle('open', isOpen);
+    $(head.getAttribute('aria-controls')).hidden = !isOpen;
+  }
+  try { localStorage.setItem(DECO_SEC_KEY, name || ''); } catch(e){}
+}
+$('decoSections').addEventListener('click', e => {
+  const head = e.target.closest('.pgroup-head'); if (!head) return;
+  openDecoSection(head.getAttribute('aria-expanded') === 'true' ? null : head.dataset.dsec);
+});
+{ let v = null; try { v = localStorage.getItem(DECO_SEC_KEY); } catch(e){} openDecoSection(v === null ? 'buttons' : v); }
 function openPaletteGroup(name){
   for (const head of $('palette').querySelectorAll('.pgroup-head')){
     const isOpen = head.dataset.group === name;
@@ -1417,7 +1466,8 @@ function initControls(){
     syncInputs();
   });
   $('thick').addEventListener('change', e => { const v = clampNum(+e.target.value||4, 2, 10); e.target.value = v; mutate(() => { state.thickness = v; }); });
-  const decoInputs = {decoOn:'rings', decoH:'height', decoW:'width', decoC:'chamfer', decoD:'depth', decoB:'bridges', decoBG:'bridgeGap', decoBW:'bridgeWidth'};
+  const decoInputs = {decoOn:'rings', decoH:'height', decoW:'width', decoC:'chamfer', decoD:'depth', decoB:'bridges', decoBG:'bridgeGap', decoBW:'bridgeWidth',
+                      decoE:'encRings', decoEH:'encHeight', decoEW:'encWidth', decoEC:'encChamfer', decoEG:'encGap'};
   for (const [id, key] of Object.entries(decoInputs)) $(id).addEventListener('change', e => {
     const v = e.target.type === 'checkbox' ? e.target.checked : (e.target.id === 'decoBW' && e.target.value.trim() === '') ? null : +e.target.value;
     mutate(() => { state.deco = cleanDeco({...state.deco, [key]: v}); });
@@ -1460,12 +1510,15 @@ function syncDeco(){
   $('decoOn').checked = d.rings; $('decoB').checked = d.bridges; $('decoB').disabled = !d.rings; $('decoBG').disabled = $('decoBW').disabled = !d.rings || !d.bridges;
   for (const [id, v] of [['decoH', d.height], ['decoW', d.width], ['decoC', d.chamfer], ['decoD', d.depth], ['decoBG', d.bridgeGap], ['decoBW', d.bridgeWidth === null ? '' : d.bridgeWidth]]) if ($(id) !== a) $(id).value = v;
   for (const id of ['decoH','decoW','decoC','decoD']) $(id).disabled = !d.rings;
+  $('decoE').checked = d.encRings;
+  for (const [id, v] of [['decoEH', d.encHeight], ['decoEW', d.encWidth], ['decoEC', d.encChamfer], ['decoEG', d.encGap]]){ if ($(id) !== a) $(id).value = v; $(id).disabled = !d.encRings; }
 }
 function decoUnavailable(){
-  if (!cleanDeco(state.deco).rings) return 'Rings are turned off.';
+  const d = cleanDeco(state.deco);
+  if (!d.rings && !d.encRings) return 'All deco rings are turned off.';
   if (mfState === 'loading') return 'The 3D engine is still loading.';
   if (mfState === 'failed') return 'The 3D engine could not load, so the deco can\'t be built. Reload the page to try again.';
-  if (!state.parts.some(isButton)) return 'Add a button to get a ring.';
+  if (!(d.rings && state.parts.some(isButton)) && !(d.encRings && state.parts.some(isEncoder))) return 'Add a button or an encoder to get a ring.';
   return '';
 }
 function handlesUnavailable(){
@@ -1494,8 +1547,9 @@ function renderHandles(){
   const why = handlesUnavailable();
   const val = id => hs[inp[id][0]] ?? (H && H[inp[id][0]]);
   const hh = handlesHoles, tail = ' Shown in the 3D preview only, to judge the look; they aren\'t exported.' + (handlesError ? ` Last build failed: ${handlesError}.` : '');
-  let text;
-  if (H && H.style === 'rally'){
+  let text = '';
+  if (!H){}
+  else if (H.style === 'rally'){
     const n = H.spokes.length;
     text = `Rally rim, Ø${fmt(val('hW'))} mm with a ${fmt(val('hD'))} mm tube and a flat bottom, on ${n} spoke${n === 1 ? '' : 's'} bolted behind the back plate through ${H.holes.length} mount hole${H.holes.length === 1 ? '' : 's'}.`;
   } else {
@@ -1523,7 +1577,13 @@ function renderDecoNote(){
       (br.limited.length ? ` Narrowed to the maximum for ${br.limited.map(q => `${q.pair} (${fmt(q.w)} mm)`).join(', ')}.` : '') +
       (br.skipped.length ? ` Not connected: ${br.skipped.join(', ')}.` : '');
   }
-  $('decoNote').textContent = why || `${n} ring${n === 1 ? '' : 's'}, ${fmt(d.height)} mm high, ${fmt(d.width)} mm wide.${bridges}${sleeve} Exported as its own STL in the same position as the plate.`;
+  const bwhy = !d.rings ? 'Button rings are turned off.' : !n ? 'No buttons on the plate.' : (why && !/turned off|Add a/.test(why) ? why : '');
+  $('decoNote').textContent = bwhy || `${n} ring${n === 1 ? '' : 's'}, ${fmt(d.height)} mm high, ${fmt(d.width)} mm wide.${bridges}${sleeve}`;
+  const ne = state.parts.filter(isEncoder).length;
+  const ewhy = !d.encRings ? 'Encoder rings are turned off.' : !ne ? 'No encoders or rotary switches on the plate.' : (why && !/turned off|Add a/.test(why) ? why : '');
+  $('decoENote').textContent = ewhy || `${ne} ring${ne === 1 ? '' : 's'} around the knobs of the encoders and rotary switches, ${fmt(d.encHeight)} mm high and ${fmt(d.encWidth)} mm wide, with ${fmt(d.encGap)} mm free around each knob so it turns freely. No sleeve: the knob sits above the plate on its shaft.`;
+  $('decoAll').textContent = why ? (/turned off|Add a/.test(why) ? why : '') : 'Button and encoder rings are one piece, exported as its own STL in the same position as the plate.';
+  for (const [k, c] of [['buttons', n], ['encoders', ne]]){ const el = document.querySelector(`#decoSections [data-dsec="${k}"] .pg-count`); if (el) el.textContent = c; }
   $('exDeco').disabled = !!why;
 }
 function syncInputs(){ syncDeco(); $('plateSel').value = state.plateId; $('thick').value = state.thickness; $('gap').value = state.gap; $('snapSel').value = String(state.snap); }
@@ -1729,37 +1789,51 @@ function decoBridges(ds){
 //         ri  rs   (the sleeve is 0.02 mm under rs so its facets stay inside the plate hole)
 //
 // Button elements, other parts' cut-outs and caps, and mounting holes are cut out of the whole piece.
+// One ring footprint (discs + optional bars, joints rounded), clipped to the flat top of the plate, as a chamfered solid.
+function decoPrism(discs, bars, z0, h, c, T){
+  const { Manifold, CrossSection } = MF, pl = plate(), ch = chamferFor(pl, state.thickness);
+  let fp = T(new CrossSection([...discs, ...bars], 'Positive'));
+  if (bars.length) fp = T(T(fp.offset(DECO_SMOOTH, 'Round')).offset(-DECO_SMOOTH, 'Round'));
+  fp = T(fp.intersect(T(T(new CrossSection([pl.outline])).offset(-ch.outline, 'Round'))));
+  // Simplify to 0.02 mm: drops the very short segments the rounding leaves behind. Each segment gets its own
+  // chamfer cutter, so this keeps the build fast and avoids near-identical cutters that confuse the booleans.
+  fp = T(fp.simplify(0.02));
+  if (fp.isEmpty()) return null;
+  // extrude and chamfer the outer edge (directly as a mesh; the slower cutter method is the fallback)
+  let m = chamferedPrism(fp, z0, h, c);
+  if (m) return T(m);
+  m = T(T(Manifold.extrude(fp, h)).translate([0, 0, z0]));
+  if (c > 0){
+    const cutters = [];
+    for (const contour of fp.toPolygons()) for (const k of edgeChamferCutters(contour, z0 + h, c)) cutters.push(T(k));
+    m = T(m.subtract(T(Manifold.union(cutters))));
+  }
+  return m;
+}
 function mfDeco(){
   const ds = cleanDeco(state.deco);
-  if (!ds.rings || !MF) return null;
-  const buttons = state.parts.filter(isButton);
-  if (!buttons.length) return null;
+  if (!MF) return null;
+  const buttons = ds.rings ? state.parts.filter(isButton) : [];
+  const encs = ds.encRings ? state.parts.filter(isEncoder) : [];
+  if (!buttons.length && !encs.length) return null;
   const { Manifold, CrossSection } = MF, trash = [];
   const T = x => (trash.push(x), x);
   try {
-    const pl = plate(), t = state.thickness, ch = chamferFor(pl, t), h = ds.height, c = ds.chamfer;
-    const dep = Math.min(ds.depth, t);
-    // 1. footprint: discs + bridges, joints rounded, clipped to the flat top of the plate
-    const discs = buttons.map(p => circlePoly(p.x, p.y, elementR(p) + ds.width));
-    const bars = decoBridges(ds).pairs.map(b => b.bar);
-    let fp = T(new CrossSection([...discs, ...bars], 'Positive'));
-    if (bars.length) fp = T(T(fp.offset(DECO_SMOOTH, 'Round')).offset(-DECO_SMOOTH, 'Round'));
-    fp = T(fp.intersect(T(T(new CrossSection([pl.outline])).offset(-ch.outline, 'Round'))));
-    // Simplify to 0.02 mm: drops the very short segments the rounding leaves behind. Each segment gets its own
-    // chamfer cutter, so this keeps the build fast and avoids near-identical cutters that confuse the booleans.
-    fp = T(fp.simplify(0.02));
-    if (fp.isEmpty()) return null;
-    // 2. extrude and chamfer the outer edge (directly as a mesh; the slower cutter method is the fallback)
-    let deco = chamferedPrism(fp, t, h, c);
-    if (deco) T(deco);
-    else {
-      deco = T(T(Manifold.extrude(fp, h)).translate([0, 0, t]));
-      if (c > 0){
-        const cutters = [];
-        for (const contour of fp.toPolygons()) for (const k of edgeChamferCutters(contour, t + h, c)) cutters.push(T(k));
-        deco = T(deco.subtract(T(Manifold.union(cutters))));
-      }
+    const pl = plate(), t = state.thickness, ch = chamferFor(pl, t), h = ds.height;
+    const dep = buttons.length ? Math.min(ds.depth, t) : 0;
+    // 1–2. button rings with bridges, and encoder rings (own height, width and chamfer)
+    const pieces = [];
+    if (buttons.length){
+      const bp = decoPrism(buttons.map(p => circlePoly(p.x, p.y, elementR(p) + ds.width)), decoBridges(ds).pairs.map(b => b.bar), t, h, ds.chamfer, T);
+      if (bp) pieces.push(bp);
     }
+    const encR = p => typeOf(p).cap.d/2 + ds.encGap;   // inner radius of an encoder ring
+    if (encs.length){
+      const ep = decoPrism(encs.map(p => circlePoly(p.x, p.y, encR(p) + ds.encWidth)), [], t, ds.encHeight, ds.encChamfer, T);
+      if (ep) pieces.push(ep);
+    }
+    if (!pieces.length) return null;
+    let deco = pieces.length > 1 ? T(Manifold.union(pieces)) : pieces[0];
     // 3. sleeves (they reach up into the ring a little so the two overlap instead of just touching)
     // Each sleeve fills its button's gap between cap and hole; rs is 0.02 mm under the hole radius so the sleeve's
     // facets stay inside the plate hole's facets. Buttons whose hole leaves no room around the cap get no sleeve.
@@ -1769,15 +1843,16 @@ function mfDeco(){
     }) : [];
     if (sleeves.length) deco = T(Manifold.union([deco, ...sleeves]));
     // 4. cut out button bodies, other parts and mounting holes through the whole piece
-    const z0 = t - dep - 1, zh = dep + h + 2;
+    const z0 = t - dep - 1, zh = dep + Math.max(h, ds.encHeight) + 2;
     const open = [];
+    const ringed = new Set([...buttons, ...encs].map(p => p.id));
     for (const p of state.parts.flatMap(elemsOf)){
-      if (isButton(p)) continue;
+      if (ringed.has(p.id)) continue;
       const tp = typeOf(p);
       open.push(shapePoly(cutShape(p)));
       if (tp.cap && tp.cap.c === 'circle') open.push(circlePoly(p.x, p.y, tp.cap.d/2));
     }
-    const bodies = buttons.map(p => circlePoly(p.x, p.y, elementR(p)));
+    const bodies = [...buttons.map(p => circlePoly(p.x, p.y, elementR(p))), ...encs.map(p => circlePoly(p.x, p.y, encR(p)))];
     const mounts = pl.holes.filter(m => m.role === 'mount').map(m => circlePoly(m.x, m.y, m.d/2 + ch.mount + 0.5));
     let ocs = T(new CrossSection([...bodies, ...mounts], 'Positive'));
     if (open.length) ocs = T(CrossSection.union(ocs, T(T(new CrossSection(open, 'Positive')).offset(0.5, 'Round'))));

@@ -102,7 +102,9 @@ For a one-off part that isn't in `parts.json`, use **Custom circle** or **Custom
 Custom parts rotate, mirror and duplicate like any other part. They're saved with the layout and listed with their sizes in the parts list (CSV). They have no depth, so the plate-spacing check doesn't apply to them.
 
 ### Deco
-The deco is a separate printed piece that sits on top of the front plate, exported as its own STL (`-deco.stl`). It uses the same coordinates as the plate STL, so importing both into a slicer lines them up, for example for a multi-colour print. It's generated from the layout. For now it has one feature, set in the **Deco** panel:
+The deco is a separate printed piece that sits on top of the front plate, exported as its own STL (`-deco.stl`). It uses the same coordinates as the plate STL, so importing both into a slicer lines them up, for example for a multi-colour print. It's generated from the layout. The **Deco** panel has two sections, opened one at a time like the parts list: **Buttons** and **Encoders**. Button and encoder rings come out as one piece.
+
+**Buttons:**
 - **Rings around buttons:** a ring around every part whose cap style is `button`. Its opening is the button's element (the `cap` in `parts.json`), so the cap passes through. Defaults are 2 mm high and 4 mm wide, with a 1 mm 45° chamfer on the top outer edge.
 - **Sleeve:** each ring has a sleeve, part of the same piece, that goes down into the button's hole and fills the gap between the cap and the hole. It locates the deco on the plate. The sleeve's wall is (hole − cap) / 2: the 12 mm button has a Ø14 cap in a Ø15 hole, so its wall is 0.5 mm. The plate hole is never enlarged; it's always the `hole` from `parts.json`. A button whose hole leaves less than 0.3 mm around the cap gets no sleeve, and the Deco panel says so. Default sleeve depth is 3 mm, limited to the plate thickness, and 0 turns sleeves off.
 - **Bridges:** buttons whose rings are at most 6 mm apart, edge to edge, are joined automatically by a bar. You can change the distance or turn bridges off.
@@ -114,6 +116,11 @@ The deco is a separate printed piece that sits on top of the front plate, export
 - Rings that touch are merged into one piece.
 - The deco stays on the flat top of the plate, inside the outline chamfer. It leaves other parts' cut-outs and caps (plus 0.5 mm) and the mounting holes clear.
 - The sleeve and the plate hole have the same nominal size. For printing clearance, make the `hole` slightly larger in `parts.json`.
+
+**Encoders:** a ring around the knob of every part whose cap style is `knob`, which covers the encoder and the rotary switch.
+- The ring has its own height, width and chamfer (defaults 2, 3 and 1 mm), and the **Gap to knob** (1 mm by default) is the free space between the knob and the ring, so the knob turns freely.
+- There's no sleeve, because the knob sits above the plate on its shaft.
+- Encoder rings aren't bridged.
 
 The deco settings are saved with the layout.
 
