@@ -25,49 +25,49 @@
       "name": "Push button 12 mm", "group": "Buttons", "label": "BTN",
       "hole": { "shape": "circle", "d": 15 },
       "cap":  { "shape": "circle", "d": 14, "height": 5, "style": "button" },
-      "pcb":  { "shape": "rect", "w": 20, "h": 20, "r": 1, "depth": 20 },
+      "pcb":  { "shape": "rect", "w": 20, "h": 20, "r": 1, "depth": 15 },
       "clearance": 0
     },
     "btn16": {
       "name": "Push button 16 mm", "group": "Buttons", "label": "BTN",
       "hole": { "shape": "circle", "d": 19 },
       "cap":  { "shape": "circle", "d": 18, "height": 6, "style": "button" },
-      "pcb":  { "shape": "circle", "d": 17, "depth": 24 },
+      "pcb":  { "shape": "circle", "d": 17, "depth": 15 },
       "clearance": 2
     },
     "enc": {
       "name": "Encoder EC11", "group": "Encoders & switches", "label": "ENC",
       "hole": { "shape": "circle", "d": 7.2 },
       "cap":  { "shape": "circle", "d": 20, "height": 8, "style": "knob" },
-      "pcb":  { "shape": "rect", "w": 12, "h": 13, "depth": 20 },
+      "pcb":  { "shape": "rect", "w": 12, "h": 13, "depth": 15 },
       "clearance": 2
     },
     "rot": {
       "name": "Rotary switch 12-pos", "group": "Encoders & switches", "label": "ROT",
       "hole": { "shape": "circle", "d": 9.5 },
       "cap":  { "shape": "circle", "d": 28, "height": 10, "style": "knob" },
-      "pcb":  { "shape": "rect", "w": 27.2, "h": 27.2, "r": 1, "depth": 30 },
+      "pcb":  { "shape": "rect", "w": 27.2, "h": 27.2, "r": 1, "depth": 15 },
       "clearance": 0
     },
     "tgl": {
       "name": "Toggle switch M6", "group": "Encoders & switches", "label": "TGL",
       "hole": { "shape": "circle", "d": 6.2 },
       "cap":  { "shape": "circle", "d": 3, "height": 11, "style": "lever" },
-      "pcb":  { "shape": "rect", "w": 8, "h": 13, "depth": 25 },
+      "pcb":  { "shape": "rect", "w": 8, "h": 13, "depth": 15 },
       "clearance": 3
     },
     "led5": {
       "name": "LED 5 mm", "group": "Indicators", "label": "LED",
       "hole": { "shape": "circle", "d": 5.1 },
       "cap":  { "shape": "circle", "d": 5, "height": 4, "style": "led" },
-      "pcb":  { "shape": "circle", "d": 5, "depth": 10 },
+      "pcb":  { "shape": "circle", "d": 5, "depth": 15 },
       "clearance": 1.5
     },
     "led3": {
       "name": "LED 3 mm", "group": "Indicators", "label": "LED",
       "hole": { "shape": "circle", "d": 3.1 },
       "cap":  { "shape": "circle", "d": 3, "height": 3, "style": "led" },
-      "pcb":  { "shape": "circle", "d": 3, "depth": 10 },
+      "pcb":  { "shape": "circle", "d": 3, "depth": 15 },
       "clearance": 1
     },
     "oled": {

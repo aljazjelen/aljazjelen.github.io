@@ -19,7 +19,7 @@
   "name": "Hermes · Rally",
   "dxf": "backplate.dxf",
   "edgeMargin": 4.5,
-  "plateSpacing": 30,
+  "plateSpacing": 20,
   "frontPlateThickness": 4,
   "chamfer": {
     "outline": 0.5,
@@ -39,7 +39,7 @@
   },
   "handles": {
     "style": "rally",
-    "rim": { "diameter": 340, "tube": 30, "flatBottom": 140, "cornerRadius": 40, "gapBelowFrontPlate": 0.5 },
+    "rim": { "diameter": 320, "tube": 30, "flatBottom": 132, "cornerRadius": 40, "gapBelowFrontPlate": 0.5 },
     "spokes": [
       { "holes": [[-48.061, 10.275]] },
       { "holes": [[-18.584, -43.664], [18.584, -43.664]] }

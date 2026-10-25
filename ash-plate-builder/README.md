@@ -43,7 +43,7 @@ wheels/
 
 The wheels are named after Greek gods:
 - **Zeus · GT3** (`zeus`): 267 × 142 mm plate with 13 mounting holes, and GT3-style open grips in the preview.
-- **Hermes · Rally** (`hermes`): compact 147 × 108 mm plate with 6 mounting holes, and a rally rim in the preview. Its default plate spacing is 30 mm, so the 12-position rotary switches fit.
+- **Hermes · Rally** (`hermes`): compact 147 × 108 mm plate with 6 mounting holes, and a rally rim in the preview.
 - **Ares · GT3 wide** (`ares`): a placeholder defined without a DXF.
 
 Layouts saved with the old folder names (`backplate-5`, `rally`, `gt3-placeholder`) still open on the right wheel.
@@ -116,7 +116,7 @@ A wheel can define handles in its `wheel.json`, so the style follows the wheel. 
 - **Mirroring:** the right handle is the left one mirrored.
 
 **`rally`** (Hermes): a round rim with a flat bottom, on spokes.
-- **Rim:** `rim.diameter` is the outside diameter (340 mm) and `rim.tube` the tube diameter (30 mm). `rim.flatBottom` is the distance from the centre to the outside of the flat bottom (140 mm), and `rim.cornerRadius` rounds the flat into the circle (40 mm). The top of the rim sits just below the front plate, like the GT3 grips.
+- **Rim:** `rim.diameter` is the outside diameter (320 mm) and `rim.tube` the tube diameter (30 mm). `rim.flatBottom` is the distance from the centre to the outside of the flat bottom (132 mm), and `rim.cornerRadius` rounds the flat into the circle (40 mm). The top of the rim sits just below the front plate, like the GT3 grips.
 - **Spokes:** each entry in `spokes` lists the mount holes it bolts to. A spoke is a pad behind the back plate, swept up to the rim, so the rim is dished towards the driver. The spoke runs outward from the centre through its holes. Spokes off the centre line are mirrored. Hermes has three: left, right, and a wide bottom spoke on the two bottom holes. `spoke` sets the width and thickness.
 
 The **Handles** panel can hide them and change the main sizes: grip width and depth for `gt3`, rim and tube diameter for `rally`. To reshape them, edit `wheel.json`.
