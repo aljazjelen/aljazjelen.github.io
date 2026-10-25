@@ -61,6 +61,17 @@ header.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom
 @media (max-width:1180px){.grid{grid-template-columns:250px minmax(0,1fr);grid-template-areas:"side editor" "right right"}.right{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start}}
 @media (max-width:760px){.grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"editor" "side" "right"}}
 
+.tabs{display:inline-flex;background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
+.tabs button{border:0;background:transparent;border-radius:999px;padding:6px 14px;font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.03em;color:var(--muted);cursor:pointer}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.grid3d{display:grid;gap:14px;grid-template-columns:minmax(0,1fr) 360px;align-items:start}
+.grid3d .viewer-col{min-width:0;grid-area:auto}
+.grid3d .right{display:flex;flex-direction:column;gap:14px;min-width:0;grid-area:auto}
+.grid3d #view3d{height:clamp(360px, calc(100vh - 190px), 1000px)}
+@media (max-width:1100px){.grid3d{grid-template-columns:minmax(0,1fr)}.grid3d .right{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start}}
+@media (max-width:760px){.grid3d #view3d{height:62vh}}
+.kbhelp{padding:8px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);min-width:0}
 .card > h2{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0;padding:10px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
 .card > h2 .grow{flex:1}
@@ -165,13 +176,17 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 <div class="wrap">
   <header class="bar">
     <div class="brand"><h1>ASH <span>Front Plate</span> Builder</h1><small id="plateTag"></small></div>
+    <div class="tabs" role="tablist" aria-label="View">
+      <button role="tab" id="tabDesign" aria-controls="viewDesign" aria-selected="true">2D design</button>
+      <button role="tab" id="tabPreview" aria-controls="viewPreview" aria-selected="false">3D preview</button>
+    </div>
     <div class="spacer"></div>
     <span id="status" class="status ok">Ready</span>
     <button class="btn sm" id="undoBtn" title="Undo (Ctrl+Z)">Undo</button>
     <button class="btn sm" id="redoBtn" title="Redo (Ctrl+Y)">Redo</button>
   </header>
 
-  <div class="grid">
+  <div class="grid" id="viewDesign" role="tabpanel" aria-labelledby="tabDesign">
     <aside class="side">
       <section class="card">
         <h2>Wheel</h2>
@@ -206,6 +221,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
           <span class="readout" id="readout">x — y —</span>
         </div>
         <div class="stage"><svg id="plate" xmlns="http://www.w3.org/2000/svg" aria-label="Front plate layout editor"></svg></div>
+        <div class="kbhelp"><kbd>Del</kbd> remove · <kbd>R</kbd> rotate 90° (<kbd>Shift</kbd> 5°) · <kbd>M</kbd> mirror copy · arrows nudge · <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo</div>
       </section>
     </main>
 
@@ -217,6 +233,35 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
       <section class="card">
         <h2>Checks</h2>
         <div class="body" id="issuesBox"></div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="grid3d" id="viewPreview" role="tabpanel" aria-labelledby="tabPreview" hidden>
+    <main class="viewer-col">
+      <section class="card viewer">
+        <h2><span class="grow">3D preview</span><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="partsChk" checked> Parts</label></h2>
+        <div class="body"><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
+          <p class="note">Drag to orbit, scroll or pinch to zoom. Translucent bodies show depth behind the plate; the lower slab is the back plate. Parts are placed in the 2D design view.</p></div>
+      </section>
+    </main>
+    <aside class="right">
+      <section class="card">
+        <h2>Export</h2>
+        <div class="body">
+          <div class="exports">
+            <button class="btn primary wide" id="exAll">Download everything <em>.zip</em></button>
+            <button class="btn" id="exStl">Front plate <em>.stl</em></button>
+            <button class="btn" id="exDeco">Deco <em>.stl</em></button>
+            <button class="btn" id="exDxf">Cut outline <em>.dxf</em></button>
+            <button class="btn" id="exSvg">Cut outline <em>.svg</em></button>
+            <button class="btn" id="exBom">Parts list <em>.csv</em></button>
+            <button class="btn" id="exJson">Save layout <em>.json</em></button>
+            <button class="btn wide" id="imJson">Open layout <em>.json</em></button>
+          </div>
+          <input type="file" id="fileIn" accept=".json,application/json" hidden>
+          <p class="note" id="exNote"></p>
+        </div>
       </section>
       <section class="card">
         <h2>Deco</h2>
@@ -249,29 +294,6 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
             <label class="field">Grip depth (mm)<input type="number" id="hD" min="15" max="80" step="1"></label>
           </div>
           <p class="note" id="hNote"></p>
-        </div>
-      </section>
-      <section class="card">
-        <h2><span class="grow">3D preview</span><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="partsChk" checked> Parts</label></h2>
-        <div class="body"><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
-          <p class="note">Drag to orbit, scroll or pinch to zoom. Translucent bodies show depth behind the plate; the lower slab is the back plate.</p></div>
-      </section>
-      <section class="card">
-        <h2>Export</h2>
-        <div class="body">
-          <div class="exports">
-            <button class="btn primary wide" id="exAll">Download everything <em>.zip</em></button>
-            <button class="btn" id="exStl">Front plate <em>.stl</em></button>
-            <button class="btn" id="exDeco">Deco <em>.stl</em></button>
-            <button class="btn" id="exDxf">Cut outline <em>.dxf</em></button>
-            <button class="btn" id="exSvg">Cut outline <em>.svg</em></button>
-            <button class="btn" id="exBom">Parts list <em>.csv</em></button>
-            <button class="btn" id="exJson">Save layout <em>.json</em></button>
-            <button class="btn wide" id="imJson">Open layout <em>.json</em></button>
-          </div>
-          <input type="file" id="fileIn" accept=".json,application/json" hidden>
-          <p class="note" id="exNote"></p>
-          <p class="note"><kbd>Del</kbd> remove · <kbd>R</kbd> rotate 90° (<kbd>Shift</kbd> 5°) · <kbd>M</kbd> mirror copy · arrows nudge · <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo</p>
         </div>
       </section>
     </aside>
@@ -1798,7 +1820,27 @@ function init3d(){
   three = { renderer, scene, camera, controls, draw, resize, group:null, framedFor:null };
   rebuild3d();
 }
-function schedule3d(){ if (!three) return; clearTimeout(rebuildTimer); rebuildTimer = setTimeout(rebuild3d, drag ? 90 : 30); }
+// The 3D scene is only rebuilt while the 3D preview is showing; switching to it catches up.
+let preview3dStale = true;
+function schedule3d(){
+  if (!three) return;
+  if ($('viewPreview').hidden){ preview3dStale = true; return; }
+  clearTimeout(rebuildTimer); rebuildTimer = setTimeout(rebuild3d, drag ? 90 : 30);
+}
+const VIEW_KEY = 'ash-front-plate-view';
+function setView(v){
+  const preview = v === 'preview';
+  $('viewDesign').hidden = preview; $('viewPreview').hidden = !preview;
+  $('tabDesign').setAttribute('aria-selected', String(!preview)); $('tabPreview').setAttribute('aria-selected', String(preview));
+  try { localStorage.setItem(VIEW_KEY, preview ? 'preview' : 'design'); } catch(e){}
+  if (preview && three){ three.resize(); if (preview3dStale){ preview3dStale = false; rebuild3d(); } }
+  if (!preview) render2d();
+}
+$('tabDesign').addEventListener('click', () => setView('design'));
+$('tabPreview').addEventListener('click', () => setView('preview'));
+for (const id of ['tabDesign', 'tabPreview']) $(id).addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft'){ e.preventDefault(); const other = id === 'tabDesign' ? 'tabPreview' : 'tabDesign'; $(other).focus(); $(other).click(); }
+});
 function disposeGroup(g){ g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); }
 function rebuild3d(){
   if (!three) return;
@@ -2012,6 +2054,11 @@ async function boot(){
   catch(e){ loadState(makeExample(PLATES[0].id)); }
   renderPalette(); initControls(); renderAll(false);
   init3d();
+  let startView = 'design';
+  try { startView = localStorage.getItem(VIEW_KEY) || 'design'; } catch(e){}
+  if (location.hash === '#preview') startView = 'preview';
+  if (location.hash === '#design') startView = 'design';
+  setView(startView);
   loadManifold();
   renderWheelWarnings();
   const allWarn = [...wheelWarnings, ...partWarnings];

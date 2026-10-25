@@ -112,6 +112,11 @@ After editing, run `python3 tools/sync_builtin.py` to refresh the copy. GitHub P
 ### Chamfers and the 3D engine
 The chamfered plate is built with [manifold-3d](https://github.com/elalish/manifold) 3.5.4, which is vendored in `vendor/` so the app doesn't depend on a CDN. The chamfer only changes the STL and the 3D preview; the DXF and SVG stay 2D outlines. If the engine can't load, the app falls back to a plain extrusion and says so under Export.
 
+## Views
+The app has two views, switched at the top. It remembers the last one; add `#design` or `#preview` to the link to open a specific view.
+- **2D design:** wheel selection, the parts list, the plate editor, the selected part and the checks.
+- **3D preview:** a large 3D view of the plate, deco and handles, with the Export, Deco and Handles panels.
+
 ## Controls
 In the editor:
 - the black shapes are the caps (button caps, knobs, levers, LEDs), as seen from the front; parts without a cap, like the display, show their cut-out
