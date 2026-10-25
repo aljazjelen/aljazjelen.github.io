@@ -61,7 +61,7 @@
     { "type": "led3", "x": 9, "y": 39.5, "label": "S6" },
     { "type": "led3", "x": 15, "y": 39.5, "label": "S7" },
     { "type": "led3", "x": 21, "y": 39.5, "label": "S8" },
-    { "type": "rot", "x": -35, "y": 24, "rot": 315, "label": "ROT L" },
-    { "type": "rot", "x": 35, "y": 24, "rot": 45, "label": "ROT R" }
+    { "type": "enc", "x": -36, "y": 24, "label": "ENC L" },
+    { "type": "enc", "x": 36, "y": 24, "label": "ENC R" }
   ]
 }

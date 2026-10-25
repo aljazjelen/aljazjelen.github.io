@@ -83,7 +83,7 @@ The part library. For each part it sets:
 - `pcb`: the board or switch body underneath, including its depth behind the plate
 - `clearance`: the safe space around the part. The keep-out zone is the largest of the hole, cap and PCB, plus the clearance on every side.
 - optional `keepout`, to set the keep-out shape exactly instead
-- optional `counterbore`, a wider blind pocket cut from the top of the plate around the hole, with its own `depth`. The hole still goes all the way through, and at least 0.4 mm of plate is left under the pocket. The rotary switch uses Ø16 × 2 mm. Counterbores are in the STL, and in the DXF on their own `COUNTERBORE` layer; the SVG only has through-cuts.
+- optional `counterbore`, a wider blind pocket cut from the top of the plate around the hole, with its own `depth`. The hole still goes all the way through, and at least 0.4 mm of plate is left under the pocket. The rotary switch has a Ø30 hole with a Ø32 × 1 mm counterbore. Counterbores are in the STL, and in the DXF on their own `COUNTERBORE` layer; the SVG only has through-cuts.
 - `allowOverNoGo` and `display`, plus `rotatable: false` to lock rotation (every part rotates by default)
 - optional `row`, for a symmetric row of identical elements such as LEDs: `pitch` is the default centre-to-centre spacing, `maxPerSide` how many can be added on each side of the middle one
 

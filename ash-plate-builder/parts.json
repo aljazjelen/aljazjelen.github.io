@@ -11,7 +11,7 @@
     "keepout (optional): set an exact keep-out shape instead of the computed one.",
     "Every part can be rotated; set rotatable: false to lock one. allowOverNoGo: true lets a part sit over the back plate's no-go areas (it must still avoid mounting holes).",
     "display: true draws a screen in the 3D preview.",
-    "counterbore (optional): a wider blind pocket cut from the top of the plate around the hole, e.g. { \"shape\": \"circle\", \"d\": 16, \"depth\": 2 }. The hole still goes all the way through; at least 0.4 mm of plate is always left under the pocket.",
+    "counterbore (optional): a wider blind pocket cut from the top of the plate around the hole, e.g. { \"shape\": \"circle\", \"d\": 32, \"depth\": 1 }. The hole still goes all the way through; at least 0.4 mm of plate is always left under the pocket.",
     "deco: false keeps a part out of the deco: no ring around it (the rotary switch uses this).",
     "row (optional): makes a symmetric row of identical elements, e.g. LEDs. pitch = default centre-to-centre spacing, maxPerSide = how many can be added on each side of the middle one. The part's position is the middle element; the keep-out becomes one rounded strip around the whole row."
   ],
@@ -47,9 +47,9 @@
     },
     "rot": {
       "name": "Rotary switch 12-pos", "group": "Buttons/Rotaries", "label": "ROT",
-      "hole": { "shape": "circle", "d": 9.5 },
+      "hole": { "shape": "circle", "d": 30 },
       "cap":  { "shape": "circle", "d": 28, "height": 10, "style": "knob" },
-      "counterbore": { "shape": "circle", "d": 16, "depth": 2 },
+      "counterbore": { "shape": "circle", "d": 32, "depth": 1 },
       "pcb":  { "shape": "rect", "w": 27.2, "h": 27.2, "r": 1, "depth": 15 },
       "clearance": 0,
       "deco": false
