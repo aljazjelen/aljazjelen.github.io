@@ -149,8 +149,17 @@ After editing, run `python3 tools/sync_builtin.py` to refresh the copy. GitHub P
 The chamfered plate is built with [manifold-3d](https://github.com/elalish/manifold) 3.5.4, which is vendored in `vendor/` so the app doesn't depend on a CDN. The chamfer only changes the STL and the 3D preview; the DXF and SVG stay 2D outlines. If the engine can't load, the app falls back to a plain extrusion and says so under Export.
 
 ## Views
-The app has two views, switched at the top. It remembers the last one; add `#design` or `#preview` to the link to open a specific view.
-- **2D design:** wheel selection, the parts list, the plate editor, the selected part and the checks. The parts list shows its groups (Buttons/Rotaries, Encoders & switches, Indicators, Displays, Custom) collapsed. Click a group to open it; only one is open at a time.
+The app has three views, switched at the top. It remembers the last one; add `#outline`, `#design` or `#preview` to the link to open a specific view. A first visit starts on Outline.
+- **Outline:** where the back plate comes from. Either pick an **existing design** (the wheels in `wheels/`, shown as cards with a small picture), or draw **your own outline**:
+  - The drawing area is 300 × 200 mm, with the Ø46 mm electronics zone in the middle (a no-go area, like the hub on the other plates).
+  - Click to place points, drag a point to move it, double-click it or press <kbd>Del</kbd> to remove it, and use the arrow keys to nudge the selected point. A click within 6 mm of an edge adds a point into that edge; otherwise it's added after the last point.
+  - **Symmetric** (on by default): you draw the right half from top to bottom, its ends join the centre line, and the left half is mirrored.
+  - **Round corners** rounds every corner, inner and outer, with one radius (5 mm by default).
+  - **Start from** fills the canvas with a rectangle, a round shape, or a simplified copy of one of the existing designs to modify.
+  - The outline must not cross itself. It should go around the electronics zone with at least 4.5 mm to spare; the panel on the right says when it doesn't.
+  - Your own outline uses a 4.5 mm edge margin, 20 mm plate spacing, 4 mm thickness, and a 0.5 mm top chamfer. **Mounting holes are still to do**: the front plate is exported without them.
+  - The outline is saved with the layout. Until it's usable, the 2D design keeps showing the previous back plate and says so.
+- **2D design:** the chosen back plate (**Change** goes back to Outline), the parts list, the plate editor, the selected part and the checks. The parts list shows its groups (Buttons/Rotaries, Encoders & switches, Indicators, Displays, Custom) collapsed. Click a group to open it; only one is open at a time.
 - **3D preview:** a large 3D view of the plate, deco and handles, with the Export, Deco and Handles panels.
 
 ## Controls

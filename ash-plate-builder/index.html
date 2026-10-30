@@ -71,6 +71,50 @@ header.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom
 .grid3d #view3d{height:clamp(360px, calc(100vh - 190px), 1000px)}
 @media (max-width:1100px){.grid3d{grid-template-columns:minmax(0,1fr)}.grid3d .right{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start}}
 @media (max-width:760px){.grid3d #view3d{height:62vh}}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px}
+.seg button{border:0;background:transparent;border-radius:4px;padding:7px 6px;font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.03em;color:var(--muted);cursor:pointer}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-checked="true"]{background:var(--accent);color:var(--accent-ink)}
+.presets{display:flex;flex-direction:column;gap:6px}
+.preset{display:flex;gap:10px;align-items:center;width:100%;border:1px solid var(--line);background:var(--panel);border-radius:4px;padding:6px 8px;cursor:pointer;text-align:left;color:var(--ink);font:inherit}
+.preset:hover{background:var(--panel-2)}
+.preset[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.preset svg{width:64px;height:42px;flex:none}
+.preset svg .pv{fill:var(--plate)}
+.preset svg .ph{fill:var(--panel)}
+.preset b{display:block;font-size:13px;font-weight:600}
+.preset i{display:block;font-style:normal;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.inline{flex-direction:row!important;align-items:center;gap:6px}
+.etools .field.inline input{width:64px}.etools .field.inline select{width:auto;max-width:190px}
+.platepick{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.platepick b{font-size:14px;font-weight:600}
+.olstat{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.olstat li{padding:6px 8px;border-radius:4px}
+.olstat .ok{background:var(--ok-soft);color:var(--ok)}
+.olstat .err{background:var(--err-soft);color:var(--err)}
+.olstat .warn{background:var(--warn-soft);color:var(--warn)}
+.oltodo{border:1px dashed var(--line);border-radius:4px;padding:8px;font-size:12px;color:var(--muted)}
+#outlineSvg{width:100%;max-height:calc(100vh - 210px);touch-action:none;user-select:none;-webkit-user-select:none;display:block}
+#outlineSvg .ol-area{fill:var(--panel);stroke:var(--muted);stroke-width:.35;stroke-dasharray:2 1.2}
+#outlineSvg .ol-gl{stroke:var(--line);stroke-width:.2}
+#outlineSvg .ol-gl.s{stroke:var(--line);stroke-width:.45}
+#outlineSvg .ol-axis{stroke:var(--accent);stroke-width:.35;stroke-dasharray:3 2;opacity:.6}
+#outlineSvg .ol-plate{fill:var(--plate)}
+#outlineSvg .ol-draft{fill:var(--accent-soft);stroke:none}
+#outlineSvg .ol-margin{fill:none;stroke:var(--zone);stroke-width:.4;stroke-dasharray:2 1.5}
+#outlineSvg .ol-hub{fill:url(#olHatch);stroke:var(--zone);stroke-width:.35}
+#outlineSvg .ol-hubko{fill:none;stroke:var(--zone);stroke-width:.3;stroke-dasharray:1 1}
+#outlineSvg .ol-hatch{stroke:var(--zone);stroke-width:.35}
+#outlineSvg .ol-raw{fill:none;stroke:var(--accent);stroke-width:.45}
+#outlineSvg .ol-raw.bad{stroke:var(--err)}
+#outlineSvg .ol-pt{fill:var(--panel);stroke:var(--accent);stroke-width:.7;cursor:grab}
+#outlineSvg .ol-pt:hover{fill:var(--accent-soft)}
+#outlineSvg .ol-pt.sel{fill:var(--accent)}
+#outlineSvg .ol-ghost{fill:var(--accent);opacity:.4;pointer-events:none}
+#outlineSvg .ol-mount{fill:var(--panel);stroke:var(--plate-ink);stroke-width:.3}
+#outlineSvg .ol-lbl{font-family:var(--f-mono);font-size:4.2px;fill:var(--muted)}
+#outlineSvg .ol-hint{font-family:var(--f-body);font-size:6px;fill:var(--muted);text-anchor:middle}
+#outlineSvg.drawing{cursor:crosshair}
 .kbhelp{padding:8px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);min-width:0}
 .card > h2{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0;padding:10px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
@@ -154,9 +198,9 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .customdims{display:flex;flex-direction:column;gap:8px}
 .dimgroup{display:flex;flex-direction:column;gap:4px}
 .dimtitle{font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.props .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px}
-.props .kv dt{color:var(--muted)}
-.props .kv dd{margin:0;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.props .kv,#olInfo .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px}
+.props .kv dt,#olInfo .kv dt{color:var(--muted)}
+.props .kv dd,#olInfo .kv dd{margin:0;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 .empty{font-size:13px;color:var(--muted);margin:0}
 
 .issues{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
@@ -189,6 +233,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
   <header class="bar">
     <div class="brand"><h1>ASH <span>Front Plate</span> Builder</h1><small id="plateTag"></small></div>
     <div class="tabs" role="tablist" aria-label="View">
+      <button role="tab" id="tabOutline" aria-controls="viewOutline" aria-selected="false">Outline</button>
       <button role="tab" id="tabDesign" aria-controls="viewDesign" aria-selected="true">2D design</button>
       <button role="tab" id="tabPreview" aria-controls="viewPreview" aria-selected="false">3D preview</button>
     </div>
@@ -198,12 +243,50 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
     <button class="btn sm" id="redoBtn" title="Redo (Ctrl+Y)">Redo</button>
   </header>
 
+  <div class="grid" id="viewOutline" role="tabpanel" aria-labelledby="tabOutline" hidden>
+    <aside class="side">
+      <section class="card">
+        <h2>Back plate outline</h2>
+        <div class="body">
+          <div class="seg" role="radiogroup" aria-label="Where the outline comes from">
+            <button type="button" role="radio" id="srcPreset" aria-checked="true">Existing design</button>
+            <button type="button" role="radio" id="srcCustom" aria-checked="false">My own outline</button>
+          </div>
+          <div class="presets" id="presetList"></div>
+          <div id="customIntro" hidden>
+            <p class="note">Draw the outline of your wheel inside the 300 × 200 mm area. The Ø46 mm electronics zone in the middle stays free. The 2D design and 3D preview use this outline.</p>
+          </div>
+        </div>
+      </section>
+    </aside>
+    <main class="editor">
+      <section class="card">
+        <div class="etools" id="olTools" hidden>
+          <label class="check"><input type="checkbox" id="olSym" checked> Symmetric</label>
+          <label class="field inline">Snap<select id="olSnap"><option value="0.5">0.5 mm</option><option value="1">1 mm</option><option value="2.5">2.5 mm</option><option value="5">5 mm</option><option value="10">10 mm</option></select></label>
+          <label class="field inline" title="Rounds every corner of the outline with this radius">Round corners<input type="number" id="olRad" min="0" max="40" step="0.5"> mm</label>
+          <label class="field inline">Start from<select id="olStart"><option value="">…</option></select></label>
+          <button class="btn sm ghost danger" id="olClear">Clear</button>
+          <span class="readout" id="olReadout">x — y —</span>
+        </div>
+        <div class="stage"><svg id="outlineSvg" xmlns="http://www.w3.org/2000/svg" aria-label="Back plate outline"></svg></div>
+        <div class="kbhelp" id="olHelp" hidden>Click to add a point · drag a point to move it · double-click or <kbd>Del</kbd> removes it · with Symmetric on you edit the right half and the left half follows · <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo</div>
+      </section>
+    </main>
+    <aside class="right">
+      <section class="card">
+        <h2 id="olInfoTitle">Outline</h2>
+        <div class="body" id="olInfo"></div>
+      </section>
+    </aside>
+  </div>
+
   <div class="grid" id="viewDesign" role="tabpanel" aria-labelledby="tabDesign">
     <aside class="side">
       <section class="card">
         <h2>Wheel</h2>
         <div class="body">
-          <label class="field">Back plate<select id="plateSel"></select></label>
+          <div class="platepick"><span><span class="note" style="display:block">Back plate</span><b id="plateName"></b></span><button class="btn sm" id="plateChange" title="Pick another back plate or draw your own in the Outline tab">Change</button></div>
           <div class="row">
             <label class="field">Thickness (mm)<input type="number" id="thick" min="2" max="10" step="0.5"></label>
             <label class="field">Plate spacing (mm)<input type="number" id="gap" min="5" max="60" step="1" title="Distance between the back of the front plate and the back plate"></label>
@@ -885,6 +968,151 @@ function cleanDeco(d){
            encChamfer: clampNum(num(d.encChamfer, DECO_DEFAULTS.encChamfer), 0, Math.min(encHeight, encWidth)),
            encGap: clampNum(num(d.encGap, DECO_DEFAULTS.encGap), 0, 10) };
 }
+/* ---------------- Outline (step 1) ----------------
+   Either one of the wheels from wheels/ (a preset) or the user's own outline, drawn as points inside a
+   300 × 200 mm area around a Ø46 mm electronics zone. With Symmetric on, pts is the right half only (x ≥ 0),
+   running from top to bottom; the ends join the centre line and the left half is mirrored. The drawn polygon
+   is rounded with "Round corners" and becomes the plate with id 'custom'. Mounting holes: to do. */
+const OL = { W: 300, H: 200, hub: 46, margin: 4.5 };
+const OL_SNAPS = [0.5, 1, 2.5, 5, 10];
+function cleanOutline(o, plateId){
+  o = o && typeof o === 'object' ? o : {};
+  const sym = o.sym !== false;
+  const pts = (Array.isArray(o.pts) ? o.pts : []).filter(q => Array.isArray(q) && Number.isFinite(+q[0]) && Number.isFinite(+q[1])).slice(0, 300)
+    .map(([x, y]) => [r2(clampNum(sym ? Math.abs(+x) : +x, -OL.W/2, OL.W/2)), r2(clampNum(+y, -OL.H/2, OL.H/2))]);
+  const mode = o.mode === 'custom' || plateId === 'custom' ? 'custom' : 'preset';
+  return { mode, sym, pts, radius: clampNum(Number.isFinite(+o.radius) ? +o.radius : 5, 0, 40),
+           snap: OL_SNAPS.includes(+o.snap) ? +o.snap : 1, preset: typeof o.preset === 'string' ? o.preset : null };
+}
+// The whole drawn polygon (both halves when symmetric), without repeated points.
+function fullOutline(o){
+  let out;
+  if (!o.sym) out = o.pts.map(q => [...q]);
+  else {
+    const p = o.pts; if (!p.length) return [];
+    const right = [];
+    if (p[0][0] > 0.01) right.push([0, p[0][1]]);
+    right.push(...p.map(q => [...q]));
+    const last = p[p.length-1];
+    if (last[0] > 0.01) right.push([0, last[1]]);
+    out = [...right, ...right.filter(q => q[0] > 0.01).map(([x, y]) => [-x, y]).reverse()];
+  }
+  out = out.filter((q, i, a) => i === 0 || Math.hypot(q[0]-a[i-1][0], q[1]-a[i-1][1]) > 0.01);
+  while (out.length > 1 && Math.hypot(out[0][0]-out[out.length-1][0], out[0][1]-out[out.length-1][1]) <= 0.01) out.pop();
+  return out;
+}
+function selfIntersects(P){
+  const n = P.length, cr = (a, b, c) => (b[0]-a[0])*(c[1]-a[1]) - (b[1]-a[1])*(c[0]-a[0]);
+  const on = (a, b, c) => Math.min(a[0],b[0]) - 1e-9 <= c[0] && c[0] <= Math.max(a[0],b[0]) + 1e-9 && Math.min(a[1],b[1]) - 1e-9 <= c[1] && c[1] <= Math.max(a[1],b[1]) + 1e-9;
+  const hit = (a, b, c, d) => {
+    const d1 = cr(c, d, a), d2 = cr(c, d, b), d3 = cr(a, b, c), d4 = cr(a, b, d);
+    if (((d1 > 1e-9 && d2 < -1e-9) || (d1 < -1e-9 && d2 > 1e-9)) && ((d3 > 1e-9 && d4 < -1e-9) || (d3 < -1e-9 && d4 > 1e-9))) return true;
+    return (Math.abs(d1) <= 1e-9 && on(c, d, a)) || (Math.abs(d2) <= 1e-9 && on(c, d, b)) || (Math.abs(d3) <= 1e-9 && on(a, b, c)) || (Math.abs(d4) <= 1e-9 && on(a, b, d));
+  };
+  for (let i = 0; i < n; i++) for (let j = i + 2; j < n; j++){
+    if (i === 0 && j === n - 1) continue;
+    if (hit(P[i], P[(i+1)%n], P[j], P[(j+1)%n])) return true;
+  }
+  return false;
+}
+// Rounds every corner with radius r (convex and concave) via offsets; keeps the largest piece.
+function roundOutline(P, r){
+  if (!MF || !(r > 0)) return P;
+  const { CrossSection } = MF, trash = [];
+  try {
+    let cs = new CrossSection([ccw(P)], 'Positive'); trash.push(cs);
+    const off = (c, d) => { const x = c.offset(d, 'Round', 2, 48); trash.push(x); return x; };
+    cs = off(off(cs, -r), r); cs = off(off(cs, r), -r);
+    cs = cs.simplify(0.02); trash.push(cs);   // drop the tiny segments the rounding leaves (they trip up the chamfer)
+    const polys = cs.toPolygons();
+    if (!polys.length) return null;
+    let best = polys[0];
+    for (const q of polys) if (Math.abs(polyArea(q)) > Math.abs(polyArea(best))) best = q;
+    return best.map(([x, y]) => [Math.round(x*1000)/1000, Math.round(y*1000)/1000]);
+  } finally { for (const x of trash) x.delete(); }
+}
+const hashStr = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+let customStatus = { usable: false, errors: [], warnings: [], raw: [], outline: null }, customKey = null;
+// Builds (or removes) the 'custom' plate from the outline. Memoized, so it's cheap to call on every render.
+function rebuildCustomPlate(o){
+  o = o || (state && state.outline);
+  const key = JSON.stringify([o && o.sym, o && o.pts, o && o.radius, !!MF]);
+  if (key === customKey && (!customStatus.usable || PLATES.some(p => p.id === 'custom'))) return;
+  customKey = key;
+  PLATES = PLATES.filter(p => p.id !== 'custom');
+  const st = { usable: false, errors: [], warnings: [], raw: [], outline: null };
+  customStatus = st;
+  if (!o) return;
+  const raw = fullOutline(o); st.raw = raw;
+  if (raw.length < 3 || Math.abs(polyArea(raw)) < 1){ st.errors.push(o.sym ? 'Place at least two points on the right half. The left half is mirrored.' : 'Place at least three points.'); return; }
+  if (selfIntersects(raw)){ st.errors.push('The outline crosses itself. Move the points so no edges cross.'); return; }
+  let out = roundOutline(raw, o.radius);
+  if (!out || out.length < 3){ st.errors.push('Rounding the corners leaves nothing of the outline. Lower Round corners.'); return; }
+  out = ccw(out);
+  if (o.radius > 0 && !MF) st.warnings.push('Corners get rounded once the 3D engine has loaded.');
+  if (!pointInPoly(0, 0, out) || edgeDist(0, 0, out) < OL.hub/2 + OL.margin - 1e-6)
+    st.warnings.push(`The outline should go around the Ø${OL.hub} mm electronics zone with at least ${OL.margin} mm to spare.`);
+  st.outline = out;
+  try {
+    const pl = buildWheel('custom', { name: 'Own outline', outline: out, edgeMargin: OL.margin, plateSpacing: DEFAULT_GAP, frontPlateThickness: 4,
+      chamfer: { outline: 0.5, mountHoles: 1.7 }, holes: { noGo: { diameters: [OL.hub], clearance: OL.margin } },
+      extraHoles: [{ x: 0, y: 0, d: OL.hub, role: 'noGo' }], example: [] }, null);
+    pl.key = 'custom:' + hashStr(JSON.stringify(out)); pl.notes = []; pl.custom = true;
+    PLATES.push(pl); st.usable = true;
+  } catch(e){ st.errors.push(e.message); }
+}
+// Where a new point goes: after the last point, unless the click lands within OL_SNAP_EDGE mm of an existing edge,
+// then into that edge (symmetric: including the joins from the first and last point to the centre line).
+const OL_SNAP_EDGE = 6;
+function olInsertIndex(o, p){
+  const P = o.pts, n = P.length;
+  let best = n, bd = OL_SNAP_EDGE;
+  if (o.sym){
+    if (n < 2) return n;
+    const C = [[0, P[0][1]], ...P, [0, P[n-1][1]]];
+    for (let k = 0; k < C.length - 1; k++){ const d = segDist(p[0], p[1], C[k], C[k+1]); if (d < bd){ bd = d; best = k; } }
+    return best;
+  }
+  if (n < 3) return n;
+  for (let i = 0; i < n; i++){ const d = segDist(p[0], p[1], P[i], P[(i+1)%n]); if (d < bd){ bd = d; best = i + 1; } }
+  return best;
+}
+// Right half of a full polygon, from where it crosses the centre line at the top to where it crosses at the bottom.
+function rightHalf(P){
+  const n = P.length, cuts = [];
+  for (let i = 0; i < n; i++){
+    const a = P[i], b = P[(i+1)%n];
+    if ((a[0] <= 0 && b[0] > 0) || (a[0] > 0 && b[0] <= 0)){
+      const t = a[0] === b[0] ? 0 : -a[0] / (b[0] - a[0]);
+      cuts.push({ i, pt: [0, r2(a[1] + t*(b[1]-a[1]))], into: b[0] > 0 });
+    }
+  }
+  if (cuts.length !== 2) return P.filter(q => q[0] >= 0);
+  const start = cuts.find(c => c.into), end = cuts.find(c => !c.into), out = [start.pt];
+  for (let k = (start.i + 1) % n; ; k = (k + 1) % n){ out.push([r2(P[k][0]), r2(P[k][1])]); if (k === end.i) break; }
+  out.push(end.pt);
+  return out[0][1] >= out[out.length-1][1] ? out : out.reverse();
+}
+// Douglas–Peucker: keeps an outline copied from a preset editable (a few dozen points instead of hundreds).
+function simplifyPts(P, tol){
+  if (P.length < 4) return P;
+  const keep = new Uint8Array(P.length); keep[0] = keep[P.length-1] = 1;
+  const rec = (a, b) => { let md = 0, mi = -1; for (let i = a + 1; i < b; i++){ const d = segDist(P[i][0], P[i][1], P[a], P[b]); if (d > md){ md = d; mi = i; } } if (md > tol){ keep[mi] = 1; rec(a, mi); rec(mi, b); } };
+  rec(0, P.length - 1);
+  return P.filter((_, i) => keep[i]);
+}
+function outlineStart(kind){
+  const o = state.outline;
+  let full;
+  if (kind === 'rect') full = [[-130, 60], [130, 60], [130, -60], [-130, -60]];
+  else if (kind === 'round') full = Array.from({length: 24}, (_, k) => { const a = Math.PI/2 - 2*Math.PI*k/24; return [r2(95*Math.cos(a)), r2(95*Math.sin(a))]; });
+  else {
+    const pl = PLATES.find(p => p.id === kind && !p.custom); if (!pl) return;
+    const P = pl.outline.slice().reverse();   // clockwise, like the shapes above
+    full = simplifyPts([...P, P[0]], 0.6).slice(0, -1).map(([x, y]) => [r2(clampNum(x, -OL.W/2, OL.W/2)), r2(clampNum(y, -OL.H/2, OL.H/2))]);
+  }
+  mutate(() => { o.pts = o.sym ? rightHalf(full) : full; if (kind !== 'rect' && kind !== 'round') o.radius = 0; });
+}
 // Handles: show/export, and optional grip size overrides (null = the wheel's own size).
 function cleanHandles(h){
   h = h && typeof h === 'object' ? h : {};
@@ -920,6 +1148,7 @@ function makeExample(plateId){
   const pl = PLATES.find(p => p.id === plateId) || PLATES[0];
   const s = { plateId: pl.id, thickness: pl.thickness, gap: pl.spacing, snap:1, deco: {...DECO_DEFAULTS}, handles: cleanHandles({}), parts:[] };
   const prev = state; state = s;
+  if (prev && prev.outline) s.outline = JSON.parse(JSON.stringify(prev.outline));
   for (const o of pl.example) if (o && knownType(o.type) && Number.isFinite(+o.x) && Number.isFinite(+o.y))
     s.parts.push(newPart({type:o.type, dims:o.dims, row:o.row, x:+o.x, y:+o.y, rot:+o.rot||0, label:o.label ? String(o.label) : '', __list:s.parts}));
   state = prev;
@@ -930,7 +1159,11 @@ function loadState(json){
   const s = typeof json === 'string' ? JSON.parse(json) : json;
   if (!s || !Array.isArray(s.parts)) throw new Error('This file has no parts list.');
   if (PLATE_ALIASES[s.plateId] && PLATES.some(p => p.id === PLATE_ALIASES[s.plateId])) s.plateId = PLATE_ALIASES[s.plateId];
-  if (!PLATES.some(p=>p.id===s.plateId)) s.plateId = PLATES[0].id;
+  s.outline = cleanOutline(s.outline, s.plateId);
+  rebuildCustomPlate(s.outline);
+  if (s.outline.mode === 'custom') s.plateId = 'custom';   // stays custom even while the outline isn't usable yet
+  else if (!PLATES.some(p => p.id === s.plateId && !p.custom)) s.plateId = PLATES.find(p => !p.custom).id;
+  if (s.outline.mode === 'preset') s.outline.preset = s.plateId;
   s.thickness = clampNum(+s.thickness || 4, 2, 10);
   s.gap = clampNum(+s.gap || DEFAULT_GAP, 5, 60);
   s.deco = cleanDeco(s.deco);
@@ -1130,7 +1363,7 @@ function offsetInward(o, d){
 const marginCache = { key: null, polys: null };
 function marginLines(pl){
   if (!MF) return [offsetInward(pl.outline, pl.inset)];
-  const key = pl.id + '|' + pl.inset;
+  const key = (pl.key || pl.id) + '|' + pl.inset;
   if (marginCache.key !== key){
     const cs = new MF.CrossSection([pl.outline]), off = cs.offset(-pl.inset, 'Round', 2, 72);
     marginCache.key = key; marginCache.polys = off.toPolygons().filter(q => q.length >= 3);
@@ -1238,6 +1471,150 @@ function endDrag(){
 svg.addEventListener('pointerup', endDrag);
 svg.addEventListener('pointercancel', endDrag);
 svg.addEventListener('pointerleave', () => { if(!drag) $('readout').textContent = 'x — y —'; });
+
+/* ---------------- Outline tab ---------------- */
+const olSvg = $('outlineSvg');
+let olDrag = null, olSel = null, olLastDown = { i: -1, t: 0 };
+function olWorld(e){
+  const pt = olSvg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const m = olSvg.getScreenCTM(); if (!m) return {x:0, y:0};
+  const q = pt.matrixTransform(m.inverse()); return {x:q.x, y:-q.y};
+}
+function olPoint(w){
+  const o = state.outline, sn = v => Math.round(v / o.snap) * o.snap;
+  let x = clampNum(sn(w.x), -OL.W/2, OL.W/2), y = clampNum(sn(w.y), -OL.H/2, OL.H/2);
+  if (o.sym) x = Math.abs(x);
+  return [r2(x), r2(y)];
+}
+function presetThumb(pl){
+  const b = pl.bbox, pad = 4, w = pl.width + 2*pad, h = pl.height + 2*pad;
+  const holes = pl.holes.filter(m => !m.poly && m.role === 'mount').map(m => `<circle class="ph" cx="${m.x}" cy="${-m.y}" r="${Math.max(m.d, 4)/2}"/>`).join('');
+  return `<svg viewBox="${b.minX-pad} ${-b.maxY-pad} ${w} ${h}" aria-hidden="true"><polygon class="pv" points="${polySvgPts(pl.outline)}"/>${holes}</svg>`;
+}
+function selectPreset(id){
+  const pl = PLATES.find(p => p.id === id && !p.custom); if (!pl) return;
+  mutate(() => { state.outline.mode = 'preset'; state.outline.preset = id; state.plateId = id; state.gap = pl.spacing; state.thickness = pl.thickness; });
+  syncInputs();
+}
+function selectCustom(){
+  if (state.outline.mode === 'custom') return;
+  mutate(() => { state.outline.preset = state.plateId; state.outline.mode = 'custom'; state.plateId = 'custom'; state.gap = DEFAULT_GAP; state.thickness = 4; });
+  syncInputs();
+}
+function initOutline(){
+  $('srcPreset').addEventListener('click', () => selectPreset(state.outline.preset || PLATES.find(p => !p.custom).id));
+  $('srcCustom').addEventListener('click', selectCustom);
+  $('presetList').addEventListener('click', e => { const b = e.target.closest('[data-plate]'); if (b) selectPreset(b.dataset.plate); });
+  $('olSym').addEventListener('change', e => {
+    const o = state.outline, on = e.target.checked;
+    mutate(() => { o.pts = on ? rightHalf(fullOutline(o)) : fullOutline(o); o.sym = on; });
+    olSel = null;
+  });
+  $('olSnap').addEventListener('change', e => { mutate(() => { state.outline.snap = +e.target.value; }); });
+  $('olRad').addEventListener('change', e => { const v = clampNum(+e.target.value || 0, 0, 40); mutate(() => { state.outline.radius = v; }); });
+  $('olStart').innerHTML = `<option value="">Choose…</option><option value="rect">Rectangle 260 × 120</option><option value="round">Round Ø190</option>` +
+    PLATES.filter(p => !p.custom).map(p => `<option value="${p.id}">Copy of ${esc(p.name)}</option>`).join('');
+  $('olStart').addEventListener('change', e => { const v = e.target.value; e.target.value = ''; if (v){ olSel = null; outlineStart(v); } });
+  $('olClear').addEventListener('click', () => { if (!state.outline.pts.length) return; olSel = null; mutate(() => { state.outline.pts = []; }); });
+  olSvg.addEventListener('pointerdown', e => {
+    if (state.outline.mode !== 'custom' || e.button > 0) return;
+    const o = state.outline, h = e.target.closest('[data-pt]'), before = serialize();
+    if (h){
+      const i = +h.dataset.pt, now = performance.now();
+      // double-click removes the point (detected here: the redraw on the first click replaces the element)
+      if (olLastDown.i === i && now - olLastDown.t < 400){ olLastDown = { i: -1, t: 0 }; olSel = null; e.preventDefault(); mutate(() => { o.pts.splice(i, 1); }); return; }
+      olLastDown = { i, t: now };
+      olSel = i; olDrag = { idx: i, before, moved: false };
+    }
+    else {
+      const p = olPoint(olWorld(e)), idx = olInsertIndex(o, p);
+      o.pts.splice(idx, 0, p); olSel = idx; olDrag = { idx, before, moved: true };
+      rebuildCustomPlate(); renderOutline();
+    }
+    olSvg.setPointerCapture(e.pointerId); e.preventDefault();
+    renderOutline();
+  });
+  olSvg.addEventListener('pointermove', e => {
+    const w = olWorld(e);
+    $('olReadout').textContent = `x ${fmt(w.x)}  y ${fmt(w.y)} mm`;
+    if (!olDrag) return;
+    const p = olPoint(w), q = state.outline.pts[olDrag.idx];
+    if (q && (q[0] !== p[0] || q[1] !== p[1])){ state.outline.pts[olDrag.idx] = p; olDrag.moved = true; rebuildCustomPlate(); renderOutline(); }
+  });
+  const end = () => { if (!olDrag) return; const d = olDrag; olDrag = null; if (d.moved){ undoStack.push(d.before); redoStack = []; afterChange(); } };
+  olSvg.addEventListener('pointerup', end); olSvg.addEventListener('pointercancel', end);
+  olSvg.addEventListener('pointerleave', () => { if (!olDrag) $('olReadout').textContent = 'x — y —'; });
+}
+function outlineKey(e){
+  if (state.outline.mode !== 'custom' || olSel === null) return;
+  if (e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); const i = olSel; olSel = null; mutate(() => { state.outline.pts.splice(i, 1); }); }
+  else if (e.key === 'Escape'){ olSel = null; renderOutline(); }
+  else if (e.key.startsWith('Arrow')){
+    e.preventDefault();
+    const st = state.outline.snap * (e.shiftKey ? 5 : 1), d = {ArrowLeft:[-st,0], ArrowRight:[st,0], ArrowUp:[0,st], ArrowDown:[0,-st]}[e.key];
+    const q = state.outline.pts[olSel]; if (!q) return;
+    mutate(() => { state.outline.pts[olSel] = olPoint({x: q[0] + d[0], y: q[1] + d[1]}); });
+  }
+}
+function renderOutline(){
+  if (!state || !$('outlineSvg')) return;
+  const o = state.outline, custom = o.mode === 'custom', st = customStatus;
+  $('srcPreset').setAttribute('aria-checked', String(!custom)); $('srcCustom').setAttribute('aria-checked', String(custom));
+  $('presetList').hidden = custom; $('customIntro').hidden = !custom; $('olTools').hidden = !custom; $('olHelp').hidden = !custom;
+  olSvg.classList.toggle('drawing', custom);
+  if (!custom) $('presetList').innerHTML = PLATES.filter(p => !p.custom).map(p =>
+    `<button type="button" class="preset" data-plate="${p.id}" aria-pressed="${p.id === state.plateId}">${presetThumb(p)}<span><b>${esc(p.name)}</b><i>${fmt(p.width)} × ${fmt(p.height)} mm · ${p.holes.filter(h => h.role === 'mount').length} mount holes${p.handles ? ' · ' + p.handles.style + ' handles' : ''}</i></span></button>`).join('');
+  const a = document.activeElement;
+  $('olSym').checked = o.sym; $('olSnap').value = String(o.snap); if ($('olRad') !== a) $('olRad').value = o.radius;
+  // canvas: the 300 × 200 drawing area (or the preset's own size when it's bigger)
+  const pl = custom ? (PLATES.find(p => p.id === 'custom') || null) : plate();
+  let minX = -OL.W/2, maxX = OL.W/2, minY = -OL.H/2, maxY = OL.H/2;
+  if (pl && !custom){ minX = Math.min(minX, pl.bbox.minX); maxX = Math.max(maxX, pl.bbox.maxX); minY = Math.min(minY, pl.bbox.minY); maxY = Math.max(maxY, pl.bbox.maxY); }
+  const pad = 10;
+  olSvg.setAttribute('viewBox', `${minX-pad} ${-maxY-pad} ${maxX-minX+2*pad} ${maxY-minY+2*pad+6}`);
+  let g = `<defs><pattern id="olHatch" width="2.4" height="2.4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="2.4" class="ol-hatch"/></pattern></defs>`;
+  g += `<rect class="ol-area" x="${-OL.W/2}" y="${-OL.H/2}" width="${OL.W}" height="${OL.H}"/>`;
+  for (let v = -OL.W/2 + 10; v < OL.W/2; v += 10) g += `<line class="ol-gl${v % 50 === 0 ? ' s' : ''}" x1="${v}" y1="${-OL.H/2}" x2="${v}" y2="${OL.H/2}"/>`;
+  for (let v = -OL.H/2 + 10; v < OL.H/2; v += 10) g += `<line class="ol-gl${v % 50 === 0 ? ' s' : ''}" x1="${-OL.W/2}" y1="${-v}" x2="${OL.W/2}" y2="${-v}"/>`;
+  g += `<text class="ol-lbl" x="${-OL.W/2}" y="${OL.H/2 + 6}">${custom ? `drawing area ${OL.W} × ${OL.H} mm` : esc(plate().name)}</text>`;
+  if (custom && o.sym) g += `<line class="ol-axis" x1="0" y1="${-OL.H/2}" x2="0" y2="${OL.H/2}"/>`;
+  if (pl){
+    g += `<polygon class="ol-plate" points="${polySvgPts(pl.outline)}"/>`;
+    for (const z of marginLines(pl)) g += `<polygon class="ol-margin" points="${polySvgPts(z)}"/>`;
+    for (const m of pl.holes) if (m.role === 'mount') g += `<circle class="ol-mount" cx="${m.x}" cy="${-m.y}" r="${m.d/2}"/>`;
+  } else if (custom && st.raw.length >= 3) g += `<polygon class="ol-draft" points="${polySvgPts(st.raw)}"/>`;
+  const hubs = pl ? pl.holes.filter(m => m.role !== 'mount' && !m.poly) : [{x:0, y:0, d:OL.hub, ko:OL.hub + 2*OL.margin}];
+  for (const m of hubs) g += `<circle class="ol-hubko" cx="${m.x}" cy="${-m.y}" r="${m.ko/2}"/><circle class="ol-hub" cx="${m.x}" cy="${-m.y}" r="${m.d/2}"/>`;
+  if (pl) for (const m of pl.holes.filter(h => h.poly)) g += `<polygon class="ol-hub" points="${polySvgPts(m.poly)}"/>`;
+  if (custom){
+    if (st.raw.length >= 2) g += `<polygon class="ol-raw${st.errors.length ? ' bad' : ''}" points="${polySvgPts(st.raw)}"/>`;
+    if (o.sym) for (const [x, y] of o.pts) if (x > 0.01) g += `<circle class="ol-ghost" cx="${-x}" cy="${-y}" r="1.4"/>`;
+    o.pts.forEach(([x, y], i) => { g += `<circle class="ol-pt${i === olSel ? ' sel' : ''}" data-pt="${i}" cx="${x}" cy="${-y}" r="2.4"><title>Point ${i+1}: ${fmt(x)}, ${fmt(y)} mm</title></circle>`; });
+    if (!o.pts.length) g += `<text class="ol-hint" x="${o.sym ? 70 : 0}" y="${-60}">${o.sym ? 'Click on the right half to place points from top to bottom' : 'Click to place the outline’s corners'}</text><text class="ol-hint" x="${o.sym ? 70 : 0}" y="${-52}">or pick a shape under “Start from”</text>`;
+  }
+  olSvg.innerHTML = g;
+  // info card
+  const box = $('olInfo');
+  if (!custom){
+    const P = plate();
+    $('olInfoTitle').textContent = P.name;
+    box.innerHTML = `<dl class="kv"><dt>Size</dt><dd>${fmt(P.width)} × ${fmt(P.height)} mm</dd><dt>Edge margin</dt><dd>${P.inset} mm</dd>
+      <dt>Mount holes</dt><dd>${P.holes.filter(h => h.role === 'mount').length}</dd><dt>No-go areas</dt><dd>${P.holes.filter(h => h.role !== 'mount').length}</dd>
+      <dt>Handles</dt><dd>${P.handles ? P.handles.style : 'none'}</dd></dl>
+      <button class="btn primary" id="olNext">Continue to 2D design</button>`;
+  } else {
+    $('olInfoTitle').textContent = 'Your outline';
+    const items = [...st.errors.map(t => `<li class="err">${esc(t)}</li>`), ...st.warnings.map(t => `<li class="warn">${esc(t)}</li>`)];
+    if (st.usable && !st.errors.length && !st.warnings.length) items.push(`<li class="ok">The outline is ready for the 2D design.</li>`);
+    const cp = PLATES.find(p => p.id === 'custom');
+    box.innerHTML = `<dl class="kv"><dt>Size</dt><dd>${cp ? `${fmt(cp.width)} × ${fmt(cp.height)} mm` : '—'}</dd>
+      <dt>Points</dt><dd>${o.pts.length}${o.sym ? ` (${st.raw.length} with the mirrored half)` : ''}</dd><dt>Round corners</dt><dd>${fmt(o.radius)} mm</dd><dt>Edge margin</dt><dd>${OL.margin} mm</dd></dl>
+      <ul class="olstat">${items.join('')}</ul>
+      <div class="oltodo"><b>Mounting holes: to do.</b> Your own outline has no mounting holes yet, so the front plate is exported without them.</div>
+      <button class="btn primary" id="olNext" ${st.usable ? '' : 'disabled'}>Continue to 2D design</button>`;
+  }
+  $('olNext').addEventListener('click', () => setView('design'));
+}
 
 /* ---------------- Palette ---------------- */
 function iconSvg(t){
@@ -1468,29 +1845,27 @@ function chamferText(pl){
 }
 function renderHeader(){
   const pl = plate();
-  $('plateTag').textContent = `${pl.name} · ${fmt(state.thickness)} mm · ${fmt(state.gap)} mm spacing`;
-  $('plateNote').textContent = `${fmt(pl.width)} × ${fmt(pl.height)} mm outline, parts must stay ${pl.inset} mm from the edge. ${pl.holes.filter(h=>h.role==='mount').length} mounting holes${pl.holes.some(h=>h.role!=='mount') ? `, ${pl.holes.filter(h=>h.role!=='mount').length} no-go areas (hatched)` : ''}.${chamferText(pl)}`;
+  $('plateName').textContent = pl.name;
+  const noEx = state.plateId === 'custom' || !pl.example.length; $('resetBtn').disabled = noEx; $('resetBtn').title = noEx ? 'This back plate has no example layout' : '';
+  $('plateTag').textContent = `${state.plateId === 'custom' && !pl.custom ? 'Own outline (unfinished)' : pl.name} · ${fmt(state.thickness)} mm · ${fmt(state.gap)} mm spacing`;
+  $('plateNote').textContent = (state.plateId === 'custom' && !pl.custom ? `Your own outline isn't finished yet, so this shows ${pl.name}. Finish it in the Outline tab. ` : '') + `${fmt(pl.width)} × ${fmt(pl.height)} mm outline, parts must stay ${pl.inset} mm from the edge. ${pl.holes.filter(h=>h.role==='mount').length} mounting holes${pl.holes.some(h=>h.role!=='mount') ? `, ${pl.holes.filter(h=>h.role!=='mount').length} no-go areas (hatched)` : ''}.${chamferText(pl)}`;
   $('undoBtn').disabled = !undoStack.length; $('redoBtn').disabled = !redoStack.length;
 }
 
 function renderAll(rebuild3d = true){
-  validate(); render2d(); renderProps(); renderIssues(); renderHeader(); renderDecoNote(); renderHandles();
+  rebuildCustomPlate();
+  validate(); render2d(); renderProps(); renderIssues(); renderHeader(); renderDecoNote(); renderHandles(); renderOutline();
   if (rebuild3d) schedule3d();
 }
 function afterChange(){ renderAll(true); persist(); }
 
 /* ---------------- Controls wiring ---------------- */
 function initControls(){
-  $('plateSel').innerHTML = PLATES.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-  $('plateSel').value = state.plateId;
   $('thick').value = state.thickness;
   $('gap').value = state.gap;
   $('snapSel').value = String(state.snap);
-  $('plateSel').addEventListener('change', e => {
-    const pl = PLATES.find(p => p.id === e.target.value); if (!pl) return;
-    mutate(() => { state.plateId = pl.id; state.gap = pl.spacing; state.thickness = pl.thickness; });
-    syncInputs();
-  });
+  $('plateChange').addEventListener('click', () => setView('outline'));
+  initOutline();
   $('thick').addEventListener('change', e => { const v = clampNum(+e.target.value||4, 2, 10); e.target.value = v; mutate(() => { state.thickness = v; }); });
   const decoInputs = {decoOn:'rings', decoH:'height', decoW:'width', decoC:'chamfer', decoD:'depth', decoB:'bridges', decoBG:'bridgeGap', decoBW:'bridgeWidth',
                       decoE:'encRings', decoEH:'encHeight', decoEW:'encWidth', decoEC:'encChamfer', decoEG:'encGap'};
@@ -1518,6 +1893,8 @@ function initControls(){
     const mod = e.ctrlKey || e.metaKey;
     if (mod && e.key.toLowerCase() === 'z'){ e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if (mod && e.key.toLowerCase() === 'y'){ e.preventDefault(); redo(); return; }
+    if (!$('viewOutline').hidden){ outlineKey(e); return; }
+    if ($('viewDesign').hidden) return;
     const p = selected && findPart(selected); if (!p) return;
     if (e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); deleteSelected(); }
     else if (e.key === 'r' || e.key === 'R'){ rotateSelected(e.shiftKey ? 5 : 90); }
@@ -1612,7 +1989,7 @@ function renderDecoNote(){
   for (const [k, c] of [['buttons', n], ['encoders', ne]]){ const el = document.querySelector(`#decoSections [data-dsec="${k}"] .pg-count`); if (el) el.textContent = c; }
   $('exDeco').disabled = !!why;
 }
-function syncInputs(){ syncDeco(); $('plateSel').value = state.plateId; $('thick').value = state.thickness; $('gap').value = state.gap; $('snapSel').value = String(state.snap); }
+function syncInputs(){ syncDeco(); $('thick').value = state.thickness; $('gap').value = state.gap; $('snapSel').value = String(state.snap); }
 
 /* ---------------- 3D preview ---------------- */
 let three = null, rebuildTimer = null;
@@ -1652,7 +2029,7 @@ async function loadManifold(){
     wasm.setup(); MF = wasm; mfState = 'ready';
   } catch(e){ mfState = 'failed'; console.warn('manifold-3d could not load; plates are exported without chamfers.', e); }
   renderHeader(); renderIssues(); renderDecoNote(); renderHandles(); schedule3d();
-  if (mfState === 'ready') render2d();   // exact margin line
+  if (mfState === 'ready') renderAll(true);   // exact margin line, rounded custom outline
 }
 function circlePoly(x, y, r){
   const n = Math.max(32, Math.ceil(Math.PI / Math.acos(Math.max(-1, 1 - 0.01/r))));
@@ -1687,7 +2064,7 @@ function edgeChamferCutters(o, zTop, c){
 }
 // Plate body with mounting holes and chamfers; depends only on the wheel and thickness, so it is cached.
 function mfBase(pl, t){
-  const ch = chamferFor(pl, t), key = JSON.stringify([pl.id, t, ch]);
+  const ch = chamferFor(pl, t), key = JSON.stringify([pl.key || pl.id, t, ch]);
   if (mfCache.key === key && mfCache.base) return mfCache.base;
   if (mfCache.base){ mfCache.base.delete(); mfCache.base = null; mfCache.key = null; }
   const { Manifold, CrossSection } = MF, trash = [];
@@ -2081,7 +2458,7 @@ let handlesError = '', handlesHoles = null;
 // dragged the 3D preview keeps showing the last deco and catches up when the drag ends.
 const decoCache = { key: null, geo: null };
 function decoGeometry(allowStale){
-  const key = JSON.stringify([state.plateId, state.thickness, state.deco, state.parts, mfState]);
+  const key = JSON.stringify([plate().key || state.plateId, state.thickness, state.deco, state.parts, mfState]);
   if (decoCache.key === key || (allowStale && decoCache.key !== null)) return decoCache.geo ? decoCache.geo.clone() : null;
   let geo = null;
   try { const m = mfDeco(); if (m){ geo = mfToGeometry(m); m.delete(); } }
@@ -2137,19 +2514,26 @@ function schedule3d(){
   clearTimeout(rebuildTimer); rebuildTimer = setTimeout(rebuild3d, drag ? 90 : 30);
 }
 const VIEW_KEY = 'ash-front-plate-view';
+const VIEWS = { outline: ['tabOutline', 'viewOutline'], design: ['tabDesign', 'viewDesign'], preview: ['tabPreview', 'viewPreview'] };
 function setView(v){
-  const preview = v === 'preview';
-  $('viewDesign').hidden = preview; $('viewPreview').hidden = !preview;
-  $('tabDesign').setAttribute('aria-selected', String(!preview)); $('tabPreview').setAttribute('aria-selected', String(preview));
-  try { localStorage.setItem(VIEW_KEY, preview ? 'preview' : 'design'); } catch(e){}
-  if (preview && three){ three.resize(); if (preview3dStale){ preview3dStale = false; rebuild3d(); } }
-  if (!preview) render2d();
+  if (!VIEWS[v]) v = 'design';
+  for (const [k, [tab, view]] of Object.entries(VIEWS)){ $(view).hidden = k !== v; $(tab).setAttribute('aria-selected', String(k === v)); }
+  try { localStorage.setItem(VIEW_KEY, v); } catch(e){}
+  if (v === 'preview' && three){ three.resize(); if (preview3dStale){ preview3dStale = false; rebuild3d(); } }
+  if (v === 'design') render2d();
+  if (v === 'outline') renderOutline();
 }
-$('tabDesign').addEventListener('click', () => setView('design'));
-$('tabPreview').addEventListener('click', () => setView('preview'));
-for (const id of ['tabDesign', 'tabPreview']) $(id).addEventListener('keydown', e => {
-  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft'){ e.preventDefault(); const other = id === 'tabDesign' ? 'tabPreview' : 'tabDesign'; $(other).focus(); $(other).click(); }
-});
+const TAB_ORDER = ['outline', 'design', 'preview'];
+for (const v of TAB_ORDER){
+  const id = VIEWS[v][0];
+  $(id).addEventListener('click', () => setView(v));
+  $(id).addEventListener('keydown', e => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    const next = TAB_ORDER[(TAB_ORDER.indexOf(v) + (e.key === 'ArrowRight' ? 1 : 2)) % 3];
+    $(VIEWS[next][0]).focus(); setView(next);
+  });
+}
 function disposeGroup(g){ g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); }
 function rebuild3d(){
   if (!three) return;
@@ -2207,8 +2591,8 @@ function rebuild3d(){
     }
   }
   scene.add(g); three.group = g;
-  if (three.framedFor !== pl.id){
-    three.framedFor = pl.id;
+  if (three.framedFor !== (pl.key || pl.id)){
+    three.framedFor = pl.key || pl.id;
     three.camera.position.set(S*0.25, -S*1.45, S*1.25);
     three.controls.update();
   }
@@ -2369,8 +2753,10 @@ async function boot(){
   init3d();
   let startView = 'design';
   try { startView = localStorage.getItem(VIEW_KEY) || 'design'; } catch(e){}
+  try { if (!localStorage.getItem(VIEW_KEY) && !localStorage.getItem(STORE_KEY + '-seen')) startView = 'outline'; localStorage.setItem(STORE_KEY + '-seen', '1'); } catch(e){}
   if (location.hash === '#preview') startView = 'preview';
   if (location.hash === '#design') startView = 'design';
+  if (location.hash === '#outline') startView = 'outline';
   setView(startView);
   loadManifold();
   renderWheelWarnings();
