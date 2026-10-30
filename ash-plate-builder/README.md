@@ -157,7 +157,11 @@ The app has three views, switched at the top. It remembers the last one; add `#o
   - **Round corners** rounds every corner, inner and outer, with one radius (5 mm by default).
   - **Start from** fills the canvas with a rectangle, a round shape, or a simplified copy of one of the existing designs to modify.
   - The outline must not cross itself. It should go around the electronics zone with at least 4.5 mm to spare; the panel on the right says when it doesn't.
-  - Your own outline uses a 4.5 mm edge margin, 20 mm plate spacing, 4 mm thickness, and a 0.5 mm top chamfer. **Mounting holes are still to do**: the front plate is exported without them.
+  - **Handle mounting** (right column) adds the handle mounting holes to your outline and shows the handles around it:
+    - **Rally**: Hermes' four Ø3.3 spoke holes and its round rim with a flat bottom.
+    - **GT3 open** and **GT3 closed**: Zeus' five Ø4.2 handle holes per side and its grips. **Closed** adds a bar over the top that joins the two grips. **Wheel size** (GT3 only) sets the wheel's width across the grips, from Ø300 to Ø360 mm; Ø330 matches Zeus. The grip ends stay on their mounting holes.
+    - The holes and the handle shapes are copied from those designs, so they follow any change to them. A hole that falls outside the outline, or closer than 1.5 mm to its edge, shows in red, and the handles stay out of the 3D preview until every hole is on the plate.
+  - Your own outline uses a 4.5 mm edge margin, 20 mm plate spacing, 4 mm thickness, and a 0.5 mm top chamfer. Other mounting points for the front plate are still to do.
   - The outline is saved with the layout. Until it's usable, the 2D design keeps showing the previous back plate and says so.
 - **2D design:** the chosen back plate (**Change** goes back to Outline), the parts list, the plate editor, the selected part and the checks. The parts list shows its groups (Buttons/Rotaries, Encoders & switches, Indicators, Displays, Custom) collapsed. Click a group to open it; only one is open at a time.
 - **3D preview:** a large 3D view of the plate, deco and handles, with the Export, Deco and Handles panels.

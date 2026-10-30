@@ -111,6 +111,10 @@ header.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom
 #outlineSvg .ol-pt:hover{fill:var(--accent-soft)}
 #outlineSvg .ol-pt.sel{fill:var(--accent)}
 #outlineSvg .ol-ghost{fill:var(--accent);opacity:.4;pointer-events:none}
+#outlineSvg .ol-grip{fill:none;stroke:var(--zone);opacity:.28;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+#outlineSvg .ol-gripline{fill:none;stroke:var(--zone);stroke-width:.4;stroke-dasharray:2 1.5;pointer-events:none}
+#outlineSvg .ol-hhole{fill:var(--hole);stroke:var(--hole-edge);stroke-width:.3;pointer-events:none}
+#outlineSvg .ol-hhole.bad{fill:var(--err);stroke:var(--err-soft);stroke-width:.5}
 #outlineSvg .ol-mount{fill:var(--panel);stroke:var(--plate-ink);stroke-width:.3}
 #outlineSvg .ol-lbl{font-family:var(--f-mono);font-size:4.2px;fill:var(--muted)}
 #outlineSvg .ol-hint{font-family:var(--f-body);font-size:6px;fill:var(--muted);text-anchor:middle}
@@ -274,6 +278,21 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
       </section>
     </main>
     <aside class="right">
+      <section class="card" id="olHandleCard" hidden>
+        <h2>Handle mounting</h2>
+        <div class="body">
+          <div class="row">
+            <label class="field">Mounting type<select id="olHandle">
+              <option value="none">None</option>
+              <option value="rally">Rally (round rim)</option>
+              <option value="gt3-open">GT3 open</option>
+              <option value="gt3-closed">GT3 closed</option>
+            </select></label>
+            <label class="field" id="olSizeField">Wheel size<select id="olSize"></select></label>
+          </div>
+          <p class="note" id="olHandleNote"></p>
+        </div>
+      </section>
       <section class="card">
         <h2 id="olInfoTitle">Outline</h2>
         <div class="body" id="olInfo"></div>
@@ -755,7 +774,7 @@ function cleanHandlesCfg(h, ox, oy, notes, holes){
   checkHoles(mh);
   const g = h.grip || {};
   return {
-    style, holes: mh, path, mirror,
+    style, holes: mh, path, mirror, closed: !!h.closed, diameter: numOr(h.diameter, 0),
     width: numOr(g.width, 30), depth: numOr(g.depth, 38), gapBelowFront: Math.max(0, numOr(g.gapBelowFrontPlate, 0.5)),
     boltHole: numOr(b.hole, 4.2), boltHead: numOr(b.head, 8), boltSeat: numOr(b.seat, 6),
   };
@@ -975,14 +994,43 @@ function cleanDeco(d){
    is rounded with "Round corners" and becomes the plate with id 'custom'. Mounting holes: to do. */
 const OL = { W: 300, H: 200, hub: 46, margin: 4.5 };
 const OL_SNAPS = [0.5, 1, 2.5, 5, 10];
+// Handle mounting for your own outline. The hole positions and grip shapes come from the existing designs:
+// GT3 from the first wheel with gt3 handles (Zeus), rally from the first with a rally rim (Hermes).
+const HANDLE_TYPES = { none: 'None', rally: 'Rally', 'gt3-open': 'GT3 open', 'gt3-closed': 'GT3 closed' };
+const GT3_SIZES = [300, 315, 330, 345, 360], GT3_DEFAULT_SIZE = 330;   // outside diameter across the grips, mm
+const HANDLE_HOLE_EDGE = 1.5;   // mm of plate a handle hole needs between itself and the outline
+function handleTemplate(style){ const pl = PLATES.find(p => !p.custom && p.handles && p.handles.style === style); return pl ? { pl, H: pl.handles } : null; }
+// wheel.json-style handles config + the extra mounting holes for the chosen type, or null for none.
+function customHandles(hs){
+  if (!hs || hs.type === 'none') return null;
+  if (hs.type === 'rally'){
+    const t = handleTemplate('rally'); if (!t) return { error: 'No existing design has rally handles to copy.' };
+    const H = t.H;
+    return { from: t.pl.name, holes: H.holes.map(([x, y]) => ({ x, y, d: H.boltHole })),
+      cfg: { style: 'rally', mirror: false, spokes: H.spokes.map(q => ({ holes: q })),
+        rim: { diameter: H.rim, tube: H.tube, flatBottom: H.flatBottom, cornerRadius: H.cornerRadius, gapBelowFrontPlate: H.gapBelowFront },
+        spoke: { width: H.spokeWidth, thickness: H.spokeThickness }, bolt: { hole: H.boltHole, head: H.boltHead, seat: H.boltSeat } } };
+  }
+  const t = handleTemplate('gt3'); if (!t) return { error: 'No existing design has GT3 handles to copy.' };
+  const H = t.H, D = hs.size;
+  // scale the grip's middle points outward or inward so the wheel is D across; the ends stay on their mount holes
+  const reach = Math.max(...H.path.map(([x, y]) => Math.hypot(x, y))), k = (D/2 - H.width/2) / reach;
+  const path = H.path.map((q, i) => i === 0 || i === H.path.length - 1 ? q : [r2(q[0]*k), r2(q[1]*k)]);
+  const holes = [...H.holes, ...H.holes.map(([x, y]) => [-x, y])].map(([x, y]) => ({ x, y, d: H.boltHole }));
+  return { from: t.pl.name, holes,
+    cfg: { style: 'gt3', left: { holes: H.holes, path }, mirror: true, closed: hs.type === 'gt3-closed', diameter: D,
+      grip: { width: H.width, depth: H.depth, gapBelowFrontPlate: H.gapBelowFront }, bolt: { hole: H.boltHole, head: H.boltHead, seat: H.boltSeat } } };
+}
 function cleanOutline(o, plateId){
   o = o && typeof o === 'object' ? o : {};
   const sym = o.sym !== false;
   const pts = (Array.isArray(o.pts) ? o.pts : []).filter(q => Array.isArray(q) && Number.isFinite(+q[0]) && Number.isFinite(+q[1])).slice(0, 300)
     .map(([x, y]) => [r2(clampNum(sym ? Math.abs(+x) : +x, -OL.W/2, OL.W/2)), r2(clampNum(+y, -OL.H/2, OL.H/2))]);
   const mode = o.mode === 'custom' || plateId === 'custom' ? 'custom' : 'preset';
+  const h = o.handles && typeof o.handles === 'object' ? o.handles : {};
   return { mode, sym, pts, radius: clampNum(Number.isFinite(+o.radius) ? +o.radius : 5, 0, 40),
-           snap: OL_SNAPS.includes(+o.snap) ? +o.snap : 1, preset: typeof o.preset === 'string' ? o.preset : null };
+           snap: OL_SNAPS.includes(+o.snap) ? +o.snap : 1, preset: typeof o.preset === 'string' ? o.preset : null,
+           handles: { type: HANDLE_TYPES[h.type] ? h.type : 'none', size: GT3_SIZES.includes(+h.size) ? +h.size : GT3_DEFAULT_SIZE } };
 }
 // The whole drawn polygon (both halves when symmetric), without repeated points.
 function fullOutline(o){
@@ -1036,12 +1084,15 @@ let customStatus = { usable: false, errors: [], warnings: [], raw: [], outline: 
 // Builds (or removes) the 'custom' plate from the outline. Memoized, so it's cheap to call on every render.
 function rebuildCustomPlate(o){
   o = o || (state && state.outline);
-  const key = JSON.stringify([o && o.sym, o && o.pts, o && o.radius, !!MF]);
+  const key = JSON.stringify([o && o.sym, o && o.pts, o && o.radius, o && o.handles, !!MF, PLATES.filter(p => !p.custom).length]);
   if (key === customKey && (!customStatus.usable || PLATES.some(p => p.id === 'custom'))) return;
   customKey = key;
   PLATES = PLATES.filter(p => p.id !== 'custom');
-  const st = { usable: false, errors: [], warnings: [], raw: [], outline: null };
+  const st = { usable: false, errors: [], warnings: [], raw: [], outline: null, handle: null, handleHoles: [] };
   customStatus = st;
+  const hd = o ? customHandles(o.handles) : null;
+  if (hd && hd.error){ st.warnings.push(hd.error); }
+  else if (hd){ st.handle = hd; st.handleHoles = hd.holes.map(h => ({ ...h, ok: true })); }
   if (!o) return;
   const raw = fullOutline(o); st.raw = raw;
   if (raw.length < 3 || Math.abs(polyArea(raw)) < 1){ st.errors.push(o.sym ? 'Place at least two points on the right half. The left half is mirrored.' : 'Place at least three points.'); return; }
@@ -1053,11 +1104,19 @@ function rebuildCustomPlate(o){
   if (!pointInPoly(0, 0, out) || edgeDist(0, 0, out) < OL.hub/2 + OL.margin - 1e-6)
     st.warnings.push(`The outline should go around the Ø${OL.hub} mm electronics zone with at least ${OL.margin} mm to spare.`);
   st.outline = out;
+  // handle holes must sit inside the outline with some plate around them
+  let bad = 0;
+  for (const h of st.handleHoles){ h.ok = pointInPoly(h.x, h.y, out) && edgeDist(h.x, h.y, out) >= h.d/2 + HANDLE_HOLE_EDGE - 1e-6; if (!h.ok) bad++; }
+  if (bad) st.warnings.push(`${bad} of the ${st.handleHoles.length} handle mounting holes ${bad === 1 ? 'is' : 'are'} outside your outline or closer than ${HANDLE_HOLE_EDGE} mm to its edge (shown in red). Make the outline reach ${bad === 1 ? 'it' : 'them'}.`);
   try {
-    const pl = buildWheel('custom', { name: 'Own outline', outline: out, edgeMargin: OL.margin, plateSpacing: DEFAULT_GAP, frontPlateThickness: 4,
-      chamfer: { outline: 0.5, mountHoles: 1.7 }, holes: { noGo: { diameters: [OL.hub], clearance: OL.margin } },
-      extraHoles: [{ x: 0, y: 0, d: OL.hub, role: 'noGo' }], example: [] }, null);
-    pl.key = 'custom:' + hashStr(JSON.stringify(out)); pl.notes = []; pl.custom = true;
+    const okHoles = st.handleHoles.filter(h => h.ok);
+    const cfg = { name: 'Own outline', outline: out, edgeMargin: OL.margin, plateSpacing: DEFAULT_GAP, frontPlateThickness: 4,
+      chamfer: { outline: 0.5, mountHoles: 1.7 }, holes: { mount: { diameters: [], clearance: 2.85 }, noGo: { diameters: [OL.hub], clearance: OL.margin } },
+      extraHoles: [{ x: 0, y: 0, d: OL.hub, role: 'noGo' }, ...okHoles.map(h => ({ x: h.x, y: h.y, d: h.d, role: 'mount' }))], example: [] };
+    // handles only once every hole they bolt to is on the plate
+    if (st.handle && !bad) cfg.handles = st.handle.cfg;
+    const pl = buildWheel('custom', cfg, null);
+    pl.key = 'custom:' + hashStr(JSON.stringify([out, okHoles, cfg.handles || null])); pl.notes = []; pl.custom = true;
     PLATES.push(pl); st.usable = true;
   } catch(e){ st.errors.push(e.message); }
 }
@@ -1515,6 +1574,9 @@ function initOutline(){
   $('olStart').innerHTML = `<option value="">Choose…</option><option value="rect">Rectangle 260 × 120</option><option value="round">Round Ø190</option>` +
     PLATES.filter(p => !p.custom).map(p => `<option value="${p.id}">Copy of ${esc(p.name)}</option>`).join('');
   $('olStart').addEventListener('change', e => { const v = e.target.value; e.target.value = ''; if (v){ olSel = null; outlineStart(v); } });
+  $('olSize').innerHTML = GT3_SIZES.map(d => `<option value="${d}">Ø${d} mm${d === GT3_DEFAULT_SIZE ? ' (as Zeus)' : ''}</option>`).join('');
+  $('olHandle').addEventListener('change', e => { mutate(() => { state.outline.handles.type = e.target.value; }); });
+  $('olSize').addEventListener('change', e => { mutate(() => { state.outline.handles.size = +e.target.value; }); });
   $('olClear').addEventListener('click', () => { if (!state.outline.pts.length) return; olSel = null; mutate(() => { state.outline.pts = []; }); });
   olSvg.addEventListener('pointerdown', e => {
     if (state.outline.mode !== 'custom' || e.button > 0) return;
@@ -1561,6 +1623,14 @@ function renderOutline(){
   const o = state.outline, custom = o.mode === 'custom', st = customStatus;
   $('srcPreset').setAttribute('aria-checked', String(!custom)); $('srcCustom').setAttribute('aria-checked', String(custom));
   $('presetList').hidden = custom; $('customIntro').hidden = !custom; $('olTools').hidden = !custom; $('olHelp').hidden = !custom;
+  $('olHandleCard').hidden = !custom;
+  const ht = o.handles.type, gt3 = ht.startsWith('gt3');
+  $('olHandle').value = ht; $('olSize').value = String(o.handles.size); $('olSizeField').hidden = !gt3;
+  const hh = st.handleHoles, nBad = hh.filter(h => !h.ok).length;
+  $('olHandleNote').textContent = ht === 'none' ? 'No handles. Pick a type to add its mounting holes to your outline and see the handles in the 3D preview.'
+    : !st.handle ? '' : `${hh.length} mounting holes (Ø${fmt(hh[0].d)}) at the same places as on ${st.handle.from}` +
+      (gt3 ? `, ${hh.length/2} per side. The grips reach Ø${o.handles.size} mm across${ht === 'gt3-closed' ? ' and are joined by a bar over the top' : ''}.` : `, for the rim's spokes. Rim Ø${fmt(st.handle.cfg.rim.diameter)} mm with a flat bottom.`) +
+      (nBad ? ` ${nBad} ${nBad === 1 ? 'hole is' : 'holes are'} not on your outline yet, so the handles are left out until the outline reaches them.` : ' The handles show in the 3D preview.');
   olSvg.classList.toggle('drawing', custom);
   if (!custom) $('presetList').innerHTML = PLATES.filter(p => !p.custom).map(p =>
     `<button type="button" class="preset" data-plate="${p.id}" aria-pressed="${p.id === state.plateId}">${presetThumb(p)}<span><b>${esc(p.name)}</b><i>${fmt(p.width)} × ${fmt(p.height)} mm · ${p.holes.filter(h => h.role === 'mount').length} mount holes${p.handles ? ' · ' + p.handles.style + ' handles' : ''}</i></span></button>`).join('');
@@ -1570,6 +1640,22 @@ function renderOutline(){
   const pl = custom ? (PLATES.find(p => p.id === 'custom') || null) : plate();
   let minX = -OL.W/2, maxX = OL.W/2, minY = -OL.H/2, maxY = OL.H/2;
   if (pl && !custom){ minX = Math.min(minX, pl.bbox.minX); maxX = Math.max(maxX, pl.bbox.maxX); minY = Math.min(minY, pl.bbox.minY); maxY = Math.max(maxY, pl.bbox.maxY); }
+  // handle preview (own outline): grip / rim centre lines drawn at their real width
+  const grips = [];
+  if (custom && st.handle){
+    const c = st.handle.cfg;
+    if (c.style === 'gt3'){
+      const L = catmullRom(c.left.path, 2.5);
+      grips.push({ pts: L, w: c.grip.width }, { pts: L.map(([x, y]) => [-x, y]), w: c.grip.width });
+      if (c.closed){ const tp = gt3TopPath({ path: c.left.path, diameter: c.diameter }, c.grip.width); if (tp) grips.push({ pts: catmullRom(tp, 2.5), w: c.grip.width }); }
+    } else {
+      const R = (c.rim.diameter - c.rim.tube)/2, cc = Math.min(c.rim.flatBottom, c.rim.diameter/2) - c.rim.tube/2, loop = rimPath(R, cc, c.rim.cornerRadius, 2.5);
+      grips.push({ pts: [...loop, loop[0]], w: c.rim.tube });
+      for (const q of c.spokes){ const hs = q.holes, cx = hs.reduce((a, [x]) => a + x, 0)/hs.length, cy = hs.reduce((a, [, y]) => a + y, 0)/hs.length, l = Math.hypot(cx, cy);
+        const hit = l < 1 ? rayHit(loop, 0, -1) : rayHit(loop, cx/l, cy/l); if (hit) grips.push({ pts: [[cx, cy], hit], w: c.spoke.width }); }
+    }
+    for (const g of grips) for (const [x, y] of g.pts){ minX = Math.min(minX, x - g.w/2); maxX = Math.max(maxX, x + g.w/2); minY = Math.min(minY, y - g.w/2); maxY = Math.max(maxY, y + g.w/2); }
+  }
   const pad = 10;
   olSvg.setAttribute('viewBox', `${minX-pad} ${-maxY-pad} ${maxX-minX+2*pad} ${maxY-minY+2*pad+6}`);
   let g = `<defs><pattern id="olHatch" width="2.4" height="2.4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="2.4" class="ol-hatch"/></pattern></defs>`;
@@ -1577,6 +1663,8 @@ function renderOutline(){
   for (let v = -OL.W/2 + 10; v < OL.W/2; v += 10) g += `<line class="ol-gl${v % 50 === 0 ? ' s' : ''}" x1="${v}" y1="${-OL.H/2}" x2="${v}" y2="${OL.H/2}"/>`;
   for (let v = -OL.H/2 + 10; v < OL.H/2; v += 10) g += `<line class="ol-gl${v % 50 === 0 ? ' s' : ''}" x1="${-OL.W/2}" y1="${-v}" x2="${OL.W/2}" y2="${-v}"/>`;
   g += `<text class="ol-lbl" x="${-OL.W/2}" y="${OL.H/2 + 6}">${custom ? `drawing area ${OL.W} × ${OL.H} mm` : esc(plate().name)}</text>`;
+  const gripPath = q => 'M' + q.map(([x, y]) => `${x.toFixed(2)} ${(-y).toFixed(2)}`).join('L');
+  for (const gr of grips) g += `<path class="ol-grip" d="${gripPath(gr.pts)}" stroke-width="${gr.w}"/><path class="ol-gripline" d="${gripPath(gr.pts)}"/>`;
   if (custom && o.sym) g += `<line class="ol-axis" x1="0" y1="${-OL.H/2}" x2="0" y2="${OL.H/2}"/>`;
   if (pl){
     g += `<polygon class="ol-plate" points="${polySvgPts(pl.outline)}"/>`;
@@ -1588,6 +1676,7 @@ function renderOutline(){
   if (pl) for (const m of pl.holes.filter(h => h.poly)) g += `<polygon class="ol-hub" points="${polySvgPts(m.poly)}"/>`;
   if (custom){
     if (st.raw.length >= 2) g += `<polygon class="ol-raw${st.errors.length ? ' bad' : ''}" points="${polySvgPts(st.raw)}"/>`;
+    for (const h of st.handleHoles) g += `<circle class="ol-hhole${h.ok ? '' : ' bad'}" cx="${h.x}" cy="${-h.y}" r="${Math.max(h.d/2, 1.6)}"><title>Handle mounting hole Ø${fmt(h.d)} at ${fmt(h.x)}, ${fmt(h.y)}${h.ok ? '' : ': not on the outline'}</title></circle>`;
     if (o.sym) for (const [x, y] of o.pts) if (x > 0.01) g += `<circle class="ol-ghost" cx="${-x}" cy="${-y}" r="1.4"/>`;
     o.pts.forEach(([x, y], i) => { g += `<circle class="ol-pt${i === olSel ? ' sel' : ''}" data-pt="${i}" cx="${x}" cy="${-y}" r="2.4"><title>Point ${i+1}: ${fmt(x)}, ${fmt(y)} mm</title></circle>`; });
     if (!o.pts.length) g += `<text class="ol-hint" x="${o.sym ? 70 : 0}" y="${-60}">${o.sym ? 'Click on the right half to place points from top to bottom' : 'Click to place the outline’s corners'}</text><text class="ol-hint" x="${o.sym ? 70 : 0}" y="${-52}">or pick a shape under “Start from”</text>`;
@@ -1610,7 +1699,7 @@ function renderOutline(){
     box.innerHTML = `<dl class="kv"><dt>Size</dt><dd>${cp ? `${fmt(cp.width)} × ${fmt(cp.height)} mm` : '—'}</dd>
       <dt>Points</dt><dd>${o.pts.length}${o.sym ? ` (${st.raw.length} with the mirrored half)` : ''}</dd><dt>Round corners</dt><dd>${fmt(o.radius)} mm</dd><dt>Edge margin</dt><dd>${OL.margin} mm</dd></dl>
       <ul class="olstat">${items.join('')}</ul>
-      <div class="oltodo"><b>Mounting holes: to do.</b> Your own outline has no mounting holes yet, so the front plate is exported without them.</div>
+      <div class="oltodo"><b>Mounting holes:</b> ${st.handleHoles.length ? `${st.handleHoles.filter(h => h.ok).length} for the handles (see Handle mounting). Other mounting points for the front plate are still to do.` : 'none yet. Pick a handle mounting type to add the handle holes; other mounting points are still to do.'}</div>
       <button class="btn primary" id="olNext" ${st.usable ? '' : 'disabled'}>Continue to 2D design</button>`;
   }
   $('olNext').addEventListener('click', () => setView('design'));
@@ -1957,7 +2046,7 @@ function renderHandles(){
     text = `Rally rim, Ø${fmt(val('hW'))} mm with a ${fmt(val('hD'))} mm tube and a flat bottom, on ${n} spoke${n === 1 ? '' : 's'} bolted behind the back plate through ${H.holes.length} mount hole${H.holes.length === 1 ? '' : 's'}.`;
   } else {
     const bolts = hh ? ` Bolted through ${hh.used} of the ${H.holes.length} mount holes per side` + (hh.unused.length ? ` (not under the grip: ${hh.unused.map(([x, y]) => `${fmt(x)}, ${fmt(y)}`).join(' and ')})` : '') + '.' : '';
-    text = `GT3-style open grips, ${fmt(val('hW'))} × ${fmt(val('hD'))} mm.${bolts}`;
+    text = `GT3-style ${H.closed ? 'closed grips, joined by a bar over the top' : 'open grips'}, ${fmt(val('hW'))} × ${fmt(val('hD'))} mm.${bolts}`;
   }
   $('hNote').textContent = why || text + tail;
 }
@@ -2324,6 +2413,20 @@ function gripTube(path, zc, w, d){
   if (m.status() !== 'NoError'){ m.delete(); throw new Error('the grip path bends too tightly for the grip size'); }
   return m;
 }
+// Centre line of a closed GT3 wheel's top bar: from the left grip's top end, out to the wheel's circle, over the top
+// and down to the right grip's top end.
+function gt3TopPath(H, w){
+  const L = H.path[H.path.length - 1], rL = Math.hypot(L[0], L[1]);
+  const D = H.diameter > 0 ? H.diameter : 2*(Math.max(...H.path.map(([x, y]) => Math.hypot(x, y))) + w/2);
+  const R = Math.max(D/2 - w/2, rL + w*0.6);
+  const a0 = Math.atan2(L[1], L[0]) * 180/Math.PI, a1 = 180 - a0, start = a0 - 14, end = a1 + 14;
+  if (!(start > end + 10)) return null;
+  const pts = [L];
+  const n = Math.max(4, Math.ceil((start - end) / 12));
+  for (let i = 0; i <= n; i++){ const a = (start - (start - end)*i/n) * Math.PI/180; pts.push([R*Math.cos(a), R*Math.sin(a)]); }
+  pts.push([-L[0], L[1]]);
+  return pts;
+}
 // Which of the side's mount holes lie under the grip with room for the bolt head (+1 mm wall).
 function handleBoltHoles(H, body, zc){
   const { CrossSection } = MF;
@@ -2433,13 +2536,15 @@ function mfHandles(){
     const half = (m, side) => { parts.push({ name: side + '-front', m: m.trimByPlane([0, 0, 1], zc), color: GRIP_COLOR, rough: 0.85 }, { name: side + '-back', m: m.trimByPlane([0, 0, -1], -zc), color: GRIP_COLOR, rough: 0.85 }); };
     half(body, 'left');
     if (H.mirror) half(T(body.mirror([1, 0, 0])), 'right');
+    // closed GT3: a bar over the top joining the two grips' upper ends
+    if (H.closed && H.mirror){ const tp = gt3TopPath(H, w); if (tp) parts.push({ name: 'top', m: gripTube(tp, zc, w, d), color: GRIP_COLOR, rough: 0.85 }); }
     return { parts, used, unused };
   } finally { for (const x of trash) x.delete(); }
 }
 const handlesCache = { key: null, geos: null };
 // Three.js geometries for the preview and export: { 'left-front': geo, ... } (cached; callers clone).
 function handleGeometries(allowStale){
-  const key = JSON.stringify([state.plateId, state.handles, state.gap, mfState]);
+  const key = JSON.stringify([plate().key || state.plateId, state.handles, state.gap, mfState]);
   if (handlesCache.key === key || (allowStale && handlesCache.key !== null)) return handlesCache.geos;
   let geos = null;
   handlesError = '';
@@ -2542,7 +2647,7 @@ function rebuild3d(){
   const g = new THREE.Group();
   const pl = plate(), t = state.thickness, gap = state.gap;
   const handleSpan = !pl.handles ? 0 : pl.handles.style === 'rally' ? numOr((state.handles || {}).rim, pl.handles.rim)
-    : 2*Math.max(...pl.handles.path.map(([x]) => Math.abs(x))) + pl.handles.width;
+    : Math.max(2*Math.max(...pl.handles.path.map(([x]) => Math.abs(x))) + pl.handles.width, pl.handles.closed ? pl.handles.diameter : 0);
   const S = Math.max(pl.width, pl.height, handleSpan);
   const mat = (c, o={}) => new THREE.MeshStandardMaterial({color:new THREE.Color(c), roughness:0.75, metalness:0.05, ...o});
   let geo;
