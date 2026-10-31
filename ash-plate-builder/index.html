@@ -228,6 +228,14 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .modal-box h3{margin:0;font-family:var(--f-display);font-weight:600;font-size:18px}
 .modal-box p{margin:0;color:var(--muted);font-size:13px}
 .modal-box ul{margin:0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:4px;max-height:40vh;overflow:auto}
+/* Embedded (in an iframe, e.g. a WordPress page): the frame grows to fit the content, so nothing may size itself
+   from the viewport height, and popups go next to the last click instead of the middle of a tall frame. */
+.embed .grid3d #view3d{height:clamp(320px, 62vw, 820px)}
+.embed #plate,.embed #outlineSvg{max-height:none}
+.embed .modal{place-items:start center}
+.embed .modal-box{margin-top:var(--embed-y,16px)}
+.embed .modal-box ul{max-height:300px}
+.embed .toast{position:absolute;bottom:auto;top:var(--embed-y,16px)}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
 kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:3px;padding:0 4px;background:var(--panel-2)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -960,6 +968,26 @@ let undoStack = [], redoStack = [];
 let showKO = true, show3dParts = true;
 
 const $ = id => document.getElementById(id);
+
+/* ---------------- Embedded mode ----------------
+   Inside an iframe (or with ?embed in the link) the page reports its height to the page around it
+   (message {type:'ash-builder-height', height}), so the iframe can be exactly as tall as the builder. */
+const EMBED = (() => { try { return window.self !== window.top; } catch(e){ return true; } })() || /[?&]embed(=|&|$)/.test(location.search);
+let lastPointerY = 0;
+if (EMBED){
+  document.documentElement.classList.add('embed');
+  document.addEventListener('pointerdown', e => { lastPointerY = e.pageY; }, true);
+  let lastH = 0;
+  const report = () => {
+    const w = document.querySelector('.wrap'); if (!w) return;
+    const h = Math.ceil(w.getBoundingClientRect().bottom + window.scrollY);
+    if (Math.abs(h - lastH) > 1){ lastH = h; try { window.parent.postMessage({ type: 'ash-builder-height', height: h }, '*'); } catch(e){} }
+  };
+  if (window.ResizeObserver) new ResizeObserver(report).observe(document.querySelector('.wrap'));
+  window.addEventListener('load', report); setInterval(report, 1500);
+}
+// In embedded mode, show a popup next to the last click.
+function placeNearPointer(el){ if (EMBED) el.style.setProperty('--embed-y', Math.max(16, lastPointerY - 80) + 'px'); }
 const plate = () => PLATES.find(p => p.id === state.plateId) || PLATES[0];
 
 /* Deco: a separate printed piece that sits on top of the front plate. For now: rings around buttons. */
@@ -2806,7 +2834,7 @@ function guarded(run){
   if (!errs.length){ run(); return; }
   $('cfTitle').textContent = `Export with ${errs.length} problem${errs.length>1?'s':''}?`;
   $('cfList').innerHTML = errs.slice(0,6).map(i => `<li>${esc(i.msg)}</li>`).join('') + (errs.length>6 ? `<li>…and ${errs.length-6} more</li>` : '');
-  $('confirm').hidden = false; $('cfGo').focus();
+  placeNearPointer($('confirm')); $('confirm').hidden = false; $('cfGo').focus();
   $('cfGo').onclick = () => { $('confirm').hidden = true; run(); };
 }
 $('cfCancel').addEventListener('click', () => { $('confirm').hidden = true; });
@@ -2845,7 +2873,7 @@ $('fileIn').addEventListener('change', e => {
 });
 
 let toastTimer = null;
-function toast(msg){ const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3200); }
+function toast(msg){ const t = $('toast'); t.textContent = msg; placeNearPointer(t); t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3200); }
 
 /* ---------------- Boot ---------------- */
 async function boot(){
