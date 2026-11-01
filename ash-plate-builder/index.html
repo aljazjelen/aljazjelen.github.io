@@ -1028,6 +1028,7 @@ const HANDLE_TYPES = { none: 'None', rally: 'Rally', 'gt3-open': 'GT3 open', 'gt
 const GT3_SIZES = [300, 315, 330, 345, 360], GT3_DEFAULT_SIZE = 330;   // outside diameter across the grips, mm
 const HANDLE_HOLE_EDGE = 1.5;   // mm of plate a handle hole needs between itself and the outline
 const HANDLE_PAD = 4;           // mm of plate around a hole in an automatic mounting tab
+const HANDLE_TAB_GROUP = 25;    // mm: holes this close share one tab, with straight edges from hole to hole
 // Mounting tabs: every handle hole the outline doesn't cover (with HANDLE_HOLE_EDGE to spare) gets a round pad,
 // joined to the outline by a bridge to the nearest point of its edge. The tabs are part of the plate and can't
 // be removed by editing points; only changing Handle mounting does that. Inner corners are rounded so they blend in.
@@ -1051,13 +1052,23 @@ function addMountingTabs(out, holes, radius){
   const need = holes.filter(h => !(pointInPoly(h.x, h.y, out) && edgeDist(h.x, h.y, out) >= h.d/2 + HANDLE_HOLE_EDGE - 1e-6));
   if (!need.length || !MF) return { out, tabs: need.length && !MF ? -1 : 0 };
   const { CrossSection } = MF, trash = [], polys = [ccw(out)];
+  // Neighbouring holes share one tab: the convex hull of their pads (and bridges), so the edge from one hole to
+  // the next is a straight line instead of dipping in between two round pads.
+  const near = (a, b) => Math.hypot(a.x - b.x, a.y - b.y) <= HANDLE_TAB_GROUP;
+  const groups = [];
   for (const h of need){
-    const rp = h.d/2 + HANDLE_PAD, pad = circlePoly(h.x, h.y, rp);
-    polys.push(ccw(pad));
-    if (!pointInPoly(h.x, h.y, out)){
-      const [px, py] = nearestOnOutline(h.x, h.y, out);
-      polys.push(ccw(convexHull([...pad, ...circlePoly(px, py, rp)])));   // bridge: as wide as the pad
+    const hit = groups.filter(g => g.some(k => near(k, h)));
+    if (!hit.length) groups.push([h]);
+    else { hit[0].push(h); for (const g of hit.slice(1)){ hit[0].push(...g); groups.splice(groups.indexOf(g), 1); } }
+  }
+  for (const g of groups){
+    const pts = [];
+    for (const h of g){
+      const rp = h.d/2 + HANDLE_PAD;
+      pts.push(...circlePoly(h.x, h.y, rp));
+      if (!pointInPoly(h.x, h.y, out)){ const [px, py] = nearestOnOutline(h.x, h.y, out); pts.push(...circlePoly(px, py, rp)); }   // bridge, as wide as the pad
     }
+    polys.push(ccw(convexHull(pts)));
   }
   try {
     let cs = new CrossSection(polys, 'Positive'); trash.push(cs);
