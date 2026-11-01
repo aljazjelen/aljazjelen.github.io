@@ -1027,6 +1027,48 @@ const OL_SNAPS = [0.5, 1, 2.5, 5, 10];
 const HANDLE_TYPES = { none: 'None', rally: 'Rally', 'gt3-open': 'GT3 open', 'gt3-closed': 'GT3 closed' };
 const GT3_SIZES = [300, 315, 330, 345, 360], GT3_DEFAULT_SIZE = 330;   // outside diameter across the grips, mm
 const HANDLE_HOLE_EDGE = 1.5;   // mm of plate a handle hole needs between itself and the outline
+const HANDLE_PAD = 4;           // mm of plate around a hole in an automatic mounting tab
+// Mounting tabs: every handle hole the outline doesn't cover (with HANDLE_HOLE_EDGE to spare) gets a round pad,
+// joined to the outline by a bridge to the nearest point of its edge. The tabs are part of the plate and can't
+// be removed by editing points; only changing Handle mounting does that. Inner corners are rounded so they blend in.
+function convexHull(P){
+  const q = P.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]), cr = (o, a, b) => (a[0]-o[0])*(b[1]-o[1]) - (a[1]-o[1])*(b[0]-o[0]);
+  const lo = [], up = [];
+  for (const p of q){ while (lo.length >= 2 && cr(lo[lo.length-2], lo[lo.length-1], p) <= 0) lo.pop(); lo.push(p); }
+  for (const p of q.reverse()){ while (up.length >= 2 && cr(up[up.length-2], up[up.length-1], p) <= 0) up.pop(); up.push(p); }
+  return lo.slice(0, -1).concat(up.slice(0, -1));
+}
+function nearestOnOutline(x, y, o){
+  let best = null, bd = Infinity;
+  for (let i = 0; i < o.length; i++){
+    const [ax, ay] = o[i], [bx, by] = o[(i+1) % o.length], dx = bx - ax, dy = by - ay, L = dx*dx + dy*dy;
+    const t = L ? clampNum(((x-ax)*dx + (y-ay)*dy) / L, 0, 1) : 0, px = ax + t*dx, py = ay + t*dy, d = Math.hypot(x-px, y-py);
+    if (d < bd){ bd = d; best = [px, py]; }
+  }
+  return best;
+}
+function addMountingTabs(out, holes, radius){
+  const need = holes.filter(h => !(pointInPoly(h.x, h.y, out) && edgeDist(h.x, h.y, out) >= h.d/2 + HANDLE_HOLE_EDGE - 1e-6));
+  if (!need.length || !MF) return { out, tabs: need.length && !MF ? -1 : 0 };
+  const { CrossSection } = MF, trash = [], polys = [ccw(out)];
+  for (const h of need){
+    const rp = h.d/2 + HANDLE_PAD, pad = circlePoly(h.x, h.y, rp);
+    polys.push(ccw(pad));
+    if (!pointInPoly(h.x, h.y, out)){
+      const [px, py] = nearestOnOutline(h.x, h.y, out);
+      polys.push(ccw(convexHull([...pad, ...circlePoly(px, py, rp)])));   // bridge: as wide as the pad
+    }
+  }
+  try {
+    let cs = new CrossSection(polys, 'Positive'); trash.push(cs);
+    const f = clampNum(radius > 0 ? radius : 3, 2, 8);   // round the inner corners where tabs meet the outline
+    let c2 = cs.offset(f, 'Round', 2, 48); trash.push(c2); c2 = c2.offset(-f, 'Round', 2, 48); trash.push(c2);
+    c2 = c2.simplify(0.02); trash.push(c2);
+    const P = c2.toPolygons(); if (!P.length) return { out, tabs: 0 };
+    let best = P[0]; for (const q of P) if (Math.abs(polyArea(q)) > Math.abs(polyArea(best))) best = q;
+    return { out: ccw(best.map(([x, y]) => [Math.round(x*1000)/1000, Math.round(y*1000)/1000])), tabs: need.length };
+  } finally { for (const x of trash) x.delete(); }
+}
 function handleTemplate(style){ const pl = PLATES.find(p => !p.custom && p.handles && p.handles.style === style); return pl ? { pl, H: pl.handles } : null; }
 // wheel.json-style handles config + the extra mounting holes for the chosen type, or null for none.
 function customHandles(hs){
@@ -1129,13 +1171,15 @@ function rebuildCustomPlate(o){
   if (!out || out.length < 3){ st.errors.push('Rounding the corners leaves nothing of the outline. Lower Round corners.'); return; }
   out = ccw(out);
   if (o.radius > 0 && !MF) st.warnings.push('Corners get rounded once the 3D engine has loaded.');
+  if (st.handleHoles.length){ const t = addMountingTabs(out, st.handleHoles, o.radius); out = t.out; st.tabs = t.tabs; }
   if (!pointInPoly(0, 0, out) || edgeDist(0, 0, out) < OL.hub/2 + OL.margin - 1e-6)
     st.warnings.push(`The outline should go around the Ø${OL.hub} mm electronics zone with at least ${OL.margin} mm to spare.`);
   st.outline = out;
   // handle holes must sit inside the outline with some plate around them
   let bad = 0;
   for (const h of st.handleHoles){ h.ok = pointInPoly(h.x, h.y, out) && edgeDist(h.x, h.y, out) >= h.d/2 + HANDLE_HOLE_EDGE - 1e-6; if (!h.ok) bad++; }
-  if (bad) st.warnings.push(`${bad} of the ${st.handleHoles.length} handle mounting holes ${bad === 1 ? 'is' : 'are'} outside your outline or closer than ${HANDLE_HOLE_EDGE} mm to its edge (shown in red). Make the outline reach ${bad === 1 ? 'it' : 'them'}.`);
+  if (bad && st.tabs === -1) st.warnings.push('Mounting tabs for the handle holes are added once the 3D engine has loaded.');
+  else if (bad) st.warnings.push(`${bad} of the ${st.handleHoles.length} handle mounting holes ${bad === 1 ? 'is' : 'are'} outside your outline or closer than ${HANDLE_HOLE_EDGE} mm to its edge (shown in red). Make the outline reach ${bad === 1 ? 'it' : 'them'}.`);
   try {
     const okHoles = st.handleHoles.filter(h => h.ok);
     const cfg = { name: 'Own outline', outline: out, edgeMargin: OL.margin, plateSpacing: DEFAULT_GAP, frontPlateThickness: 4,
@@ -1658,7 +1702,8 @@ function renderOutline(){
   $('olHandleNote').textContent = ht === 'none' ? 'No handles. Pick a type to add its mounting holes to your outline and see the handles in the 3D preview.'
     : !st.handle ? '' : `${hh.length} mounting holes (Ø${fmt(hh[0].d)}) at the same places as on ${st.handle.from}` +
       (gt3 ? `, ${hh.length/2} per side. The grips reach Ø${o.handles.size} mm across${ht === 'gt3-closed' ? ' and are joined by a bar over the top' : ''}.` : `, for the rim's spokes. Rim Ø${fmt(st.handle.cfg.rim.diameter)} mm with a flat bottom.`) +
-      (nBad ? ` ${nBad} ${nBad === 1 ? 'hole is' : 'holes are'} not on your outline yet, so the handles are left out until the outline reaches them.` : ' The handles show in the 3D preview.');
+      (st.tabs > 0 ? ` Your outline doesn't reach ${st.tabs} of them, so ${st.tabs === 1 ? 'a mounting tab was' : 'mounting tabs were'} added around ${st.tabs === 1 ? 'it' : 'them'}. Tabs can't be deleted by editing points; they stay while this mounting type is chosen.` : '') +
+      (nBad ? ` ${nBad} ${nBad === 1 ? 'hole is' : 'holes are'} not on your outline yet, so the handles are left out for now.` : ' The handles show in the 3D preview.');
   olSvg.classList.toggle('drawing', custom);
   if (!custom) $('presetList').innerHTML = PLATES.filter(p => !p.custom).map(p =>
     `<button type="button" class="preset" data-plate="${p.id}" aria-pressed="${p.id === state.plateId}">${presetThumb(p)}<span><b>${esc(p.name)}</b><i>${fmt(p.width)} × ${fmt(p.height)} mm · ${p.holes.filter(h => h.role === 'mount').length} mount holes${p.handles ? ' · ' + p.handles.style + ' handles' : ''}</i></span></button>`).join('');
@@ -2188,14 +2233,22 @@ function mfBase(pl, t){
   const T = x => (trash.push(x), x);
   try {
     const mounts = pl.holes.filter(h => h.role === 'mount');
-    let cs = T(new CrossSection([pl.outline]));
-    if (mounts.length) cs = T(cs.subtract(T(new CrossSection(mounts.map(m => circlePoly(m.x, m.y, m.d/2))))));
-    let body = T(Manifold.extrude(cs, t));
-    // The cutters start a hair (d) outside the plate wall and below the chamfer line, so they cross the
-    // wall cleanly instead of touching it along a line, which would leave zero-thickness slivers in the STL.
     const cutters = [], e = 0.5, d = 0.01;
     const c = ch.outline;
-    if (c > 0) for (const h of edgeChamferCutters(pl.outline, t, c)) cutters.push(T(h));
+    // Outline with its top chamfer, built directly as a mesh (like the deco). The cutter method below is the
+    // fallback: on fine curves (e.g. where a mounting tab blends in) its cutters can leave coincident walls.
+    let body = c > 0 ? chamferedPrism(T(new CrossSection([pl.outline])), 0, t, c) : null;
+    if (body){
+      T(body);
+      if (mounts.length) body = T(body.subtract(T(T(Manifold.extrude(T(new CrossSection(mounts.map(m => ccw(circlePoly(m.x, m.y, m.d/2))), 'Positive')), t + 2)).translate([0, 0, -1]))));
+    } else {
+      let cs = T(new CrossSection([pl.outline]));
+      if (mounts.length) cs = T(cs.subtract(T(new CrossSection(mounts.map(m => circlePoly(m.x, m.y, m.d/2))))));
+      body = T(Manifold.extrude(cs, t));
+      // The cutters start a hair (d) outside the plate wall and below the chamfer line, so they cross the
+      // wall cleanly instead of touching it along a line, which would leave zero-thickness slivers in the STL.
+      if (c > 0) for (const h of edgeChamferCutters(pl.outline, t, c)) cutters.push(T(h));
+    }
     const cm = ch.mount;
     if (cm > 0) for (const m of mounts){
       const r = m.d/2;
