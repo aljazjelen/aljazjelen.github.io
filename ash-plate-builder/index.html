@@ -379,6 +379,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
             <button class="btn primary wide" id="exAll">Download everything <em>.zip</em></button>
             <button class="btn" id="exStl">Front plate <em>.stl</em></button>
             <button class="btn" id="exDeco">Deco <em>.stl</em></button>
+            <button class="btn" id="exTray">Back plate <em>.stl</em></button>
             <button class="btn" id="exDxf">Cut outline <em>.dxf</em></button>
             <button class="btn" id="exSvg">Cut outline <em>.svg</em></button>
             <button class="btn" id="exBom">Parts list <em>.csv</em></button>
@@ -742,11 +743,25 @@ function buildWheel(folder, cfg, dxfText){
     },
     example: Array.isArray(cfg.example) ? cfg.example : [], notes,
     handles: cleanHandlesCfg(cfg.handles, ox, oy, notes, holes),
+    tray: cleanTray(cfg.tray),
   };
   finalizePlate(pl);
   const cxo = (pl.bbox.minX + pl.bbox.maxX)/2, cyo = (pl.bbox.minY + pl.bbox.maxY)/2;
   if (Math.hypot(cxo, cyo) > 0.25*Math.max(pl.width, pl.height)) notes.push(`the outline is centred at ${fmt(cxo)}, ${fmt(cyo)}, far from 0,0; set "origin" if that's not the wheel centre`);
   return pl;
+}
+/* Back plate as a tray: a floor with the plate's outline and a wall all round it, as tall as the plate spacing,
+   so the front plate sits on the wall like a lid. Screw bosses (with pilot holes) stand at the front plate's
+   mounting holes; the floor has the hub opening and the quick-release bolt pattern wherever the plate has a
+   round no-go zone of the hub's size. wheel.json "tray" can change every size; these are the defaults. */
+const TRAY_DEFAULTS = { wall: 4, floor: 3, boss: 8, pilot: 2.8, hub: { bore: 46, pcd: 70, bolts: 6, bolt: 5.3, angle: 30 } };
+function cleanTray(t){
+  t = t && typeof t === 'object' ? t : {};
+  const h = t.hub && typeof t.hub === 'object' ? t.hub : {}, D = TRAY_DEFAULTS, H = D.hub;
+  return { wall: clampNum(numOr(t.wall, D.wall), 1, 20), floor: clampNum(numOr(t.floor, D.floor), 1, 20),
+           boss: clampNum(numOr(t.boss, D.boss), 3, 30), pilot: clampNum(numOr(t.pilot, D.pilot), 0, 20),
+           hub: t.hub === false ? null : { bore: numOr(h.bore, H.bore), pcd: numOr(h.pcd, H.pcd), bolts: Math.max(0, Math.round(numOr(h.bolts, H.bolts))),
+                                         bolt: numOr(h.bolt, H.bolt), angle: numOr(h.angle, H.angle) } };
 }
 // Handles from wheel.json. Two styles:
 //   gt3:   open grips on both sides (the right one is the left mirrored across x = 0).
@@ -2316,6 +2331,48 @@ function mfPlate(){
   }
   return res;
 }
+// The tray (back plate), in the same coordinates as the plate STL: its top touches the front plate's underside (z = 0).
+function mfTray(pl, gap){
+  const { Manifold, CrossSection } = MF, tr = pl.tray || cleanTray(), trash = [];
+  const T = x => (trash.push(x), x);
+  try {
+    const H = gap + tr.floor, outer = T(new CrossSection([pl.outline]));
+    let body = T(T(Manifold.extrude(outer, H)).translate([0, 0, -H]));
+    const inner = T(outer.offset(-tr.wall, 'Round', 2, 48));
+    if (!inner.isEmpty()) body = T(body.subtract(T(T(Manifold.extrude(inner, gap + 1)).translate([0, 0, -gap]))));
+    const mounts = pl.holes.filter(h => h.role === 'mount');
+    if (mounts.length){
+      // posts from the floor up to the front plate, trimmed to the outline so a post near the edge never sticks out
+      const posts = T(Manifold.union(mounts.map(m => T(T(Manifold.cylinder(gap, tr.boss/2, tr.boss/2, 40)).translate([m.x, m.y, -gap])))));
+      const clip = T(T(Manifold.extrude(T(outer.offset(-0.05, 'Round', 2, 48)), H)).translate([0, 0, -H]));
+      body = T(Manifold.union([body, T(posts.intersect(clip))]));
+      if (tr.pilot > 0){
+        const pilot = m => T(T(T(Manifold.cylinder(gap + 1, tr.pilot/2, tr.pilot/2, 24)).rotate([0, 0, 1.37])).translate([m.x, m.y, -gap]));
+        body = T(body.subtract(T(Manifold.union(mounts.map(pilot)))));
+      }
+    }
+    // hub: opening and quick-release bolt holes through the floor, at each round no-go zone of the hub's size
+    if (tr.hub) for (const hz of pl.holes.filter(h => h.role !== 'mount' && !h.poly && Math.abs(h.d - tr.hub.bore) < 0.5 && pointInPoly(h.x, h.y, pl.outline))){
+      const cuts = [T(T(Manifold.cylinder(tr.floor + 2, tr.hub.bore/2, tr.hub.bore/2, 72)).translate([hz.x, hz.y, -H - 1]))];
+      for (let k = 0; k < tr.hub.bolts; k++){
+        const a = (tr.hub.angle + 360*k/tr.hub.bolts) * Math.PI/180;
+        cuts.push(T(T(Manifold.cylinder(tr.floor + 2, tr.hub.bolt/2, tr.hub.bolt/2, 24)).translate([hz.x + tr.hub.pcd/2*Math.cos(a), hz.y + tr.hub.pcd/2*Math.sin(a), -H - 1])));
+      }
+      body = T(body.subtract(T(Manifold.union(cuts))));
+    }
+    return body.translate([0, 0, 0]);
+  } finally { for (const x of trash) x.delete(); }
+}
+const trayCache = { key: null, geo: null };
+function trayGeometry(){
+  const pl = plate(), key = JSON.stringify([pl.key || pl.id, state.gap, mfState]);
+  if (trayCache.key === key) return trayCache.geo;
+  let geo = null;
+  try { if (MF){ const m = mfTray(pl, state.gap); geo = mfToGeometry(m); m.delete(); } } catch(e){ console.warn('Back plate could not be built.', e); }
+  if (trayCache.geo) trayCache.geo.dispose();
+  trayCache.key = key; trayCache.geo = geo;
+  return geo;
+}
 // A flat shape (CrossSection) extruded from z0 to z0 + h with a 45° chamfer of size c on its top edge, built
 // directly as a mesh: bottom face, vertical walls up to z0 + h - c, a sloped band up to the outline moved c
 // inward (each corner moved along its bisector, so every band face is exactly 45°), and the top face.
@@ -2785,9 +2842,10 @@ function rebuild3d(){
     else ph.absarc(m.x, m.y, m.d/2, 0, Math.PI*2, true);
     backShape.holes.push(ph);
   }
-  const back = new THREE.Mesh(new THREE.ExtrudeGeometry(backShape, {depth:3, bevelEnabled:false, curveSegments:40}), mat(css('--zone'), {transparent:true, opacity:0.28, depthWrite:false}));
-  back.position.z = -gap - 3; g.add(back);
-  for (const m of pl.holes.filter(h => h.role === 'mount')){
+  const tgeo = trayGeometry();
+  if (tgeo) g.add(new THREE.Mesh(tgeo.clone(), mat(css('--zone'), {transparent:true, opacity:0.32, depthWrite:false, side:THREE.DoubleSide})));
+  else { const back = new THREE.Mesh(new THREE.ExtrudeGeometry(backShape, {depth:3, bevelEnabled:false, curveSegments:40}), mat(css('--zone'), {transparent:true, opacity:0.28, depthWrite:false})); back.position.z = -gap - 3; g.add(back); }
+  if (!tgeo) for (const m of pl.holes.filter(h => h.role === 'mount')){
     const so = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, gap, 20), mat(css('--zone'), {transparent:true, opacity:0.55}));
     so.rotation.x = Math.PI/2; so.position.set(m.x, m.y, -gap/2); g.add(so);
   }
@@ -2940,6 +2998,12 @@ $('exDeco').addEventListener('click', () => {
   if (!geo){ toast(decoUnavailable() || 'There is no deco to export.'); return; }
   guarded(() => saveFile(baseName()+'-deco.stl', stlFromGeometry(geo, 'ASH deco - Immersion Dynamics')));
 });
+$('exTray').addEventListener('click', () => {
+  if (!needThree()) return;
+  const geo = trayGeometry();
+  if (!geo){ toast('The back plate needs the 3D engine, which has not loaded.'); return; }
+  saveFile(baseName()+'-back.stl', stlFromGeometry(geo, 'ASH back plate - Immersion Dynamics'));
+});
 $('exDxf').addEventListener('click', () => guarded(() => saveFile(baseName()+'.dxf', dxfText())));
 $('exSvg').addEventListener('click', () => guarded(() => saveFile(baseName()+'.svg', svgText())));
 $('exBom').addEventListener('click', () => saveFile(baseName()+'-parts.csv', bomCsv()));
@@ -2950,6 +3014,7 @@ async function exportAll(){
   const z = new JSZip(), b = baseName();
   z.file(b+'.stl', stlBinary()); z.file(b+'.dxf', dxfText()); z.file(b+'.svg', svgText());
   const dgeo = decoGeometry(); if (dgeo) z.file(b+'-deco.stl', stlFromGeometry(dgeo, 'ASH deco - Immersion Dynamics'));
+  const tgeo = trayGeometry(); if (tgeo) z.file(b+'-back.stl', stlFromGeometry(tgeo, 'ASH back plate - Immersion Dynamics'));
   z.file(b+'-parts.csv', bomCsv()); z.file(b+'-layout.json', layoutJson());
   saveFile(b+'.zip', await z.generateAsync({type:'blob'}));
 }

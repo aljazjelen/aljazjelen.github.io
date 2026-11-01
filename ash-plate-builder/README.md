@@ -125,7 +125,16 @@ The deco is a separate printed piece that sits on top of the front plate, export
 
 The deco settings are saved with the layout.
 
-### Handles (3D preview only)
+### Back plate (tray)
+The back plate is generated as a tray from the same outline as the front plate, and exported as its own STL (`-back.stl`, also in the zip), in the same coordinates as the plate STL. Its top touches the underside of the front plate, which sits on its wall like a lid.
+- **Wall:** 4 mm thick, all round the outline. **Floor:** 3 mm. The plate spacing is the tray's inside depth, so the tray is spacing + 3 mm tall and the part depth check still applies.
+- **Screw bosses:** a Ø8 post at every front plate mounting hole, from the floor up to the front plate, with a Ø2.8 pilot hole for an M3 self-tapping screw. Posts near the outline are trimmed to it.
+- **Hub:** wherever the plate has a round Ø46 no-go zone, the floor gets that opening (for the electronics) plus the quick-release pattern: 6 × Ø5.3 holes on a 70 mm circle. Merida, which has no hub zone, gets a plain floor.
+- Every size can be changed per wheel in `wheel.json` under `tray`: `wall`, `floor`, `boss`, `pilot`, and `hub` (`bore`, `pcd`, `bolts`, `bolt`, `angle`), or `"hub": false`.
+- The tray's interior (the outline minus the 4 mm wall) is where everything behind the front plate has to fit. The existing checks already keep parts there: the 4.5 mm edge margin is wider than the wall, and a mounting hole's keep-out is wider than its boss.
+- Still to come: the thicker wall at the handle mounting areas, with its top lowered so the handle's 5 mm core is clamped between tray and front plate. This needs the mounting areas from the handle CAD.
+
+
 A wheel can define handles in its `wheel.json`, so the style follows the wheel. For now they're a cosmetic addition to the 3D preview, to judge how the wheel looks, and aren't exported. There are two styles:
 
 **`gt3`** (Zeus): open grips on both sides.
