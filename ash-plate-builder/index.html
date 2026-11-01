@@ -17,6 +17,7 @@
   --accent:#1F6FD1; --accent-ink:#FFFFFF; --accent-soft:#DCE9FA;
   --plate:#2E343A; --plate-ink:#C7CDD3; --grid:rgba(255,255,255,.07); --grid-strong:rgba(255,255,255,.14);
   --zone:#8FA0B0; --ko:#6FA3E6; --ko-fill:rgba(111,163,230,.10); --hole:#E9ECEF; --hole-edge:#11151A; --cap:#121519; --cap-edge:#8E99A4;
+  --grip:#25292E; --grip-edge:#4D555E; --metal:#A3ADB7;
   --ok:#2B8A3E; --ok-soft:#DDF1E1; --err:#C92A2A; --err-soft:#FBE0E0; --warn:#B35C00; --warn-soft:#FCEBD5;
   --f-display:"Saira Semi Condensed","Arial Narrow",system-ui,sans-serif;
   --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -28,6 +29,7 @@
   --accent:#4D9BFF; --accent-ink:#061428; --accent-soft:#16294A;
   --plate:#353C44; --plate-ink:#B8C0C8; --grid:rgba(255,255,255,.06); --grid-strong:rgba(255,255,255,.12);
   --zone:#7D8C9B; --ko:#7DB2FF; --ko-fill:rgba(125,178,255,.10); --hole:#111417; --hole-edge:#0A0C0E; --cap:#0E1013; --cap-edge:#8692A0;
+  --grip:#0C0E10; --grip-edge:#3F4851; --metal:#7F8B97;
   --ok:#5CC977; --ok-soft:#173222; --err:#FF6B6B; --err-soft:#3A1A1A; --warn:#F0A04B; --warn-soft:#38270F;
   color-scheme:dark}}
 :root[data-theme="dark"]{
@@ -35,6 +37,7 @@
   --accent:#4D9BFF; --accent-ink:#061428; --accent-soft:#16294A;
   --plate:#353C44; --plate-ink:#B8C0C8; --grid:rgba(255,255,255,.06); --grid-strong:rgba(255,255,255,.12);
   --zone:#7D8C9B; --ko:#7DB2FF; --ko-fill:rgba(125,178,255,.10); --hole:#111417; --hole-edge:#0A0C0E; --cap:#0E1013; --cap-edge:#8692A0;
+  --grip:#0C0E10; --grip-edge:#3F4851; --metal:#7F8B97;
   --ok:#5CC977; --ok-soft:#173222; --err:#FF6B6B; --err-soft:#3A1A1A; --warn:#F0A04B; --warn-soft:#38270F;
   color-scheme:dark}
 *{box-sizing:border-box}
@@ -111,8 +114,9 @@ header.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom
 #outlineSvg .ol-pt:hover{fill:var(--accent-soft)}
 #outlineSvg .ol-pt.sel{fill:var(--accent)}
 #outlineSvg .ol-ghost{fill:var(--accent);opacity:.4;pointer-events:none}
-#outlineSvg .ol-grip{fill:none;stroke:var(--zone);opacity:.28;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
-#outlineSvg .ol-gripline{fill:none;stroke:var(--zone);stroke-width:.4;stroke-dasharray:2 1.5;pointer-events:none}
+#outlineSvg .ol-grip{fill:var(--grip);stroke:var(--grip-edge);stroke-width:.4;stroke-linejoin:round;pointer-events:none}
+#outlineSvg .ol-spoke{fill:var(--metal);stroke:var(--grip-edge);stroke-width:.35;stroke-linejoin:round;pointer-events:none}
+#outlineSvg .ol-seam{fill:none;stroke:var(--grip-edge);stroke-width:.4;stroke-dasharray:1.6 1.4;stroke-linecap:round;pointer-events:none}
 #outlineSvg .ol-hhole{fill:var(--hole);stroke:var(--hole-edge);stroke-width:.3;pointer-events:none}
 #outlineSvg .ol-hhole.bad{fill:var(--err);stroke:var(--err-soft);stroke-width:.5}
 #outlineSvg .ol-mount{fill:var(--panel);stroke:var(--plate-ink);stroke-width:.3}
@@ -1701,6 +1705,27 @@ function outlineKey(e){
     mutate(() => { state.outline.pts[olSel] = olPoint({x: q[0] + d[0], y: q[1] + d[1]}); });
   }
 }
+// Outline of a band along a centre line: half(t) is the half-width at fraction t of the length. Open bands get
+// round ends; a closed band (a rim) is a ring, drawn with even-odd fill.
+function ribbonPath(P, half, closed){
+  const n = P.length; if (n < 2) return '';
+  const cum = [0]; for (let i = 1; i < n; i++) cum.push(cum[i-1] + Math.hypot(P[i][0]-P[i-1][0], P[i][1]-P[i-1][1]));
+  const len = cum[n-1] || 1, left = [], right = [], T = [];
+  for (let i = 0; i < n; i++){
+    const a = closed ? P[(i-1+n) % n] : P[Math.max(0, i-1)], b = closed ? P[(i+1) % n] : P[Math.min(n-1, i+1)];
+    const l = Math.hypot(b[0]-a[0], b[1]-a[1]) || 1, t = [(b[0]-a[0])/l, (b[1]-a[1])/l], nn = [-t[1], t[0]], h = half(cum[i]/len);
+    T.push(t); left.push([P[i][0] + nn[0]*h, P[i][1] + nn[1]*h]); right.push([P[i][0] - nn[0]*h, P[i][1] - nn[1]*h]);
+  }
+  const f = ([x, y]) => `${x.toFixed(2)} ${(-y).toFixed(2)}`;
+  if (closed) return 'M' + left.map(f).join('L') + 'Z M' + right.slice().reverse().map(f).join('L') + 'Z';
+  const cap = (i, dir) => {   // half circle around the end, bulging along the direction of travel
+    const p = P[i], t = T[i].map(v => v*dir), nn = [-T[i][1]*dir, T[i][0]*dir], h = half(i ? 1 : 0), out = [];
+    for (let k = 1; k < 12; k++){ const a = Math.PI*k/12; out.push([p[0] + h*(Math.cos(a)*nn[0] + Math.sin(a)*t[0]), p[1] + h*(Math.cos(a)*nn[1] + Math.sin(a)*t[1])]); }
+    return out;
+  };
+  const pts = [...left, ...cap(n-1, 1), ...right.slice().reverse(), ...cap(0, -1)];
+  return 'M' + pts.map(f).join('L') + 'Z';
+}
 function renderOutline(){
   if (!state || !$('outlineSvg')) return;
   const o = state.outline, custom = o.mode === 'custom', st = customStatus;
@@ -1724,21 +1749,25 @@ function renderOutline(){
   const pl = custom ? (PLATES.find(p => p.id === 'custom') || null) : plate();
   let minX = -OL.W/2, maxX = OL.W/2, minY = -OL.H/2, maxY = OL.H/2;
   if (pl && !custom){ minX = Math.min(minX, pl.bbox.minX); maxX = Math.max(maxX, pl.bbox.maxX); minY = Math.min(minY, pl.bbox.minY); maxY = Math.max(maxY, pl.bbox.maxY); }
-  // handle preview (own outline): grip / rim centre lines drawn at their real width
+  // handle preview (own outline): solid shapes along the grip / rim centre lines. A GT3 grip is slimmer where it
+  // meets the plate and fuller where the hand goes, with a thumb rest near its top; half(t) gives the half-width
+  // at fraction t of the length.
   const grips = [];
   if (custom && st.handle){
     const c = st.handle.cfg;
     if (c.style === 'gt3'){
-      const L = catmullRom(c.left.path, 2.5);
-      grips.push({ pts: L, w: c.grip.width }, { pts: L.map(([x, y]) => [-x, y]), w: c.grip.width });
-      if (c.closed){ const tp = gt3TopPath({ path: c.left.path, diameter: c.diameter }, c.grip.width); if (tp) grips.push({ pts: catmullRom(tp, 2.5), w: c.grip.width }); }
+      const W = c.grip.width, L = catmullRom(c.left.path, 2.5);
+      const grip = t => { const u = clampNum((t - 0.03) / 0.94, 0, 1); return W/2 * (0.56 + 0.48*Math.pow(Math.sin(Math.PI*u), 0.7) + 0.1*Math.exp(-(((t - 0.86)/0.06)**2))); };
+      grips.push({ pts: L, half: grip, cls: 'ol-grip', seam: true }, { pts: L.map(([x, y]) => [-x, y]), half: grip, cls: 'ol-grip', seam: true });
+      if (c.closed){ const tp = gt3TopPath({ path: c.left.path, diameter: c.diameter }, W); if (tp) grips.unshift({ pts: catmullRom(tp, 2.5), half: () => W/2*0.78, cls: 'ol-grip', seam: true }); }
     } else {
       const R = (c.rim.diameter - c.rim.tube)/2, cc = Math.min(c.rim.flatBottom, c.rim.diameter/2) - c.rim.tube/2, loop = rimPath(R, cc, c.rim.cornerRadius, 2.5);
-      grips.push({ pts: [...loop, loop[0]], w: c.rim.tube });
       for (const q of c.spokes){ const hs = q.holes, cx = hs.reduce((a, [x]) => a + x, 0)/hs.length, cy = hs.reduce((a, [, y]) => a + y, 0)/hs.length, l = Math.hypot(cx, cy);
-        const hit = l < 1 ? rayHit(loop, 0, -1) : rayHit(loop, cx/l, cy/l); if (hit) grips.push({ pts: [[cx, cy], hit], w: c.spoke.width }); }
+        const hit = l < 1 ? rayHit(loop, 0, -1) : rayHit(loop, cx/l, cy/l), sw = c.spoke.width;
+        if (hit) grips.push({ pts: [[cx, cy], hit], half: t => sw/2 * (1 - 0.3*t), cls: 'ol-spoke' }); }
+      grips.push({ pts: loop, half: () => c.rim.tube/2, cls: 'ol-grip', closed: true, seam: true });
     }
-    for (const g of grips) for (const [x, y] of g.pts){ minX = Math.min(minX, x - g.w/2); maxX = Math.max(maxX, x + g.w/2); minY = Math.min(minY, y - g.w/2); maxY = Math.max(maxY, y + g.w/2); }
+    for (const g of grips) for (const [x, y] of g.pts){ const h = g.half(0.5) * 1.25; minX = Math.min(minX, x - h); maxX = Math.max(maxX, x + h); minY = Math.min(minY, y - h); maxY = Math.max(maxY, y + h); }
   }
   const pad = 10;
   olSvg.setAttribute('viewBox', `${minX-pad} ${-maxY-pad} ${maxX-minX+2*pad} ${maxY-minY+2*pad+6}`);
@@ -1747,8 +1776,8 @@ function renderOutline(){
   for (let v = -OL.W/2 + 10; v < OL.W/2; v += 10) g += `<line class="ol-gl${v % 50 === 0 ? ' s' : ''}" x1="${v}" y1="${-OL.H/2}" x2="${v}" y2="${OL.H/2}"/>`;
   for (let v = -OL.H/2 + 10; v < OL.H/2; v += 10) g += `<line class="ol-gl${v % 50 === 0 ? ' s' : ''}" x1="${-OL.W/2}" y1="${-v}" x2="${OL.W/2}" y2="${-v}"/>`;
   g += `<text class="ol-lbl" x="${-OL.W/2}" y="${OL.H/2 + 6}">${custom ? `drawing area ${OL.W} × ${OL.H} mm` : esc(plate().name)}</text>`;
-  const gripPath = q => 'M' + q.map(([x, y]) => `${x.toFixed(2)} ${(-y).toFixed(2)}`).join('L');
-  for (const gr of grips) g += `<path class="ol-grip" d="${gripPath(gr.pts)}" stroke-width="${gr.w}"/><path class="ol-gripline" d="${gripPath(gr.pts)}"/>`;
+  const line = (q, close) => 'M' + q.map(([x, y]) => `${x.toFixed(2)} ${(-y).toFixed(2)}`).join('L') + (close ? 'Z' : '');
+  for (const gr of grips) g += `<path class="${gr.cls}" d="${ribbonPath(gr.pts, gr.half, gr.closed)}" fill-rule="evenodd"/>` + (gr.seam ? `<path class="ol-seam" d="${line(gr.pts, gr.closed)}"/>` : '');
   if (custom && o.sym) g += `<line class="ol-axis" x1="0" y1="${-OL.H/2}" x2="0" y2="${OL.H/2}"/>`;
   if (pl){
     g += `<polygon class="ol-plate" points="${polySvgPts(pl.outline)}"/>`;
