@@ -1030,10 +1030,10 @@ const OL_SNAPS = [0.5, 1, 2.5, 5, 10];
 // GT3 from the first wheel with gt3 handles (Zeus), rally from the first with a rally rim (Hermes).
 const HANDLE_TYPES = { none: 'None', rally: 'Rally', 'gt3-open': 'GT3 open', 'gt3-closed': 'GT3 closed' };
 const GT3_SIZES = [300, 315, 330, 345, 360], GT3_DEFAULT_SIZE = 330;   // outside diameter across the grips, mm
-const HANDLE_HOLE_EDGE = 1.5;   // mm of plate a handle hole needs between itself and the outline
-const HANDLE_PAD = 4;           // mm of plate around a hole in an automatic mounting tab
+const HANDLE_PAD = 6;           // mm of plate every handle hole gets around it; a tab tops it up where the outline leaves less
+const HANDLE_HOLE_EDGE = HANDLE_PAD - 0.1;   // what counts as enough (0.1 mm leeway for the faceted pad circles)
 const HANDLE_TAB_GROUP = 25;    // mm: holes this close share one tab, with straight edges from hole to hole
-// Mounting tabs: every handle hole the outline doesn't cover (with HANDLE_HOLE_EDGE to spare) gets a round pad,
+// Mounting tabs: every handle hole with less than HANDLE_PAD mm of plate around it gets a round pad,
 // joined to the outline by a bridge to the nearest point of its edge. The tabs are part of the plate and can't
 // be removed by editing points; only changing Handle mounting does that. Inner corners are rounded so they blend in.
 function convexHull(P){
@@ -1068,7 +1068,7 @@ function addMountingTabs(out, holes, radius){
   for (const g of groups){
     const pts = [];
     for (const h of g){
-      const rp = h.d/2 + HANDLE_PAD;
+      const rp = h.d/2 + HANDLE_PAD + 0.05;   // a hair over, so the faceted circle still leaves the full pad
       pts.push(...circlePoly(h.x, h.y, rp));
       if (!pointInPoly(h.x, h.y, out)){ const [px, py] = nearestOnOutline(h.x, h.y, out); pts.push(...circlePoly(px, py, rp)); }   // bridge, as wide as the pad
     }
@@ -1194,7 +1194,7 @@ function rebuildCustomPlate(o){
   let bad = 0;
   for (const h of st.handleHoles){ h.ok = pointInPoly(h.x, h.y, out) && edgeDist(h.x, h.y, out) >= h.d/2 + HANDLE_HOLE_EDGE - 1e-6; if (!h.ok) bad++; }
   if (bad && st.tabs === -1) st.warnings.push('Mounting tabs for the handle holes are added once the 3D engine has loaded.');
-  else if (bad) st.warnings.push(`${bad} of the ${st.handleHoles.length} handle mounting holes ${bad === 1 ? 'is' : 'are'} outside your outline or closer than ${HANDLE_HOLE_EDGE} mm to its edge (shown in red). Make the outline reach ${bad === 1 ? 'it' : 'them'}.`);
+  else if (bad) st.warnings.push(`${bad} of the ${st.handleHoles.length} handle mounting holes ${bad === 1 ? 'is' : 'are'} outside your outline or closer than ${HANDLE_PAD} mm to its edge (shown in red). Make the outline reach ${bad === 1 ? 'it' : 'them'}.`);
   try {
     const okHoles = st.handleHoles.filter(h => h.ok);
     const cfg = { name: 'Own outline', outline: out, edgeMargin: OL.margin, plateSpacing: DEFAULT_GAP, frontPlateThickness: 4,
