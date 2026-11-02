@@ -47,5 +47,16 @@ for folder in index['wheels']:
     wheels[folder] = entry
 payload = json.dumps(wheels, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/')
 s = replace_between(s, '/*WHEELS_JSON*/', '/*END_WHEELS_JSON*/', payload)
+
+handles = {}
+hidx = os.path.join(root, 'handles', 'index.json')
+if os.path.exists(hidx) and '/*HANDLES_JSON*/' in s:
+    for hid in json.load(open(hidx, encoding='utf-8'))['handles']:
+        cfg = json.load(open(os.path.join(root, 'handles', hid, 'handle.json'), encoding='utf-8'))
+        cfg.pop('_help', None)
+        names = [cfg['core']['dxf']] + [a['dxf'] for a in cfg.get('mountAreas', [])]
+        files = {n: dxf_keep_header_and_entities(open(os.path.join(root, 'handles', hid, n), encoding='utf-8', errors='replace').read()) for n in names}
+        handles[hid] = {'config': cfg, 'files': files}
+    s = replace_between(s, '/*HANDLES_JSON*/', '/*END_HANDLES_JSON*/', json.dumps(handles, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/'))
 open(html_path, 'w', encoding='utf-8').write(s)
-print(f'{len(parts["parts"])} parts and {len(wheels)} wheels copied into {html_path}')
+print(f'{len(parts["parts"])} parts, {len(wheels)} wheels and {len(handles)} handle sets copied into {html_path}')

@@ -1,0 +1,15 @@
+{
+  "_help": [
+    "One handle set, exported from CAD. All DXFs in mm, with the wheel centre (the hub) at 0,0.",
+    "core: the handle's core plate seen from the front: its outline (the largest closed shape) and holes (circles). side = which side the DXF shows; mirror adds the other side. thickness = core plate thickness; the back plate is lowered by this much at the mounting areas so the core is clamped between back plate and front plate.",
+    "mountAreas: closed shapes where the handle sits on the plate. They are always part of the outline (they can't be deleted), parts keep clear of them, and their circles become the mounting holes through the front plate and into the back plate."
+  ],
+  "name": "GT3 open",
+  "core": { "dxf": "core.dxf", "side": "right", "thickness": 5 },
+  "mountAreas": [
+    { "dxf": "area1.dxf", "side": "left" },
+    { "dxf": "area2.dxf", "side": "left" },
+    { "dxf": "area3.dxf", "side": "left" }
+  ],
+  "mirror": true
+}

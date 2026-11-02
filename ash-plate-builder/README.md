@@ -125,6 +125,18 @@ The deco is a separate printed piece that sits on top of the front plate, export
 
 The deco settings are saved with the layout.
 
+### Handle sets: `handles/`
+Handles are designed in CAD and exported as DXFs, one folder per set, listed in `handles/index.json`:
+```
+handles/
+  index.json
+  gt3/
+    handle.json
+    core.dxf        the handle's core plate seen from the front: outline + holes
+    area1.dxf ...   the mounting areas, each a closed shape with its holes as circles
+```
+`handle.json` names the set and its files, says which side each DXF shows (`left`/`right`), and `mirror: true` adds the other side. `core.thickness` (5 mm) is how far the back plate is lowered at the mounting areas, so the core is clamped between back plate and front plate. All DXFs are in mm with the wheel centre (the hub) at 0,0.
+
 ### Back plate (tray)
 The back plate is generated as a tray from the same outline as the front plate, and exported as its own STL (`-back.stl`, also in the zip), in the same coordinates as the plate STL. Its top touches the underside of the front plate, which sits on its wall like a lid.
 - **Wall:** 4 mm thick, all round the outline. **Floor:** 3 mm. The plate spacing is the tray's inside depth, so the tray is spacing + 3 mm tall and the part depth check still applies.
@@ -132,7 +144,7 @@ The back plate is generated as a tray from the same outline as the front plate, 
 - **Hub:** wherever the plate has a round Ø46 no-go zone, the floor gets that opening (for the electronics) plus the quick-release pattern: 6 × Ø5.3 holes on a 70 mm circle. Merida, which has no hub zone, gets a plain floor.
 - Every size can be changed per wheel in `wheel.json` under `tray`: `wall`, `floor`, `boss`, `pilot`, and `hub` (`bore`, `pcd`, `bolts`, `bolt`, `angle`), or `"hub": false`.
 - The tray's interior (the outline minus the 4 mm wall) is where everything behind the front plate has to fit. The existing checks already keep parts there: the 4.5 mm edge margin is wider than the wall, and a mounting hole's keep-out is wider than its boss.
-- Still to come: the thicker wall at the handle mounting areas, with its top lowered so the handle's 5 mm core is clamped between tray and front plate. This needs the mounting areas from the handle CAD.
+- **Handle mounting areas:** with a handle set, the tray is solid at each mounting area up to the core's thickness (5 mm) below its top, and the wall there is lowered by the same amount, so the handle core is clamped between the tray and the front plate. The screws go through the front plate and the core into pilot holes in these pads.
 
 
 A wheel can define handles in its `wheel.json`, so the style follows the wheel. For now they're a cosmetic addition to the 3D preview, to judge how the wheel looks, and aren't exported. There are two styles:
@@ -166,11 +178,10 @@ The app has three views, switched at the top. It remembers the last one; add `#o
   - **Round corners** rounds every corner, inner and outer, with one radius (5 mm by default).
   - **Start from** fills the canvas with a rectangle, a round shape, or a simplified copy of one of the existing designs to modify.
   - The outline must not cross itself. It should go around the electronics zone with at least 4.5 mm to spare; the panel on the right says when it doesn't.
-  - **Handle mounting** (right column) adds the handle mounting holes to your outline and shows the handles around it:
-    - **Rally**: Hermes' four Ø3.3 spoke holes and its round rim with a flat bottom.
-    - **GT3 open** and **GT3 closed**: Zeus' five Ø4.2 handle holes per side and its grips. **Closed** adds a bar over the top that joins the two grips. **Wheel size** (GT3 only) sets the wheel's width across the grips, from Ø300 to Ø360 mm; Ø330 matches Zeus. The grip ends stay on their mounting holes.
-    - The holes and the handle shapes are copied from those designs, so they follow any change to them.
-    - **Mounting tabs:** every handle hole always has at least 6 mm of plate around it. Where your outline doesn't reach a hole, or leaves less than 6 mm, the plate automatically gets a tab: a round pad with 6 mm of plate around the hole, joined to your outline by a bridge to the nearest point of its edge, with rounded inner corners so it blends in. Holes within 25 mm of each other share one tab, so the edge from one hole to the next is straight. Tabs come from the mounting type, not from your points, so they can't be deleted or dragged away; choosing another mounting type (or None) removes them. So the handles always have their holes.
+  - **Handle mounting** (right column) picks a handle set from `handles/` (or None). A handle set comes from CAD (see *Handle sets* below):
+    - Its **mounting areas** are always part of your outline: they're joined to what you draw and can't be deleted by editing points. An area your outline doesn't touch shows in red, and the handles wait until the outline reaches it.
+    - The areas' holes become mounting holes through the front plate and into the back plate. Parts keep clear of the areas (they're no-go zones), because the handle core sits behind the plate there.
+    - The handle cores are drawn around your outline, and shown in the 3D preview as plates of their thickness.
   - Your own outline uses a 4.5 mm edge margin, 20 mm plate spacing, 4 mm thickness, and a 0.5 mm top chamfer. Other mounting points for the front plate are still to do.
   - The outline is saved with the layout. Until it's usable, the 2D design keeps showing the previous back plate and says so.
 - **2D design:** the chosen back plate (**Change** goes back to Outline), the parts list, the plate editor, the selected part and the checks. The parts list shows its groups (Buttons/Rotaries, Encoders & switches, Indicators, Displays, Custom) collapsed. Click a group to open it; only one is open at a time.

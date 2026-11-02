@@ -119,6 +119,8 @@ header.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom
 #outlineSvg .ol-seam{fill:none;stroke:var(--grip-edge);stroke-width:.4;stroke-dasharray:1.6 1.4;stroke-linecap:round;pointer-events:none}
 #outlineSvg .ol-hhole{fill:var(--hole);stroke:var(--hole-edge);stroke-width:.3;pointer-events:none}
 #outlineSvg .ol-hhole.bad{fill:var(--err);stroke:var(--err-soft);stroke-width:.5}
+#outlineSvg .ol-marea{fill:none;stroke:var(--accent);stroke-width:.5;stroke-dasharray:1.6 1;pointer-events:none}
+#outlineSvg .ol-marea.bad{fill:var(--err-soft);fill-opacity:.6;stroke:var(--err);stroke-width:.6}
 #outlineSvg .ol-mount{fill:var(--panel);stroke:var(--plate-ink);stroke-width:.3}
 #outlineSvg .ol-lbl{font-family:var(--f-mono);font-size:4.2px;fill:var(--muted)}
 #outlineSvg .ol-hint{font-family:var(--f-body);font-size:6px;fill:var(--muted);text-anchor:middle}
@@ -294,13 +296,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
         <h2>Handle mounting</h2>
         <div class="body">
           <div class="row">
-            <label class="field">Mounting type<select id="olHandle">
-              <option value="none">None</option>
-              <option value="rally">Rally (round rim)</option>
-              <option value="gt3-open">GT3 open</option>
-              <option value="gt3-closed">GT3 closed</option>
-            </select></label>
-            <label class="field" id="olSizeField">Wheel size<select id="olSize"></select></label>
+            <label class="field">Handles<select id="olHandle"></select></label>
           </div>
           <p class="note" id="olHandleNote"></p>
         </div>
@@ -1041,85 +1037,54 @@ function cleanDeco(d){
    is rounded with "Round corners" and becomes the plate with id 'custom'. Mounting holes: to do. */
 const OL = { W: 300, H: 200, hub: 46, margin: 4.5 };
 const OL_SNAPS = [0.5, 1, 2.5, 5, 10];
-// Handle mounting for your own outline. The hole positions and grip shapes come from the existing designs:
-// GT3 from the first wheel with gt3 handles (Zeus), rally from the first with a rally rim (Hermes).
-const HANDLE_TYPES = { none: 'None', rally: 'Rally', 'gt3-open': 'GT3 open', 'gt3-closed': 'GT3 closed' };
-const GT3_SIZES = [300, 315, 330, 345, 360], GT3_DEFAULT_SIZE = 330;   // outside diameter across the grips, mm
-const HANDLE_PAD = 6;           // mm of plate every handle hole gets around it; a tab tops it up where the outline leaves less
-const HANDLE_HOLE_EDGE = HANDLE_PAD - 0.1;   // what counts as enough (0.1 mm leeway for the faceted pad circles)
-const HANDLE_TAB_GROUP = 25;    // mm: holes this close share one tab, with straight edges from hole to hole
-// Mounting tabs: every handle hole with less than HANDLE_PAD mm of plate around it gets a round pad,
-// joined to the outline by a bridge to the nearest point of its edge. The tabs are part of the plate and can't
-// be removed by editing points; only changing Handle mounting does that. Inner corners are rounded so they blend in.
-function convexHull(P){
-  const q = P.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]), cr = (o, a, b) => (a[0]-o[0])*(b[1]-o[1]) - (a[1]-o[1])*(b[0]-o[0]);
-  const lo = [], up = [];
-  for (const p of q){ while (lo.length >= 2 && cr(lo[lo.length-2], lo[lo.length-1], p) <= 0) lo.pop(); lo.push(p); }
-  for (const p of q.reverse()){ while (up.length >= 2 && cr(up[up.length-2], up[up.length-1], p) <= 0) up.pop(); up.push(p); }
-  return lo.slice(0, -1).concat(up.slice(0, -1));
+/* ---------------- Handle sets (from CAD) ----------------
+   handles/index.json lists the sets; each handles/<id>/ has a handle.json and DXFs: the handle's core plate and
+   its mounting areas (see the _help in handle.json). BUILTIN_HANDLES is a copy for when the files can't load. */
+const BUILTIN_HANDLES = /*HANDLES_JSON*/{"gt3":{"config":{"name":"GT3 open","core":{"dxf":"core.dxf","side":"right","thickness":5},"mountAreas":[{"dxf":"area1.dxf","side":"left"},{"dxf":"area2.dxf","side":"left"},{"dxf":"area3.dxf","side":"left"}],"mirror":true},"files":{"core.dxf":"  0\nSECTION\n  2\nHEADER\n  9\n$ACADVER\n  1\nAC1014\n  9\n$ACADMAINTVER\n 70\n     9\n  9\n$DWGCODEPAGE\n  3\nANSI_1252\n  9\n$INSBASE\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$EXTMIN\n 10\n1.000000000000000E+20\n 20\n1.000000000000000E+20\n 30\n1.000000000000000E+20\n  9\n$EXTMAX\n 10\n-1.000000000000000E+20\n 20\n-1.000000000000000E+20\n 30\n-1.000000000000000E+20\n  9\n$LIMMIN\n 10\n0.0\n 20\n0.0\n  9\n$LIMMAX\n 10\n420.0\n 20\n297.0\n  9\n$ORTHOMODE\n 70\n     0\n  9\n$REGENMODE\n 70\n     1\n  9\n$FILLMODE\n 70\n     1\n  9\n$QTEXTMODE\n 70\n     0\n  9\n$MIRRTEXT\n 70\n     1\n  9\n$DRAGMODE\n 70\n     2\n  9\n$LTSCALE\n 40\n1.0\n  9\n$OSMODE\n 70\n    37\n  9\n$ATTMODE\n 70\n     1\n  9\n$TEXTSIZE\n 40\n2.5\n  9\n$TRACEWID\n 40\n1.0\n  9\n$TEXTSTYLE\n  7\nSTANDARD\n  9\n$CLAYER\n  8\n0\n  9\n$CELTYPE\n  6\nBYLAYER\n  9\n$CECOLOR\n 62\n   256\n  9\n$CELTSCALE\n 40\n1.0\n  9\n$DELOBJ\n 70\n     1\n  9\n$DISPSILH\n 70\n     0\n  9\n$DIMSCALE\n 40\n1.0\n  9\n$DIMASZ\n 40\n2.5\n  9\n$DIMEXO\n 40\n0.625\n  9\n$DIMDLI\n 40\n3.75\n  9\n$DIMRND\n 40\n0.0\n  9\n$DIMDLE\n 40\n0.0\n  9\n$DIMEXE\n 40\n1.25\n  9\n$DIMTP\n 40\n0.0\n  9\n$DIMTM\n 40\n0.0\n  9\n$DIMTXT\n 40\n2.5\n  9\n$DIMCEN\n 40\n2.5\n  9\n$DIMTSZ\n 40\n0.0\n  9\n$DIMTOL\n 70\n     0\n  9\n$DIMLIM\n 70\n     0\n  9\n$DIMTIH\n 70\n     0\n  9\n$DIMTOH\n 70\n     0\n  9\n$DIMSE1\n 70\n     0\n  9\n$DIMSE2\n 70\n     0\n  9\n$DIMTAD\n 70\n     1\n  9\n$DIMZIN\n 70\n     8\n  9\n$DIMBLK\n  1\n\n  9\n$DIMASO\n 70\n     1\n  9\n$DIMSHO\n 70\n     1\n  9\n$DIMPOST\n  1\n\n  9\n$DIMAPOST\n  1\n\n  9\n$DIMALT\n 70\n     0\n  9\n$DIMALTD\n 70\n     3\n  9\n$DIMALTF\n 40\n0.03937007874016\n  9\n$DIMLFAC\n 40\n1.0\n  9\n$DIMTOFL\n 70\n     1\n  9\n$DIMTVP\n 40\n0.0\n  9\n$DIMTIX\n 70\n     0\n  9\n$DIMSOXD\n 70\n     0\n  9\n$DIMSAH\n 70\n     0\n  9\n$DIMBLK1\n  1\n\n  9\n$DIMBLK2\n  1\n\n  9\n$DIMSTYLE\n  2\nISO-25\n  9\n$DIMCLRD\n 70\n     0\n  9\n$DIMCLRE\n 70\n     0\n  9\n$DIMCLRT\n 70\n     0\n  9\n$DIMTFAC\n 40\n1.0\n  9\n$DIMGAP\n 40\n0.625\n  9\n$DIMJUST\n 70\n     0\n  9\n$DIMSD1\n 70\n     0\n  9\n$DIMSD2\n 70\n     0\n  9\n$DIMTOLJ\n 70\n     0\n  9\n$DIMTZIN\n 70\n     8\n  9\n$DIMALTZ\n 70\n     0\n  9\n$DIMALTTZ\n 70\n     0\n  9\n$DIMFIT\n 70\n     3\n  9\n$DIMUPT\n 70\n     0\n  9\n$DIMUNIT\n 70\n     2\n  9\n$DIMDEC\n 70\n     2\n  9\n$DIMTDEC\n 70\n     2\n  9\n$DIMALTU\n 70\n     2\n  9\n$DIMALTTD\n 70\n     3\n  9\n$DIMTXSTY\n  7\nSTANDARD\n  9\n$DIMAUNIT\n 70\n     0\n  9\n$LUNITS\n 70\n     2\n  9\n$LUPREC\n 70\n     4\n  9\n$SKETCHINC\n 40\n1.0\n  9\n$FILLETRAD\n 40\n0.0\n  9\n$AUNITS\n 70\n     0\n  9\n$AUPREC\n 70\n     0\n  9\n$MENU\n  1\n.\n  9\n$ELEVATION\n 40\n0.0\n  9\n$PELEVATION\n 40\n0.0\n  9\n$THICKNESS\n 40\n0.0\n  9\n$LIMCHECK\n 70\n     0\n  9\n$CHAMFERA\n 40\n0.0\n  9\n$CHAMFERB\n 40\n0.0\n  9\n$CHAMFERC\n 40\n0.0\n  9\n$CHAMFERD\n 40\n0.0\n  9\n$SKPOLY\n 70\n     0\n  9\n$TDCREATE\n 40\n2461347.582781424\n  9\n$TDUPDATE\n 40\n2461347.58278147\n  9\n$TDINDWG\n 40\n0.0000000116\n  9\n$TDUSRTIMER\n 40\n0.0000000116\n  9\n$USRTIMER\n 70\n     1\n  9\n$ANGBASE\n 50\n0.0\n  9\n$ANGDIR\n 70\n     0\n  9\n$PDMODE\n 70\n     0\n  9\n$PDSIZE\n 40\n0.0\n  9\n$PLINEWID\n 40\n0.0\n  9\n$COORDS\n 70\n     1\n  9\n$SPLFRAME\n 70\n     0\n  9\n$SPLINETYPE\n 70\n     6\n  9\n$SPLINESEGS\n 70\n     8\n  9\n$ATTDIA\n 70\n     0\n  9\n$ATTREQ\n 70\n     1\n  9\n$HANDLING\n 70\n     1\n  9\n$HANDSEED\n  5\n1000015C\n  9\n$SURFTAB1\n 70\n     6\n  9\n$SURFTAB2\n 70\n     6\n  9\n$SURFTYPE\n 70\n     6\n  9\n$SURFU\n 70\n     6\n  9\n$SURFV\n 70\n     6\n  9\n$UCSNAME\n  2\n\n  9\n$UCSORG\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSXDIR\n 10\n1.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSYDIR\n 10\n0.0\n 20\n1.0\n 30\n0.0\n  9\n$PUCSNAME\n  2\n\n  9\n$PUCSORG\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSXDIR\n 10\n1.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSYDIR\n 10\n0.0\n 20\n1.0\n 30\n0.0\n  9\n$USERI1\n 70\n     0\n  9\n$USERI2\n 70\n     0\n  9\n$USERI3\n 70\n     0\n  9\n$USERI4\n 70\n     0\n  9\n$USERI5\n 70\n     0\n  9\n$USERR1\n 40\n0.0\n  9\n$USERR2\n 40\n0.0\n  9\n$USERR3\n 40\n0.0\n  9\n$USERR4\n 40\n0.0\n  9\n$USERR5\n 40\n0.0\n  9\n$WORLDVIEW\n 70\n     1\n  9\n$SHADEDGE\n 70\n     3\n  9\n$SHADEDIF\n 70\n    70\n  9\n$TILEMODE\n 70\n     1\n  9\n$MAXACTVP\n 70\n    64\n  9\n$PINSBASE\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PLIMCHECK\n 70\n     0\n  9\n$PEXTMIN\n 10\n1.000000000000000E+20\n 20\n1.000000000000000E+20\n 30\n1.000000000000000E+20\n  9\n$PEXTMAX\n 10\n-1.000000000000000E+20\n 20\n-1.000000000000000E+20\n 30\n-1.000000000000000E+20\n  9\n$PLIMMIN\n 10\n0.0\n 20\n0.0\n  9\n$PLIMMAX\n 10\n420.0\n 20\n297.0\n  9\n$UNITMODE\n 70\n     0\n  9\n$VISRETAIN\n 70\n     1\n  9\n$PLINEGEN\n 70\n     0\n  9\n$PSLTSCALE\n 70\n     1\n  9\n$TREEDEPTH\n 70\n  3020\n  9\n$PICKSTYLE\n 70\n     1\n  9\n$CMLSTYLE\n  2\nSTANDARD\n  9\n$CMLJUST\n 70\n     0\n  9\n$CMLSCALE\n 40\n20.0\n  9\n$PROXYGRAPHICS\n 70\n     1\n  9\n$MEASUREMENT\n 70\n     1\n  0\nENDSEC\n  0\nSECTION\n  2\nENTITIES\n  0\nCIRCLE\n  5\n1000005A\n102\n{ACAD_XDICTIONARY\n360\n1000005B\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n117.5099313259125\n 20\n-54.84212562441826\n 30\n0.0\n 40\n3.100000000000005\n  0\nCIRCLE\n  5\n10000060\n102\n{ACAD_XDICTIONARY\n360\n10000061\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n118.1875342761094\n 20\n9.967492705111153\n 30\n0.0\n 40\n3.100000000000004\n  0\nCIRCLE\n  5\n10000066\n102\n{ACAD_XDICTIONARY\n360\n10000067\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n129.1679739952087\n 20\n46.07516899704933\n 30\n0.0\n 40\n3.099999999999992\n  0\nCIRCLE\n  5\n1000006C\n102\n{ACAD_XDICTIONARY\n360\n1000006D\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n92.0\n 20\n17.74999999999998\n 30\n0.0\n 40\n1.750000000000002\n  0\nCIRCLE\n  5\n10000072\n102\n{ACAD_XDICTIONARY\n360\n10000073\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n113.3934531914567\n 20\n55.850241723709\n 30\n0.0\n 40\n1.750000000000002\n  0\nCIRCLE\n  5\n10000078\n102\n{ACAD_XDICTIONARY\n360\n10000079\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n124.9999792072273\n 20\n63.67894237229946\n 30\n0.0\n 40\n1.749999999999995\n  0\nCIRCLE\n  5\n1000007E\n102\n{ACAD_XDICTIONARY\n360\n1000007F\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n92.0\n 20\n5.750000000000007\n 30\n0.0\n 40\n1.750000000000002\n  0\nCIRCLE\n  5\n10000084\n102\n{ACAD_XDICTIONARY\n360\n10000085\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n88.696194320477\n 20\n-46.86122691492491\n 30\n0.0\n 40\n1.750000000000002\n  0\nLINE\n  5\n1000008A\n102\n{ACAD_XDICTIONARY\n360\n1000008B\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n126.5862116852341\n 20\n72.95115173823366\n 30\n0.0\n 11\n134.023477301395\n 21\n61.9249520232516\n 31\n0.0\n  0\nLINE\n  5\n1000008E\n102\n{ACAD_XDICTIONARY\n360\n1000008F\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n134.1976418716495\n 20\n62.0424275092204\n 30\n0.0\n 11\n134.023477301395\n 21\n61.9249520232516\n 31\n0.0\n  0\nLINE\n  5\n10000092\n102\n{ACAD_XDICTIONARY\n360\n10000093\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n86.2\n 20\n23.75\n 30\n0.0\n 11\n98.50317919744444\n 21\n23.75\n 31\n0.0\n  0\nLINE\n  5\n10000096\n102\n{ACAD_XDICTIONARY\n360\n10000097\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n111.6394912392081\n 20\n46.82670152955509\n 30\n0.0\n 11\n104.2021972262479\n 21\n57.85294334452342\n 31\n0.0\n  0\nLINE\n  5\n1000009A\n102\n{ACAD_XDICTIONARY\n360\n1000009B\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n98.23217714106686\n 20\n-55.8715289677888\n 30\n0.0\n 11\n91.25511944317552\n 21\n-53.64421082723169\n 31\n0.0\n  0\nLINE\n  5\n1000009E\n102\n{ACAD_XDICTIONARY\n360\n1000009F\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n104.2021972262479\n 20\n57.85294334452342\n 30\n0.0\n 11\n126.5862116852341\n 21\n72.95115173823366\n 31\n0.0\n  0\nLINE\n  5\n100000A2\n102\n{ACAD_XDICTIONARY\n360\n100000A3\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n86.2\n 20\n23.75\n 30\n0.0\n 11\n86.2\n 21\n-0.2500000000000088\n 31\n0.0\n  0\nLINE\n  5\n100000A6\n102\n{ACAD_XDICTIONARY\n360\n100000A7\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n86.2\n 20\n-0.2500000000000088\n 30\n0.0\n 11\n98.50000000000001\n 21\n-0.2500000000000089\n 31\n0.0\n  0\nLINE\n  5\n100000AA\n102\n{ACAD_XDICTIONARY\n360\n100000AB\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n95.91655396584724\n 20\n-45.22508867039732\n 30\n0.0\n 11\n101.3467552473753\n 21\n-46.00901253990159\n 31\n0.0\n  0\nLINE\n  5\n100000AE\n102\n{ACAD_XDICTIONARY\n360\n100000AF\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n90.11537679701338\n 20\n-39.42391150156347\n 30\n0.0\n 11\n95.91655396584724\n 21\n-45.22508867039732\n 31\n0.0\n  0\nLINE\n  5\n100000B2\n102\n{ACAD_XDICTIONARY\n360\n100000B3\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n90.11537679701338\n 20\n-39.42391150156347\n 30\n0.0\n 11\n77.78624163397475\n 21\n-51.26928426960402\n 31\n0.0\n  0\nLINE\n  5\n100000B6\n102\n{ACAD_XDICTIONARY\n360\n100000B7\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n98.50000000000001\n 20\n-0.2500000000000089\n 30\n0.0\n 11\n98.50000000000001\n 21\n-0.3127072046618211\n 31\n0.0\n  0\nLINE\n  5\n100000BA\n102\n{ACAD_XDICTIONARY\n360\n100000BB\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n122.1574548520503\n 20\n-61.97358164946814\n 30\n0.0\n 11\n131.5666038227276\n 21\n-55.90905269907027\n 31\n0.0\n  0\nLINE\n  5\n100000BE\n102\n{ACAD_XDICTIONARY\n360\n100000BF\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n91.25511944317552\n 20\n-53.64421082723169\n 30\n0.0\n 11\n77.78624163397475\n 21\n-51.26928426960402\n 31\n0.0\n  0\nLINE\n  5\n100000C2\n102\n{ACAD_XDICTIONARY\n360\n100000C3\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n136.365211581149\n 20\n62.08705995457115\n 30\n0.0\n 11\n139.1536225094462\n 21\n60.36888128662112\n 31\n0.0\n  0\nLINE\n  5\n100000C6\n102\n{ACAD_XDICTIONARY\n360\n100000C7\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n98.92782380712119\n 20\n-56.80229766946653\n 30\n0.0\n 11\n118.0044603494884\n 21\n-62.55778190805852\n 31\n0.0\n  0\nSPLINE\n  5\n100000CA\n102\n{ACAD_XDICTIONARY\n360\n100000CB\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbSpline\n210\n0.0\n220\n0.0\n230\n1.0\n 70\n     8\n 71\n     3\n 72\n    17\n 73\n    13\n 74\n     0\n 42\n0.0000000001\n 43\n0.00000001\n 40\n0.0\n 40\n0.0\n 40\n0.0\n 40\n0.0\n 40\n0.0771961753938927\n 40\n0.1774652412972061\n 40\n0.2790991871112098\n 40\n0.3807401567963835\n 40\n0.4839447493050812\n 40\n0.5835523084956739\n 40\n0.6849042261046554\n 40\n0.7798567274381585\n 40\n0.8761168147171257\n 40\n1.0\n 40\n1.0\n 40\n1.0\n 40\n1.0\n 10\n99.45671521500613\n 20\n25.34360455137838\n 30\n0.0\n 10\n99.92885122336084\n 20\n25.45176769388092\n 30\n0.0\n 10\n101.0142382936431\n 20\n25.7004224761384\n 30\n0.0\n 10\n103.4836339707894\n 20\n26.67742546659495\n 30\n0.0\n 10\n105.7424959729445\n 20\n28.08235327743743\n 30\n0.0\n 10\n107.8008449638012\n 20\n29.85381795836815\n 30\n0.0\n 10\n109.5618779033282\n 20\n32.04475368714696\n 30\n0.0\n 10\n110.7976237002291\n 20\n34.31941584326574\n 30\n0.0\n 10\n111.6277921606337\n 20\n36.90049234122107\n 30\n0.0\n 10\n111.8954361743381\n 20\n39.29116691537669\n 30\n0.0\n 10\n111.9087555822856\n 20\n41.77040694017686\n 30\n0.0\n 10\n111.2071526952856\n 20\n44.21301100466641\n 30\n0.0\n 10\n110.8123334512826\n 20\n45.5875593538959\n 30\n0.0\n  0\nARC\n  5\n100000CE\n102\n{ACAD_XDICTIONARY\n360\n100000CF\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n135.3160276785909\n 20\n60.38435236411031\n 30\n0.0\n 40\n2.0\n100\nAcDbArc\n 50\n58.35922232418815\n 51\n123.9999999999991\n  0\nARC\n  5\n100000D4\n102\n{ACAD_XDICTIONARY\n360\n100000D5\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n112.7696642369067\n 20\n45.17663819886955\n 30\n0.0\n 40\n2.0\n100\nAcDbArc\n 50\n124.4082981590045\n 51\n168.1435378592376\n  0\nARC\n  5\n100000DA\n102\n{ACAD_XDICTIONARY\n360\n100000DB\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n100.5\n 20\n23.63727607848688\n 30\n0.0\n 40\n2.0\n100\nAcDbArc\n 50\n121.442484553865\n 51\n176.7689853364783\n  0\nARC\n  5\n100000E0\n102\n{ACAD_XDICTIONARY\n360\n100000E1\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n128.8578272757333\n 20\n-51.70637145747539\n 30\n0.0\n 40\n5.0\n100\nAcDbArc\n 50\n302.8032104883638\n 51\n341.1008037120016\n  0\nARC\n  5\n100000E6\n102\n{ACAD_XDICTIONARY\n360\n100000E7\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n100.5\n 20\n-0.3127072046618211\n 30\n0.0\n 40\n2.0\n100\nAcDbArc\n 50\n180.0\n 51\n249.6250960526195\n  0\nARC\n  5\n100000EC\n102\n{ACAD_XDICTIONARY\n360\n100000ED\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n14.95917992819796\n 20\n-9.696386779389265\n 30\n0.0\n 40\n100.0000000000036\n100\nAcDbArc\n 50\n341.7999226824684\n 51\n350.6145541925295\n  0\nARC\n  5\n100000F2\n102\n{ACAD_XDICTIONARY\n360\n100000F3\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n102.7772575616837\n 20\n-38.56963291764261\n 30\n0.0\n 40\n7.557157649710722\n100\nAcDbArc\n 50\n260.851684267978\n 51\n341.7999226824684\n  0\nARC\n  5\n100000F8\n102\n{ACAD_XDICTIONARY\n360\n100000F9\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n92.26904809474945\n 20\n-22.47477695345878\n 30\n0.0\n 40\n21.64119085023192\n100\nAcDbArc\n 50\n350.6145541925295\n 51\n69.62509605261934\n  0\nARC\n  5\n100000FE\n102\n{ACAD_XDICTIONARY\n360\n100000FF\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n101.4167493680155\n 20\n-47.01794425760664\n 30\n0.0\n 40\n1.0\n100\nAcDbArc\n 50\n80.8516842679772\n 51\n87.91144023133683\n  0\nARC\n  5\n10000104\n102\n{ACAD_XDICTIONARY\n360\n10000105\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n97.92806291577314\n 20\n-56.82416454237858\n 30\n0.0\n 40\n1.0\n100\nAcDbArc\n 50\n1.252979396672899\n 51\n72.29511847695437\n  0\nARC\n  5\n1000010A\n102\n{ACAD_XDICTIONARY\n360\n1000010B\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n119.448678305056\n 20\n-57.77090040787324\n 30\n0.0\n 40\n5.0\n100\nAcDbArc\n 50\n253.2112638255873\n 51\n302.8032104883634\n  0\nARC\n  5\n10000110\n102\n{ACAD_XDICTIONARY\n360\n10000111\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n101.4896377127612\n 20\n-45.01927287661369\n 30\n0.0\n 40\n1.0\n100\nAcDbArc\n 50\n261.7853233861636\n 51\n267.9114402313368\n  0\nARC\n  5\n10000116\n102\n{ACAD_XDICTIONARY\n360\n10000117\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n-84.62216515746432\n 20\n21.38082107782888\n 30\n0.0\n 40\n230.6445099752501\n100\nAcDbArc\n 50\n341.1008037120012\n 51\n7.938838019210805\n  0\nARC\n  5\n1000011C\n102\n{ACAD_XDICTIONARY\n360\n1000011D\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n133.9077029966557\n 20\n51.85534333431688\n 30\n0.0\n 40\n10.0\n100\nAcDbArc\n 50\n7.938838019210957\n 51\n58.35922232418829\n  0\nENDSEC\n  0\nEOF\n","area1.dxf":"  0\nSECTION\n  2\nHEADER\n  9\n$ACADVER\n  1\nAC1014\n  9\n$ACADMAINTVER\n 70\n     9\n  9\n$DWGCODEPAGE\n  3\nANSI_1252\n  9\n$INSBASE\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$EXTMIN\n 10\n1.000000000000000E+20\n 20\n1.000000000000000E+20\n 30\n1.000000000000000E+20\n  9\n$EXTMAX\n 10\n-1.000000000000000E+20\n 20\n-1.000000000000000E+20\n 30\n-1.000000000000000E+20\n  9\n$LIMMIN\n 10\n0.0\n 20\n0.0\n  9\n$LIMMAX\n 10\n420.0\n 20\n297.0\n  9\n$ORTHOMODE\n 70\n     0\n  9\n$REGENMODE\n 70\n     1\n  9\n$FILLMODE\n 70\n     1\n  9\n$QTEXTMODE\n 70\n     0\n  9\n$MIRRTEXT\n 70\n     1\n  9\n$DRAGMODE\n 70\n     2\n  9\n$LTSCALE\n 40\n1.0\n  9\n$OSMODE\n 70\n    37\n  9\n$ATTMODE\n 70\n     1\n  9\n$TEXTSIZE\n 40\n2.5\n  9\n$TRACEWID\n 40\n1.0\n  9\n$TEXTSTYLE\n  7\nSTANDARD\n  9\n$CLAYER\n  8\n0\n  9\n$CELTYPE\n  6\nBYLAYER\n  9\n$CECOLOR\n 62\n   256\n  9\n$CELTSCALE\n 40\n1.0\n  9\n$DELOBJ\n 70\n     1\n  9\n$DISPSILH\n 70\n     0\n  9\n$DIMSCALE\n 40\n1.0\n  9\n$DIMASZ\n 40\n2.5\n  9\n$DIMEXO\n 40\n0.625\n  9\n$DIMDLI\n 40\n3.75\n  9\n$DIMRND\n 40\n0.0\n  9\n$DIMDLE\n 40\n0.0\n  9\n$DIMEXE\n 40\n1.25\n  9\n$DIMTP\n 40\n0.0\n  9\n$DIMTM\n 40\n0.0\n  9\n$DIMTXT\n 40\n2.5\n  9\n$DIMCEN\n 40\n2.5\n  9\n$DIMTSZ\n 40\n0.0\n  9\n$DIMTOL\n 70\n     0\n  9\n$DIMLIM\n 70\n     0\n  9\n$DIMTIH\n 70\n     0\n  9\n$DIMTOH\n 70\n     0\n  9\n$DIMSE1\n 70\n     0\n  9\n$DIMSE2\n 70\n     0\n  9\n$DIMTAD\n 70\n     1\n  9\n$DIMZIN\n 70\n     8\n  9\n$DIMBLK\n  1\n\n  9\n$DIMASO\n 70\n     1\n  9\n$DIMSHO\n 70\n     1\n  9\n$DIMPOST\n  1\n\n  9\n$DIMAPOST\n  1\n\n  9\n$DIMALT\n 70\n     0\n  9\n$DIMALTD\n 70\n     3\n  9\n$DIMALTF\n 40\n0.03937007874016\n  9\n$DIMLFAC\n 40\n1.0\n  9\n$DIMTOFL\n 70\n     1\n  9\n$DIMTVP\n 40\n0.0\n  9\n$DIMTIX\n 70\n     0\n  9\n$DIMSOXD\n 70\n     0\n  9\n$DIMSAH\n 70\n     0\n  9\n$DIMBLK1\n  1\n\n  9\n$DIMBLK2\n  1\n\n  9\n$DIMSTYLE\n  2\nISO-25\n  9\n$DIMCLRD\n 70\n     0\n  9\n$DIMCLRE\n 70\n     0\n  9\n$DIMCLRT\n 70\n     0\n  9\n$DIMTFAC\n 40\n1.0\n  9\n$DIMGAP\n 40\n0.625\n  9\n$DIMJUST\n 70\n     0\n  9\n$DIMSD1\n 70\n     0\n  9\n$DIMSD2\n 70\n     0\n  9\n$DIMTOLJ\n 70\n     0\n  9\n$DIMTZIN\n 70\n     8\n  9\n$DIMALTZ\n 70\n     0\n  9\n$DIMALTTZ\n 70\n     0\n  9\n$DIMFIT\n 70\n     3\n  9\n$DIMUPT\n 70\n     0\n  9\n$DIMUNIT\n 70\n     2\n  9\n$DIMDEC\n 70\n     2\n  9\n$DIMTDEC\n 70\n     2\n  9\n$DIMALTU\n 70\n     2\n  9\n$DIMALTTD\n 70\n     3\n  9\n$DIMTXSTY\n  7\nSTANDARD\n  9\n$DIMAUNIT\n 70\n     0\n  9\n$LUNITS\n 70\n     2\n  9\n$LUPREC\n 70\n     4\n  9\n$SKETCHINC\n 40\n1.0\n  9\n$FILLETRAD\n 40\n0.0\n  9\n$AUNITS\n 70\n     0\n  9\n$AUPREC\n 70\n     0\n  9\n$MENU\n  1\n.\n  9\n$ELEVATION\n 40\n0.0\n  9\n$PELEVATION\n 40\n0.0\n  9\n$THICKNESS\n 40\n0.0\n  9\n$LIMCHECK\n 70\n     0\n  9\n$CHAMFERA\n 40\n0.0\n  9\n$CHAMFERB\n 40\n0.0\n  9\n$CHAMFERC\n 40\n0.0\n  9\n$CHAMFERD\n 40\n0.0\n  9\n$SKPOLY\n 70\n     0\n  9\n$TDCREATE\n 40\n2461347.583073588\n  9\n$TDUPDATE\n 40\n2461347.583073634\n  9\n$TDINDWG\n 40\n0.0000000116\n  9\n$TDUSRTIMER\n 40\n0.0000000116\n  9\n$USRTIMER\n 70\n     1\n  9\n$ANGBASE\n 50\n0.0\n  9\n$ANGDIR\n 70\n     0\n  9\n$PDMODE\n 70\n     0\n  9\n$PDSIZE\n 40\n0.0\n  9\n$PLINEWID\n 40\n0.0\n  9\n$COORDS\n 70\n     1\n  9\n$SPLFRAME\n 70\n     0\n  9\n$SPLINETYPE\n 70\n     6\n  9\n$SPLINESEGS\n 70\n     8\n  9\n$ATTDIA\n 70\n     0\n  9\n$ATTREQ\n 70\n     1\n  9\n$HANDLING\n 70\n     1\n  9\n$HANDSEED\n  5\n100000B6\n  9\n$SURFTAB1\n 70\n     6\n  9\n$SURFTAB2\n 70\n     6\n  9\n$SURFTYPE\n 70\n     6\n  9\n$SURFU\n 70\n     6\n  9\n$SURFV\n 70\n     6\n  9\n$UCSNAME\n  2\n\n  9\n$UCSORG\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSXDIR\n 10\n1.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSYDIR\n 10\n0.0\n 20\n1.0\n 30\n0.0\n  9\n$PUCSNAME\n  2\n\n  9\n$PUCSORG\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSXDIR\n 10\n1.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSYDIR\n 10\n0.0\n 20\n1.0\n 30\n0.0\n  9\n$USERI1\n 70\n     0\n  9\n$USERI2\n 70\n     0\n  9\n$USERI3\n 70\n     0\n  9\n$USERI4\n 70\n     0\n  9\n$USERI5\n 70\n     0\n  9\n$USERR1\n 40\n0.0\n  9\n$USERR2\n 40\n0.0\n  9\n$USERR3\n 40\n0.0\n  9\n$USERR4\n 40\n0.0\n  9\n$USERR5\n 40\n0.0\n  9\n$WORLDVIEW\n 70\n     1\n  9\n$SHADEDGE\n 70\n     3\n  9\n$SHADEDIF\n 70\n    70\n  9\n$TILEMODE\n 70\n     1\n  9\n$MAXACTVP\n 70\n    64\n  9\n$PINSBASE\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PLIMCHECK\n 70\n     0\n  9\n$PEXTMIN\n 10\n1.000000000000000E+20\n 20\n1.000000000000000E+20\n 30\n1.000000000000000E+20\n  9\n$PEXTMAX\n 10\n-1.000000000000000E+20\n 20\n-1.000000000000000E+20\n 30\n-1.000000000000000E+20\n  9\n$PLIMMIN\n 10\n0.0\n 20\n0.0\n  9\n$PLIMMAX\n 10\n420.0\n 20\n297.0\n  9\n$UNITMODE\n 70\n     0\n  9\n$VISRETAIN\n 70\n     1\n  9\n$PLINEGEN\n 70\n     0\n  9\n$PSLTSCALE\n 70\n     1\n  9\n$TREEDEPTH\n 70\n  3020\n  9\n$PICKSTYLE\n 70\n     1\n  9\n$CMLSTYLE\n  2\nSTANDARD\n  9\n$CMLJUST\n 70\n     0\n  9\n$CMLSCALE\n 40\n20.0\n  9\n$PROXYGRAPHICS\n 70\n     1\n  9\n$MEASUREMENT\n 70\n     1\n  0\nENDSEC\n  0\nSECTION\n  2\nENTITIES\n  0\nCIRCLE\n  5\n1000005A\n102\n{ACAD_XDICTIONARY\n360\n1000005B\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n-124.9999792072273\n 20\n63.67894237229946\n 30\n0.0\n 40\n1.749999999999995\n  0\nCIRCLE\n  5\n10000060\n102\n{ACAD_XDICTIONARY\n360\n10000061\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n-113.3934531914567\n 20\n55.850241723709\n 30\n0.0\n 40\n1.750000000000002\n  0\nLINE\n  5\n10000066\n102\n{ACAD_XDICTIONARY\n360\n10000067\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n-126.5862116852341\n 20\n72.95115173823366\n 30\n0.0\n 11\n-134.023477301395\n 21\n61.9249520232516\n 31\n0.0\n  0\nLINE\n  5\n1000006A\n102\n{ACAD_XDICTIONARY\n360\n1000006B\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n-134.023477301395\n 20\n61.9249520232516\n 30\n0.0\n 11\n-111.6512784299652\n 21\n46.83471334397964\n 31\n0.0\n  0\nARC\n  5\n1000006E\n102\n{ACAD_XDICTIONARY\n360\n1000006F\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n-112.7696642369067\n 20\n45.17663819886955\n 30\n0.0\n 40\n2.0\n100\nAcDbArc\n 50\n55.59170184099549\n 51\n55.99999999999972\n  0\nLINE\n  5\n10000074\n102\n{ACAD_XDICTIONARY\n360\n10000075\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n-111.6394912392081\n 20\n46.82670152955509\n 30\n0.0\n 11\n-104.2021972262479\n 21\n57.85294334452342\n 31\n0.0\n  0\nLINE\n  5\n10000078\n102\n{ACAD_XDICTIONARY\n360\n10000079\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n-104.2021972262479\n 20\n57.85294334452342\n 30\n0.0\n 11\n-126.5862116852341\n 21\n72.95115173823366\n 31\n0.0\n  0\nENDSEC\n  0\nEOF\n","area2.dxf":"  0\nSECTION\n  2\nHEADER\n  9\n$ACADVER\n  1\nAC1014\n  9\n$ACADMAINTVER\n 70\n     9\n  9\n$DWGCODEPAGE\n  3\nANSI_1252\n  9\n$INSBASE\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$EXTMIN\n 10\n1.000000000000000E+20\n 20\n1.000000000000000E+20\n 30\n1.000000000000000E+20\n  9\n$EXTMAX\n 10\n-1.000000000000000E+20\n 20\n-1.000000000000000E+20\n 30\n-1.000000000000000E+20\n  9\n$LIMMIN\n 10\n0.0\n 20\n0.0\n  9\n$LIMMAX\n 10\n420.0\n 20\n297.0\n  9\n$ORTHOMODE\n 70\n     0\n  9\n$REGENMODE\n 70\n     1\n  9\n$FILLMODE\n 70\n     1\n  9\n$QTEXTMODE\n 70\n     0\n  9\n$MIRRTEXT\n 70\n     1\n  9\n$DRAGMODE\n 70\n     2\n  9\n$LTSCALE\n 40\n1.0\n  9\n$OSMODE\n 70\n    37\n  9\n$ATTMODE\n 70\n     1\n  9\n$TEXTSIZE\n 40\n2.5\n  9\n$TRACEWID\n 40\n1.0\n  9\n$TEXTSTYLE\n  7\nSTANDARD\n  9\n$CLAYER\n  8\n0\n  9\n$CELTYPE\n  6\nBYLAYER\n  9\n$CECOLOR\n 62\n   256\n  9\n$CELTSCALE\n 40\n1.0\n  9\n$DELOBJ\n 70\n     1\n  9\n$DISPSILH\n 70\n     0\n  9\n$DIMSCALE\n 40\n1.0\n  9\n$DIMASZ\n 40\n2.5\n  9\n$DIMEXO\n 40\n0.625\n  9\n$DIMDLI\n 40\n3.75\n  9\n$DIMRND\n 40\n0.0\n  9\n$DIMDLE\n 40\n0.0\n  9\n$DIMEXE\n 40\n1.25\n  9\n$DIMTP\n 40\n0.0\n  9\n$DIMTM\n 40\n0.0\n  9\n$DIMTXT\n 40\n2.5\n  9\n$DIMCEN\n 40\n2.5\n  9\n$DIMTSZ\n 40\n0.0\n  9\n$DIMTOL\n 70\n     0\n  9\n$DIMLIM\n 70\n     0\n  9\n$DIMTIH\n 70\n     0\n  9\n$DIMTOH\n 70\n     0\n  9\n$DIMSE1\n 70\n     0\n  9\n$DIMSE2\n 70\n     0\n  9\n$DIMTAD\n 70\n     1\n  9\n$DIMZIN\n 70\n     8\n  9\n$DIMBLK\n  1\n\n  9\n$DIMASO\n 70\n     1\n  9\n$DIMSHO\n 70\n     1\n  9\n$DIMPOST\n  1\n\n  9\n$DIMAPOST\n  1\n\n  9\n$DIMALT\n 70\n     0\n  9\n$DIMALTD\n 70\n     3\n  9\n$DIMALTF\n 40\n0.03937007874016\n  9\n$DIMLFAC\n 40\n1.0\n  9\n$DIMTOFL\n 70\n     1\n  9\n$DIMTVP\n 40\n0.0\n  9\n$DIMTIX\n 70\n     0\n  9\n$DIMSOXD\n 70\n     0\n  9\n$DIMSAH\n 70\n     0\n  9\n$DIMBLK1\n  1\n\n  9\n$DIMBLK2\n  1\n\n  9\n$DIMSTYLE\n  2\nISO-25\n  9\n$DIMCLRD\n 70\n     0\n  9\n$DIMCLRE\n 70\n     0\n  9\n$DIMCLRT\n 70\n     0\n  9\n$DIMTFAC\n 40\n1.0\n  9\n$DIMGAP\n 40\n0.625\n  9\n$DIMJUST\n 70\n     0\n  9\n$DIMSD1\n 70\n     0\n  9\n$DIMSD2\n 70\n     0\n  9\n$DIMTOLJ\n 70\n     0\n  9\n$DIMTZIN\n 70\n     8\n  9\n$DIMALTZ\n 70\n     0\n  9\n$DIMALTTZ\n 70\n     0\n  9\n$DIMFIT\n 70\n     3\n  9\n$DIMUPT\n 70\n     0\n  9\n$DIMUNIT\n 70\n     2\n  9\n$DIMDEC\n 70\n     2\n  9\n$DIMTDEC\n 70\n     2\n  9\n$DIMALTU\n 70\n     2\n  9\n$DIMALTTD\n 70\n     3\n  9\n$DIMTXSTY\n  7\nSTANDARD\n  9\n$DIMAUNIT\n 70\n     0\n  9\n$LUNITS\n 70\n     2\n  9\n$LUPREC\n 70\n     4\n  9\n$SKETCHINC\n 40\n1.0\n  9\n$FILLETRAD\n 40\n0.0\n  9\n$AUNITS\n 70\n     0\n  9\n$AUPREC\n 70\n     0\n  9\n$MENU\n  1\n.\n  9\n$ELEVATION\n 40\n0.0\n  9\n$PELEVATION\n 40\n0.0\n  9\n$THICKNESS\n 40\n0.0\n  9\n$LIMCHECK\n 70\n     0\n  9\n$CHAMFERA\n 40\n0.0\n  9\n$CHAMFERB\n 40\n0.0\n  9\n$CHAMFERC\n 40\n0.0\n  9\n$CHAMFERD\n 40\n0.0\n  9\n$SKPOLY\n 70\n     0\n  9\n$TDCREATE\n 40\n2461347.583202431\n  9\n$TDUPDATE\n 40\n2461347.583202466\n  9\n$TDINDWG\n 40\n0.0000000116\n  9\n$TDUSRTIMER\n 40\n0.0000000116\n  9\n$USRTIMER\n 70\n     1\n  9\n$ANGBASE\n 50\n0.0\n  9\n$ANGDIR\n 70\n     0\n  9\n$PDMODE\n 70\n     0\n  9\n$PDSIZE\n 40\n0.0\n  9\n$PLINEWID\n 40\n0.0\n  9\n$COORDS\n 70\n     1\n  9\n$SPLFRAME\n 70\n     0\n  9\n$SPLINETYPE\n 70\n     6\n  9\n$SPLINESEGS\n 70\n     8\n  9\n$ATTDIA\n 70\n     0\n  9\n$ATTREQ\n 70\n     1\n  9\n$HANDLING\n 70\n     1\n  9\n$HANDSEED\n  5\n100000B6\n  9\n$SURFTAB1\n 70\n     6\n  9\n$SURFTAB2\n 70\n     6\n  9\n$SURFTYPE\n 70\n     6\n  9\n$SURFU\n 70\n     6\n  9\n$SURFV\n 70\n     6\n  9\n$UCSNAME\n  2\n\n  9\n$UCSORG\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSXDIR\n 10\n1.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSYDIR\n 10\n0.0\n 20\n1.0\n 30\n0.0\n  9\n$PUCSNAME\n  2\n\n  9\n$PUCSORG\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSXDIR\n 10\n1.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSYDIR\n 10\n0.0\n 20\n1.0\n 30\n0.0\n  9\n$USERI1\n 70\n     0\n  9\n$USERI2\n 70\n     0\n  9\n$USERI3\n 70\n     0\n  9\n$USERI4\n 70\n     0\n  9\n$USERI5\n 70\n     0\n  9\n$USERR1\n 40\n0.0\n  9\n$USERR2\n 40\n0.0\n  9\n$USERR3\n 40\n0.0\n  9\n$USERR4\n 40\n0.0\n  9\n$USERR5\n 40\n0.0\n  9\n$WORLDVIEW\n 70\n     1\n  9\n$SHADEDGE\n 70\n     3\n  9\n$SHADEDIF\n 70\n    70\n  9\n$TILEMODE\n 70\n     1\n  9\n$MAXACTVP\n 70\n    64\n  9\n$PINSBASE\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PLIMCHECK\n 70\n     0\n  9\n$PEXTMIN\n 10\n1.000000000000000E+20\n 20\n1.000000000000000E+20\n 30\n1.000000000000000E+20\n  9\n$PEXTMAX\n 10\n-1.000000000000000E+20\n 20\n-1.000000000000000E+20\n 30\n-1.000000000000000E+20\n  9\n$PLIMMIN\n 10\n0.0\n 20\n0.0\n  9\n$PLIMMAX\n 10\n420.0\n 20\n297.0\n  9\n$UNITMODE\n 70\n     0\n  9\n$VISRETAIN\n 70\n     1\n  9\n$PLINEGEN\n 70\n     0\n  9\n$PSLTSCALE\n 70\n     1\n  9\n$TREEDEPTH\n 70\n  3020\n  9\n$PICKSTYLE\n 70\n     1\n  9\n$CMLSTYLE\n  2\nSTANDARD\n  9\n$CMLJUST\n 70\n     0\n  9\n$CMLSCALE\n 40\n20.0\n  9\n$PROXYGRAPHICS\n 70\n     1\n  9\n$MEASUREMENT\n 70\n     1\n  0\nENDSEC\n  0\nSECTION\n  2\nENTITIES\n  0\nCIRCLE\n  5\n1000005A\n102\n{ACAD_XDICTIONARY\n360\n1000005B\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n-92.0\n 20\n5.750000000000007\n 30\n0.0\n 40\n1.750000000000002\n  0\nCIRCLE\n  5\n10000060\n102\n{ACAD_XDICTIONARY\n360\n10000061\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n-92.0\n 20\n17.74999999999998\n 30\n0.0\n 40\n1.750000000000002\n  0\nARC\n  5\n10000066\n102\n{ACAD_XDICTIONARY\n360\n10000067\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n-100.5\n 20\n23.63727607848688\n 30\n0.0\n 40\n2.0\n100\nAcDbArc\n 50\n0.0\n 51\n3.231014663521864\n  0\nLINE\n  5\n1000006C\n102\n{ACAD_XDICTIONARY\n360\n1000006D\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n-98.50000000000001\n 20\n23.63727607848688\n 30\n0.0\n 11\n-98.50000000000001\n 21\n-0.2500000000000081\n 31\n0.0\n  0\nLINE\n  5\n10000070\n102\n{ACAD_XDICTIONARY\n360\n10000071\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n-86.2\n 20\n-0.2500000000000087\n 30\n0.0\n 11\n-98.50000000000001\n 21\n-0.2500000000000081\n 31\n0.0\n  0\nLINE\n  5\n10000074\n102\n{ACAD_XDICTIONARY\n360\n10000075\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n-86.2\n 20\n23.75\n 30\n0.0\n 11\n-86.2\n 21\n-0.2500000000000087\n 31\n0.0\n  0\nLINE\n  5\n10000078\n102\n{ACAD_XDICTIONARY\n360\n10000079\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n-86.2\n 20\n23.75\n 30\n0.0\n 11\n-98.50317919744444\n 21\n23.75\n 31\n0.0\n  0\nENDSEC\n  0\nEOF\n","area3.dxf":"  0\nSECTION\n  2\nHEADER\n  9\n$ACADVER\n  1\nAC1014\n  9\n$ACADMAINTVER\n 70\n     9\n  9\n$DWGCODEPAGE\n  3\nANSI_1252\n  9\n$INSBASE\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$EXTMIN\n 10\n1.000000000000000E+20\n 20\n1.000000000000000E+20\n 30\n1.000000000000000E+20\n  9\n$EXTMAX\n 10\n-1.000000000000000E+20\n 20\n-1.000000000000000E+20\n 30\n-1.000000000000000E+20\n  9\n$LIMMIN\n 10\n0.0\n 20\n0.0\n  9\n$LIMMAX\n 10\n420.0\n 20\n297.0\n  9\n$ORTHOMODE\n 70\n     0\n  9\n$REGENMODE\n 70\n     1\n  9\n$FILLMODE\n 70\n     1\n  9\n$QTEXTMODE\n 70\n     0\n  9\n$MIRRTEXT\n 70\n     1\n  9\n$DRAGMODE\n 70\n     2\n  9\n$LTSCALE\n 40\n1.0\n  9\n$OSMODE\n 70\n    37\n  9\n$ATTMODE\n 70\n     1\n  9\n$TEXTSIZE\n 40\n2.5\n  9\n$TRACEWID\n 40\n1.0\n  9\n$TEXTSTYLE\n  7\nSTANDARD\n  9\n$CLAYER\n  8\n0\n  9\n$CELTYPE\n  6\nBYLAYER\n  9\n$CECOLOR\n 62\n   256\n  9\n$CELTSCALE\n 40\n1.0\n  9\n$DELOBJ\n 70\n     1\n  9\n$DISPSILH\n 70\n     0\n  9\n$DIMSCALE\n 40\n1.0\n  9\n$DIMASZ\n 40\n2.5\n  9\n$DIMEXO\n 40\n0.625\n  9\n$DIMDLI\n 40\n3.75\n  9\n$DIMRND\n 40\n0.0\n  9\n$DIMDLE\n 40\n0.0\n  9\n$DIMEXE\n 40\n1.25\n  9\n$DIMTP\n 40\n0.0\n  9\n$DIMTM\n 40\n0.0\n  9\n$DIMTXT\n 40\n2.5\n  9\n$DIMCEN\n 40\n2.5\n  9\n$DIMTSZ\n 40\n0.0\n  9\n$DIMTOL\n 70\n     0\n  9\n$DIMLIM\n 70\n     0\n  9\n$DIMTIH\n 70\n     0\n  9\n$DIMTOH\n 70\n     0\n  9\n$DIMSE1\n 70\n     0\n  9\n$DIMSE2\n 70\n     0\n  9\n$DIMTAD\n 70\n     1\n  9\n$DIMZIN\n 70\n     8\n  9\n$DIMBLK\n  1\n\n  9\n$DIMASO\n 70\n     1\n  9\n$DIMSHO\n 70\n     1\n  9\n$DIMPOST\n  1\n\n  9\n$DIMAPOST\n  1\n\n  9\n$DIMALT\n 70\n     0\n  9\n$DIMALTD\n 70\n     3\n  9\n$DIMALTF\n 40\n0.03937007874016\n  9\n$DIMLFAC\n 40\n1.0\n  9\n$DIMTOFL\n 70\n     1\n  9\n$DIMTVP\n 40\n0.0\n  9\n$DIMTIX\n 70\n     0\n  9\n$DIMSOXD\n 70\n     0\n  9\n$DIMSAH\n 70\n     0\n  9\n$DIMBLK1\n  1\n\n  9\n$DIMBLK2\n  1\n\n  9\n$DIMSTYLE\n  2\nISO-25\n  9\n$DIMCLRD\n 70\n     0\n  9\n$DIMCLRE\n 70\n     0\n  9\n$DIMCLRT\n 70\n     0\n  9\n$DIMTFAC\n 40\n1.0\n  9\n$DIMGAP\n 40\n0.625\n  9\n$DIMJUST\n 70\n     0\n  9\n$DIMSD1\n 70\n     0\n  9\n$DIMSD2\n 70\n     0\n  9\n$DIMTOLJ\n 70\n     0\n  9\n$DIMTZIN\n 70\n     8\n  9\n$DIMALTZ\n 70\n     0\n  9\n$DIMALTTZ\n 70\n     0\n  9\n$DIMFIT\n 70\n     3\n  9\n$DIMUPT\n 70\n     0\n  9\n$DIMUNIT\n 70\n     2\n  9\n$DIMDEC\n 70\n     2\n  9\n$DIMTDEC\n 70\n     2\n  9\n$DIMALTU\n 70\n     2\n  9\n$DIMALTTD\n 70\n     3\n  9\n$DIMTXSTY\n  7\nSTANDARD\n  9\n$DIMAUNIT\n 70\n     0\n  9\n$LUNITS\n 70\n     2\n  9\n$LUPREC\n 70\n     4\n  9\n$SKETCHINC\n 40\n1.0\n  9\n$FILLETRAD\n 40\n0.0\n  9\n$AUNITS\n 70\n     0\n  9\n$AUPREC\n 70\n     0\n  9\n$MENU\n  1\n.\n  9\n$ELEVATION\n 40\n0.0\n  9\n$PELEVATION\n 40\n0.0\n  9\n$THICKNESS\n 40\n0.0\n  9\n$LIMCHECK\n 70\n     0\n  9\n$CHAMFERA\n 40\n0.0\n  9\n$CHAMFERB\n 40\n0.0\n  9\n$CHAMFERC\n 40\n0.0\n  9\n$CHAMFERD\n 40\n0.0\n  9\n$SKPOLY\n 70\n     0\n  9\n$TDCREATE\n 40\n2461347.583472338\n  9\n$TDUPDATE\n 40\n2461347.583472373\n  9\n$TDINDWG\n 40\n0.0000000116\n  9\n$TDUSRTIMER\n 40\n0.0000000116\n  9\n$USRTIMER\n 70\n     1\n  9\n$ANGBASE\n 50\n0.0\n  9\n$ANGDIR\n 70\n     0\n  9\n$PDMODE\n 70\n     0\n  9\n$PDSIZE\n 40\n0.0\n  9\n$PLINEWID\n 40\n0.0\n  9\n$COORDS\n 70\n     1\n  9\n$SPLFRAME\n 70\n     0\n  9\n$SPLINETYPE\n 70\n     6\n  9\n$SPLINESEGS\n 70\n     8\n  9\n$ATTDIA\n 70\n     0\n  9\n$ATTREQ\n 70\n     1\n  9\n$HANDLING\n 70\n     1\n  9\n$HANDSEED\n  5\n100000AA\n  9\n$SURFTAB1\n 70\n     6\n  9\n$SURFTAB2\n 70\n     6\n  9\n$SURFTYPE\n 70\n     6\n  9\n$SURFU\n 70\n     6\n  9\n$SURFV\n 70\n     6\n  9\n$UCSNAME\n  2\n\n  9\n$UCSORG\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSXDIR\n 10\n1.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSYDIR\n 10\n0.0\n 20\n1.0\n 30\n0.0\n  9\n$PUCSNAME\n  2\n\n  9\n$PUCSORG\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSXDIR\n 10\n1.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSYDIR\n 10\n0.0\n 20\n1.0\n 30\n0.0\n  9\n$USERI1\n 70\n     0\n  9\n$USERI2\n 70\n     0\n  9\n$USERI3\n 70\n     0\n  9\n$USERI4\n 70\n     0\n  9\n$USERI5\n 70\n     0\n  9\n$USERR1\n 40\n0.0\n  9\n$USERR2\n 40\n0.0\n  9\n$USERR3\n 40\n0.0\n  9\n$USERR4\n 40\n0.0\n  9\n$USERR5\n 40\n0.0\n  9\n$WORLDVIEW\n 70\n     1\n  9\n$SHADEDGE\n 70\n     3\n  9\n$SHADEDIF\n 70\n    70\n  9\n$TILEMODE\n 70\n     1\n  9\n$MAXACTVP\n 70\n    64\n  9\n$PINSBASE\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PLIMCHECK\n 70\n     0\n  9\n$PEXTMIN\n 10\n1.000000000000000E+20\n 20\n1.000000000000000E+20\n 30\n1.000000000000000E+20\n  9\n$PEXTMAX\n 10\n-1.000000000000000E+20\n 20\n-1.000000000000000E+20\n 30\n-1.000000000000000E+20\n  9\n$PLIMMIN\n 10\n0.0\n 20\n0.0\n  9\n$PLIMMAX\n 10\n420.0\n 20\n297.0\n  9\n$UNITMODE\n 70\n     0\n  9\n$VISRETAIN\n 70\n     1\n  9\n$PLINEGEN\n 70\n     0\n  9\n$PSLTSCALE\n 70\n     1\n  9\n$TREEDEPTH\n 70\n  3020\n  9\n$PICKSTYLE\n 70\n     1\n  9\n$CMLSTYLE\n  2\nSTANDARD\n  9\n$CMLJUST\n 70\n     0\n  9\n$CMLSCALE\n 40\n20.0\n  9\n$PROXYGRAPHICS\n 70\n     1\n  9\n$MEASUREMENT\n 70\n     1\n  0\nENDSEC\n  0\nSECTION\n  2\nENTITIES\n  0\nCIRCLE\n  5\n1000005A\n102\n{ACAD_XDICTIONARY\n360\n1000005B\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbCircle\n 10\n-88.696194320477\n 20\n-46.86122691492491\n 30\n0.0\n 40\n1.750000000000002\n  0\nLINE\n  5\n10000060\n102\n{ACAD_XDICTIONARY\n360\n10000061\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n-90.11537679701338\n 20\n-39.42391150156347\n 30\n0.0\n 11\n-94.13202918706683\n 21\n-43.44056389161693\n 31\n0.0\n  0\nLINE\n  5\n10000064\n102\n{ACAD_XDICTIONARY\n360\n10000065\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n-94.13202918706683\n 20\n-43.44056389161693\n 30\n0.0\n 11\n-91.06373648599998\n 21\n-53.61046484823387\n 31\n0.0\n  0\nLINE\n  5\n10000068\n102\n{ACAD_XDICTIONARY\n360\n10000069\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n-91.06373648599998\n 20\n-53.61046484823387\n 30\n0.0\n 11\n-77.78624163397475\n 21\n-51.26928426960402\n 31\n0.0\n  0\nLINE\n  5\n1000006C\n102\n{ACAD_XDICTIONARY\n360\n1000006D\n102\n}\n330\n1F\n100\nAcDbEntity\n  8\nVISIBLE\n100\nAcDbLine\n 10\n-90.11537679701338\n 20\n-39.42391150156347\n 30\n0.0\n 11\n-77.78624163397475\n 21\n-51.26928426960402\n 31\n0.0\n  0\nENDSEC\n  0\nEOF\n"}}}/*END_HANDLES_JSON*/;
+let HANDLE_SETS = {};
+const mirrorX = P => P.map(([x, y]) => [-x, y]);
+function dxfShapes(text){
+  const g = dxfGeometry(text, {}), { loops } = chainLoops(g.segs), r = v => Math.round(v*1000)/1000;
+  const L = loops.map(l => ccw(l.map(([x, y]) => [r(x), r(y)]))).sort((p, q) => Math.abs(polyArea(q)) - Math.abs(polyArea(p)));
+  return { loops: L, circles: g.circles.map(c => ({ x: r(c.x), y: r(c.y), d: r(c.d) })) };
 }
-function nearestOnOutline(x, y, o){
-  let best = null, bd = Infinity;
-  for (let i = 0; i < o.length; i++){
-    const [ax, ay] = o[i], [bx, by] = o[(i+1) % o.length], dx = bx - ax, dy = by - ay, L = dx*dx + dy*dy;
-    const t = L ? clampNum(((x-ax)*dx + (y-ay)*dy) / L, 0, 1) : 0, px = ax + t*dx, py = ay + t*dy, d = Math.hypot(x-px, y-py);
-    if (d < bd){ bd = d; best = [px, py]; }
+const handleFiles = cfg => [cfg.core && cfg.core.dxf, ...(Array.isArray(cfg.mountAreas) ? cfg.mountAreas.map(a => a && a.dxf) : [])].filter(Boolean);
+function buildHandleSet(id, cfg, files){
+  if (!cfg || typeof cfg !== 'object') throw new Error('handle.json is not an object');
+  const mirror = cfg.mirror !== false, both = P => mirror ? [P, ccw(mirrorX(P))] : [P];
+  const bothC = cs => mirror ? [...cs, ...cs.map(c => ({ ...c, x: -c.x }))] : cs;
+  const core = cfg.core || {};
+  if (!core.dxf || files[core.dxf] == null) throw new Error('core.dxf is missing');
+  const cs = dxfShapes(files[core.dxf]);
+  if (!cs.loops.length) throw new Error(`${core.dxf} has no closed outline`);
+  const cores = both(cs.loops[0]).map((poly, i) => ({ poly, circles: i ? cs.circles.map(c => ({ ...c, x: -c.x })) : cs.circles }));
+  const areas = [], holes = [];
+  for (const a of Array.isArray(cfg.mountAreas) ? cfg.mountAreas : []){
+    if (!a || files[a.dxf] == null) throw new Error(`mount area ${a && a.dxf} is missing`);
+    const sh = dxfShapes(files[a.dxf]);
+    if (!sh.loops.length) throw new Error(`${a.dxf} has no closed shape`);
+    for (const loop of sh.loops.filter(l => !sh.loops.some(o => o !== l && Math.abs(polyArea(o)) > Math.abs(polyArea(l)) && l.every(([x, y]) => pointInPoly(x, y, o))))) areas.push(...both(loop));
+    holes.push(...bothC(sh.circles));
   }
-  return best;
+  if (!areas.length) throw new Error('no mounting areas');
+  const uniq = holes.filter((h, i) => holes.findIndex(k => Math.hypot(k.x - h.x, k.y - h.y) < 0.05) === i);
+  return { id, name: String(cfg.name || id), thickness: clampNum(numOr(core.thickness, 5), 1, 20), cores, areas, holes: uniq };
 }
-function addMountingTabs(out, holes, radius){
-  const need = holes.filter(h => !(pointInPoly(h.x, h.y, out) && edgeDist(h.x, h.y, out) >= h.d/2 + HANDLE_HOLE_EDGE - 1e-6));
-  if (!need.length || !MF) return { out, tabs: need.length && !MF ? -1 : 0 };
-  const { CrossSection } = MF, trash = [], polys = [ccw(out)];
-  // Neighbouring holes share one tab: the convex hull of their pads (and bridges), so the edge from one hole to
-  // the next is a straight line instead of dipping in between two round pads.
-  const near = (a, b) => Math.hypot(a.x - b.x, a.y - b.y) <= HANDLE_TAB_GROUP;
-  const groups = [];
-  for (const h of need){
-    const hit = groups.filter(g => g.some(k => near(k, h)));
-    if (!hit.length) groups.push([h]);
-    else { hit[0].push(h); for (const g of hit.slice(1)){ hit[0].push(...g); groups.splice(groups.indexOf(g), 1); } }
+async function loadHandles(){
+  const sets = {};
+  let list = null;
+  try { list = parseJson(await fetchText('handles/index.json'), 'handles/index.json').handles; } catch(e){ list = null; }
+  if (Array.isArray(list)) for (const id of list){
+    try {
+      const cfg = parseJson(await fetchText(`handles/${id}/handle.json`), `handles/${id}/handle.json`), files = {};
+      for (const f of handleFiles(cfg)) files[f] = await fetchText(`handles/${id}/${f}`);
+      sets[id] = buildHandleSet(String(id), cfg, files);
+    } catch(e){ if (!(e instanceof TypeError)) wheelWarnings.push(`Handles ${id}: skipped, ${e.message}.`); }
   }
-  for (const g of groups){
-    const pts = [];
-    for (const h of g){
-      const rp = h.d/2 + HANDLE_PAD + 0.05;   // a hair over, so the faceted circle still leaves the full pad
-      pts.push(...circlePoly(h.x, h.y, rp));
-      if (!pointInPoly(h.x, h.y, out)){ const [px, py] = nearestOnOutline(h.x, h.y, out); pts.push(...circlePoly(px, py, rp)); }   // bridge, as wide as the pad
-    }
-    polys.push(ccw(convexHull(pts)));
+  if (!Object.keys(sets).length) for (const [id, h] of Object.entries(BUILTIN_HANDLES)){
+    try { sets[id] = buildHandleSet(id, h.config, h.files); } catch(e){ wheelWarnings.push(`built-in handles ${id}: ${e.message}`); }
   }
-  try {
-    let cs = new CrossSection(polys, 'Positive'); trash.push(cs);
-    const f = clampNum(radius > 0 ? radius : 3, 2, 8);   // round the inner corners where tabs meet the outline
-    let c2 = cs.offset(f, 'Round', 2, 48); trash.push(c2); c2 = c2.offset(-f, 'Round', 2, 48); trash.push(c2);
-    c2 = c2.simplify(0.02); trash.push(c2);
-    const P = c2.toPolygons(); if (!P.length) return { out, tabs: 0 };
-    let best = P[0]; for (const q of P) if (Math.abs(polyArea(q)) > Math.abs(polyArea(best))) best = q;
-    return { out: ccw(best.map(([x, y]) => [Math.round(x*1000)/1000, Math.round(y*1000)/1000])), tabs: need.length };
-  } finally { for (const x of trash) x.delete(); }
-}
-function handleTemplate(style){ const pl = PLATES.find(p => !p.custom && p.handles && p.handles.style === style); return pl ? { pl, H: pl.handles } : null; }
-// wheel.json-style handles config + the extra mounting holes for the chosen type, or null for none.
-function customHandles(hs){
-  if (!hs || hs.type === 'none') return null;
-  if (hs.type === 'rally'){
-    const t = handleTemplate('rally'); if (!t) return { error: 'No existing design has rally handles to copy.' };
-    const H = t.H;
-    return { from: t.pl.name, holes: H.holes.map(([x, y]) => ({ x, y, d: H.boltHole })),
-      cfg: { style: 'rally', mirror: false, spokes: H.spokes.map(q => ({ holes: q })),
-        rim: { diameter: H.rim, tube: H.tube, flatBottom: H.flatBottom, cornerRadius: H.cornerRadius, gapBelowFrontPlate: H.gapBelowFront },
-        spoke: { width: H.spokeWidth, thickness: H.spokeThickness }, bolt: { hole: H.boltHole, head: H.boltHead, seat: H.boltSeat } } };
-  }
-  const t = handleTemplate('gt3'); if (!t) return { error: 'No existing design has GT3 handles to copy.' };
-  const H = t.H, D = hs.size;
-  // scale the grip's middle points outward or inward so the wheel is D across; the ends stay on their mount holes
-  const reach = Math.max(...H.path.map(([x, y]) => Math.hypot(x, y))), k = (D/2 - H.width/2) / reach;
-  const path = H.path.map((q, i) => i === 0 || i === H.path.length - 1 ? q : [r2(q[0]*k), r2(q[1]*k)]);
-  const holes = [...H.holes, ...H.holes.map(([x, y]) => [-x, y])].map(([x, y]) => ({ x, y, d: H.boltHole }));
-  return { from: t.pl.name, holes,
-    cfg: { style: 'gt3', left: { holes: H.holes, path }, mirror: true, closed: hs.type === 'gt3-closed', diameter: D,
-      grip: { width: H.width, depth: H.depth, gapBelowFrontPlate: H.gapBelowFront }, bolt: { hole: H.boltHole, head: H.boltHead, seat: H.boltSeat } } };
+  HANDLE_SETS = sets;
 }
 function cleanOutline(o, plateId){
   o = o && typeof o === 'object' ? o : {};
@@ -1130,7 +1095,7 @@ function cleanOutline(o, plateId){
   const h = o.handles && typeof o.handles === 'object' ? o.handles : {};
   return { mode, sym, pts, radius: clampNum(Number.isFinite(+o.radius) ? +o.radius : 5, 0, 40),
            snap: OL_SNAPS.includes(+o.snap) ? +o.snap : 1, preset: typeof o.preset === 'string' ? o.preset : null,
-           handles: { type: HANDLE_TYPES[h.type] ? h.type : 'none', size: GT3_SIZES.includes(+h.size) ? +h.size : GT3_DEFAULT_SIZE } };
+           handles: { type: typeof h.type === 'string' && HANDLE_SETS[h.type] ? h.type : 'none' } };
 }
 // The whole drawn polygon (both halves when symmetric), without repeated points.
 function fullOutline(o){
@@ -1180,19 +1145,19 @@ function roundOutline(P, r){
   } finally { for (const x of trash) x.delete(); }
 }
 const hashStr = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
-let customStatus = { usable: false, errors: [], warnings: [], raw: [], outline: null }, customKey = null;
+let customStatus = { usable: false, errors: [], warnings: [], raw: [], outline: null, set: null, areas: [], handleHoles: [] }, customKey = null;
 // Builds (or removes) the 'custom' plate from the outline. Memoized, so it's cheap to call on every render.
+// With a handle set chosen, its mounting areas are joined to the drawn outline: they can't be deleted by editing
+// points. An area the outline doesn't touch stays separate and is flagged; its holes and the handles wait for it.
 function rebuildCustomPlate(o){
   o = o || (state && state.outline);
-  const key = JSON.stringify([o && o.sym, o && o.pts, o && o.radius, o && o.handles, !!MF, PLATES.filter(p => !p.custom).length]);
+  const key = JSON.stringify([o && o.sym, o && o.pts, o && o.radius, o && o.handles, !!MF, PLATES.filter(p => !p.custom).length, Object.keys(HANDLE_SETS)]);
   if (key === customKey && (!customStatus.usable || PLATES.some(p => p.id === 'custom'))) return;
   customKey = key;
   PLATES = PLATES.filter(p => p.id !== 'custom');
-  const st = { usable: false, errors: [], warnings: [], raw: [], outline: null, handle: null, handleHoles: [] };
+  const set = o && o.handles.type !== 'none' ? HANDLE_SETS[o.handles.type] || null : null;
+  const st = { usable: false, errors: [], warnings: [], raw: [], outline: null, set, areas: set ? set.areas.map(poly => ({ poly, ok: false })) : [], handleHoles: [] };
   customStatus = st;
-  const hd = o ? customHandles(o.handles) : null;
-  if (hd && hd.error){ st.warnings.push(hd.error); }
-  else if (hd){ st.handle = hd; st.handleHoles = hd.holes.map(h => ({ ...h, ok: true })); }
   if (!o) return;
   const raw = fullOutline(o); st.raw = raw;
   if (raw.length < 3 || Math.abs(polyArea(raw)) < 1){ st.errors.push(o.sym ? 'Place at least two points on the right half. The left half is mirrored.' : 'Place at least three points.'); return; }
@@ -1201,24 +1166,35 @@ function rebuildCustomPlate(o){
   if (!out || out.length < 3){ st.errors.push('Rounding the corners leaves nothing of the outline. Lower Round corners.'); return; }
   out = ccw(out);
   if (o.radius > 0 && !MF) st.warnings.push('Corners get rounded once the 3D engine has loaded.');
-  if (st.handleHoles.length){ const t = addMountingTabs(out, st.handleHoles, o.radius); out = t.out; st.tabs = t.tabs; }
+  if (set){
+    if (!MF) st.warnings.push('The handle mounting areas are added once the 3D engine has loaded.');
+    else {
+      const cs = new MF.CrossSection([out, ...set.areas], 'Positive'), polys = cs.toPolygons().filter(q => polyArea(q) > 0); cs.delete();
+      const main = polys.find(q => pointInPoly(0, 0, q)) || polys.sort((p, q) => polyArea(q) - polyArea(p))[0];
+      if (main){
+        out = ccw(main.map(([x, y]) => [Math.round(x*1000)/1000, Math.round(y*1000)/1000]));
+        for (const a of st.areas){ const c = a.poly.reduce((s, [x, y]) => [s[0] + x/a.poly.length, s[1] + y/a.poly.length], [0, 0]); a.ok = pointInPoly(c[0], c[1], out); }
+      }
+      const bad = st.areas.filter(a => !a.ok).length;
+      if (bad) st.warnings.push(`${bad} of the ${st.areas.length} handle mounting areas ${bad === 1 ? "isn't" : "aren't"} joined to your outline (shown in red). Extend the outline so it touches or overlaps ${bad === 1 ? 'it' : 'them'}.`);
+    }
+    st.handleHoles = set.holes.map(h => ({ ...h, ok: pointInPoly(h.x, h.y, out) }));
+  }
   if (!pointInPoly(0, 0, out) || edgeDist(0, 0, out) < OL.hub/2 + OL.margin - 1e-6)
     st.warnings.push(`The outline should go around the Ø${OL.hub} mm electronics zone with at least ${OL.margin} mm to spare.`);
   st.outline = out;
-  // handle holes must sit inside the outline with some plate around them
-  let bad = 0;
-  for (const h of st.handleHoles){ h.ok = pointInPoly(h.x, h.y, out) && edgeDist(h.x, h.y, out) >= h.d/2 + HANDLE_HOLE_EDGE - 1e-6; if (!h.ok) bad++; }
-  if (bad && st.tabs === -1) st.warnings.push('Mounting tabs for the handle holes are added once the 3D engine has loaded.');
-  else if (bad) st.warnings.push(`${bad} of the ${st.handleHoles.length} handle mounting holes ${bad === 1 ? 'is' : 'are'} outside your outline or closer than ${HANDLE_PAD} mm to its edge (shown in red). Make the outline reach ${bad === 1 ? 'it' : 'them'}.`);
   try {
-    const okHoles = st.handleHoles.filter(h => h.ok);
+    const okHoles = st.handleHoles.filter(h => h.ok), okAreas = st.areas.filter(a => a.ok).map(a => a.poly);
     const cfg = { name: 'Own outline', outline: out, edgeMargin: OL.margin, plateSpacing: DEFAULT_GAP, frontPlateThickness: 4,
       chamfer: { outline: 0.5, mountHoles: 1.7 }, holes: { mount: { diameters: [], clearance: 2.85 }, noGo: { diameters: [OL.hub], clearance: OL.margin } },
       extraHoles: [{ x: 0, y: 0, d: OL.hub, role: 'noGo' }, ...okHoles.map(h => ({ x: h.x, y: h.y, d: h.d, role: 'mount' }))], example: [] };
-    // handles only once every hole they bolt to is on the plate
-    if (st.handle && !bad) cfg.handles = st.handle.cfg;
     const pl = buildWheel('custom', cfg, null);
-    pl.key = 'custom:' + hashStr(JSON.stringify([out, okHoles, cfg.handles || null])); pl.notes = []; pl.custom = true;
+    // mounting areas: the handle core sits behind the plate there, so parts keep clear (no-go zones)
+    for (const poly of okAreas) pl.holes.push({ role: 'keepout', poly, koPoly: poly, area: true });
+    pl.mountAreas = okAreas;
+    if (set && st.areas.length && st.areas.every(a => a.ok)) pl.handles = { style: 'cad', set, holes: set.holes.map(h => [h.x, h.y]), thickness: set.thickness, name: set.name };
+    pl.key = 'custom:' + hashStr(JSON.stringify([out, okHoles, okAreas.length, set && set.id]));
+    pl.notes = []; pl.custom = true;
     PLATES.push(pl); st.usable = true;
   } catch(e){ st.errors.push(e.message); }
 }
@@ -1676,9 +1652,8 @@ function initOutline(){
   $('olStart').innerHTML = `<option value="">Choose…</option><option value="rect">Rectangle 260 × 120</option><option value="round">Round Ø190</option>` +
     PLATES.filter(p => !p.custom).map(p => `<option value="${p.id}">Copy of ${esc(p.name)}</option>`).join('');
   $('olStart').addEventListener('change', e => { const v = e.target.value; e.target.value = ''; if (v){ olSel = null; outlineStart(v); } });
-  $('olSize').innerHTML = GT3_SIZES.map(d => `<option value="${d}">Ø${d} mm${d === GT3_DEFAULT_SIZE ? ' (as Zeus)' : ''}</option>`).join('');
+  $('olHandle').innerHTML = `<option value="none">None</option>` + Object.values(HANDLE_SETS).map(h => `<option value="${esc(h.id)}">${esc(h.name)}</option>`).join('');
   $('olHandle').addEventListener('change', e => { mutate(() => { state.outline.handles.type = e.target.value; }); });
-  $('olSize').addEventListener('change', e => { mutate(() => { state.outline.handles.size = +e.target.value; }); });
   $('olClear').addEventListener('click', () => { if (!state.outline.pts.length) return; olSel = null; mutate(() => { state.outline.pts = []; }); });
   olSvg.addEventListener('pointerdown', e => {
     if (state.outline.mode !== 'custom' || e.button > 0) return;
@@ -1747,14 +1722,12 @@ function renderOutline(){
   $('srcPreset').setAttribute('aria-checked', String(!custom)); $('srcCustom').setAttribute('aria-checked', String(custom));
   $('presetList').hidden = custom; $('customIntro').hidden = !custom; $('olTools').hidden = !custom; $('olHelp').hidden = !custom;
   $('olHandleCard').hidden = !custom;
-  const ht = o.handles.type, gt3 = ht.startsWith('gt3');
-  $('olHandle').value = ht; $('olSize').value = String(o.handles.size); $('olSizeField').hidden = !gt3;
-  const hh = st.handleHoles, nBad = hh.filter(h => !h.ok).length;
-  $('olHandleNote').textContent = ht === 'none' ? 'No handles. Pick a type to add its mounting holes to your outline and see the handles in the 3D preview.'
-    : !st.handle ? '' : `${hh.length} mounting holes (Ø${fmt(hh[0].d)}) at the same places as on ${st.handle.from}` +
-      (gt3 ? `, ${hh.length/2} per side. The grips reach Ø${o.handles.size} mm across${ht === 'gt3-closed' ? ' and are joined by a bar over the top' : ''}.` : `, for the rim's spokes. Rim Ø${fmt(st.handle.cfg.rim.diameter)} mm with a flat bottom.`) +
-      (st.tabs > 0 ? ` Your outline doesn't reach ${st.tabs} of them, so ${st.tabs === 1 ? 'a mounting tab was' : 'mounting tabs were'} added around ${st.tabs === 1 ? 'it' : 'them'}. Tabs can't be deleted by editing points; they stay while this mounting type is chosen.` : '') +
-      (nBad ? ` ${nBad} ${nBad === 1 ? 'hole is' : 'holes are'} not on your outline yet, so the handles are left out for now.` : ' The handles show in the 3D preview.');
+  const ht = o.handles.type, set = st.set;
+  $('olHandle').value = ht;
+  const nBadA = st.areas.filter(a => !a.ok).length;
+  $('olHandleNote').textContent = ht === 'none' ? 'No handles. Pick a handle set to add its mounting areas and holes to your outline and see the handles in the 3D preview.'
+    : !set ? '' : `${set.name}: ${set.areas.length} mounting areas with ${set.holes.length} Ø${fmt(set.holes[0].d)} holes, from the handle CAD. The areas are always part of your outline and can't be deleted by editing points. Parts keep clear of them, because the ${fmt(set.thickness)} mm handle core sits behind the plate there.` +
+      (nBadA ? ` ${nBadA} ${nBadA === 1 ? "area isn't" : "areas aren't"} joined to your outline yet, so the handles are left out for now.` : ' The handles show in the 3D preview.');
   olSvg.classList.toggle('drawing', custom);
   if (!custom) $('presetList').innerHTML = PLATES.filter(p => !p.custom).map(p =>
     `<button type="button" class="preset" data-plate="${p.id}" aria-pressed="${p.id === state.plateId}">${presetThumb(p)}<span><b>${esc(p.name)}</b><i>${fmt(p.width)} × ${fmt(p.height)} mm · ${p.holes.filter(h => h.role === 'mount').length} mount holes${p.handles ? ' · ' + p.handles.style + ' handles' : ''}</i></span></button>`).join('');
@@ -1764,26 +1737,9 @@ function renderOutline(){
   const pl = custom ? (PLATES.find(p => p.id === 'custom') || null) : plate();
   let minX = -OL.W/2, maxX = OL.W/2, minY = -OL.H/2, maxY = OL.H/2;
   if (pl && !custom){ minX = Math.min(minX, pl.bbox.minX); maxX = Math.max(maxX, pl.bbox.maxX); minY = Math.min(minY, pl.bbox.minY); maxY = Math.max(maxY, pl.bbox.maxY); }
-  // handle preview (own outline): solid shapes along the grip / rim centre lines. A GT3 grip is slimmer where it
-  // meets the plate and fuller where the hand goes, with a thumb rest near its top; half(t) gives the half-width
-  // at fraction t of the length.
-  const grips = [];
-  if (custom && st.handle){
-    const c = st.handle.cfg;
-    if (c.style === 'gt3'){
-      const W = c.grip.width, L = catmullRom(c.left.path, 2.5);
-      const grip = t => { const u = clampNum((t - 0.03) / 0.94, 0, 1); return W/2 * (0.56 + 0.48*Math.pow(Math.sin(Math.PI*u), 0.7) + 0.1*Math.exp(-(((t - 0.86)/0.06)**2))); };
-      grips.push({ pts: L, half: grip, cls: 'ol-grip', seam: true }, { pts: L.map(([x, y]) => [-x, y]), half: grip, cls: 'ol-grip', seam: true });
-      if (c.closed){ const tp = gt3TopPath({ path: c.left.path, diameter: c.diameter }, W); if (tp) grips.unshift({ pts: catmullRom(tp, 2.5), half: () => W/2*0.78, cls: 'ol-grip', seam: true }); }
-    } else {
-      const R = (c.rim.diameter - c.rim.tube)/2, cc = Math.min(c.rim.flatBottom, c.rim.diameter/2) - c.rim.tube/2, loop = rimPath(R, cc, c.rim.cornerRadius, 2.5);
-      for (const q of c.spokes){ const hs = q.holes, cx = hs.reduce((a, [x]) => a + x, 0)/hs.length, cy = hs.reduce((a, [, y]) => a + y, 0)/hs.length, l = Math.hypot(cx, cy);
-        const hit = l < 1 ? rayHit(loop, 0, -1) : rayHit(loop, cx/l, cy/l), sw = c.spoke.width;
-        if (hit) grips.push({ pts: [[cx, cy], hit], half: t => sw/2 * (1 - 0.3*t), cls: 'ol-spoke' }); }
-      grips.push({ pts: loop, half: () => c.rim.tube/2, cls: 'ol-grip', closed: true, seam: true });
-    }
-    for (const g of grips) for (const [x, y] of g.pts){ const h = g.half(0.5) * 1.25; minX = Math.min(minX, x - h); maxX = Math.max(maxX, x + h); minY = Math.min(minY, y - h); maxY = Math.max(maxY, y + h); }
-  }
+  // handle preview (own outline): the handle cores from the CAD, drawn behind the plate
+  const cores = custom && st.set ? st.set.cores : [];
+  for (const c of cores) for (const [x, y] of c.poly){ minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
   const pad = 10;
   olSvg.setAttribute('viewBox', `${minX-pad} ${-maxY-pad} ${maxX-minX+2*pad} ${maxY-minY+2*pad+6}`);
   let g = `<defs><pattern id="olHatch" width="2.4" height="2.4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="2.4" class="ol-hatch"/></pattern></defs>`;
@@ -1791,8 +1747,9 @@ function renderOutline(){
   for (let v = -OL.W/2 + 10; v < OL.W/2; v += 10) g += `<line class="ol-gl${v % 50 === 0 ? ' s' : ''}" x1="${v}" y1="${-OL.H/2}" x2="${v}" y2="${OL.H/2}"/>`;
   for (let v = -OL.H/2 + 10; v < OL.H/2; v += 10) g += `<line class="ol-gl${v % 50 === 0 ? ' s' : ''}" x1="${-OL.W/2}" y1="${-v}" x2="${OL.W/2}" y2="${-v}"/>`;
   g += `<text class="ol-lbl" x="${-OL.W/2}" y="${OL.H/2 + 6}">${custom ? `drawing area ${OL.W} × ${OL.H} mm` : esc(plate().name)}</text>`;
-  const line = (q, close) => 'M' + q.map(([x, y]) => `${x.toFixed(2)} ${(-y).toFixed(2)}`).join('L') + (close ? 'Z' : '');
-  for (const gr of grips) g += `<path class="${gr.cls}" d="${ribbonPath(gr.pts, gr.half, gr.closed)}" fill-rule="evenodd"/>` + (gr.seam ? `<path class="ol-seam" d="${line(gr.pts, gr.closed)}"/>` : '');
+  const line = q => 'M' + q.map(([x, y]) => `${x.toFixed(2)} ${(-y).toFixed(2)}`).join('L') + 'Z';
+  const circ = c => `M${(c.x - c.d/2).toFixed(2)} ${(-c.y).toFixed(2)}a${c.d/2} ${c.d/2} 0 1 0 ${c.d} 0a${c.d/2} ${c.d/2} 0 1 0 ${-c.d} 0Z`;
+  for (const c of cores) g += `<path class="ol-grip" d="${line(c.poly)}${c.circles.map(circ).join('')}" fill-rule="evenodd"/>`;
   if (custom && o.sym) g += `<line class="ol-axis" x1="0" y1="${-OL.H/2}" x2="0" y2="${OL.H/2}"/>`;
   if (pl){
     g += `<polygon class="ol-plate" points="${polySvgPts(pl.outline)}"/>`;
@@ -1804,6 +1761,7 @@ function renderOutline(){
   if (pl) for (const m of pl.holes.filter(h => h.poly)) g += `<polygon class="ol-hub" points="${polySvgPts(m.poly)}"/>`;
   if (custom){
     if (st.raw.length >= 2) g += `<polygon class="ol-raw${st.errors.length ? ' bad' : ''}" points="${polySvgPts(st.raw)}"/>`;
+    for (const a of st.areas) g += `<polygon class="ol-marea${a.ok ? '' : ' bad'}" points="${polySvgPts(a.poly)}"><title>Handle mounting area${a.ok ? '' : ': not joined to your outline'}</title></polygon>`;
     for (const h of st.handleHoles) g += `<circle class="ol-hhole${h.ok ? '' : ' bad'}" cx="${h.x}" cy="${-h.y}" r="${Math.max(h.d/2, 1.6)}"><title>Handle mounting hole Ø${fmt(h.d)} at ${fmt(h.x)}, ${fmt(h.y)}${h.ok ? '' : ': not on the outline'}</title></circle>`;
     if (o.sym) for (const [x, y] of o.pts) if (x > 0.01) g += `<circle class="ol-ghost" cx="${-x}" cy="${-y}" r="1.4"/>`;
     o.pts.forEach(([x, y], i) => { g += `<circle class="ol-pt${i === olSel ? ' sel' : ''}" data-pt="${i}" cx="${x}" cy="${-y}" r="2.4"><title>Point ${i+1}: ${fmt(x)}, ${fmt(y)} mm</title></circle>`; });
@@ -1827,7 +1785,7 @@ function renderOutline(){
     box.innerHTML = `<dl class="kv"><dt>Size</dt><dd>${cp ? `${fmt(cp.width)} × ${fmt(cp.height)} mm` : '—'}</dd>
       <dt>Points</dt><dd>${o.pts.length}${o.sym ? ` (${st.raw.length} with the mirrored half)` : ''}</dd><dt>Round corners</dt><dd>${fmt(o.radius)} mm</dd><dt>Edge margin</dt><dd>${OL.margin} mm</dd></dl>
       <ul class="olstat">${items.join('')}</ul>
-      <div class="oltodo"><b>Mounting holes:</b> ${st.handleHoles.length ? `${st.handleHoles.filter(h => h.ok).length} for the handles (see Handle mounting). Other mounting points for the front plate are still to do.` : 'none yet. Pick a handle mounting type to add the handle holes; other mounting points are still to do.'}</div>
+      <div class="oltodo"><b>Mounting holes:</b> ${st.handleHoles.length ? `${st.handleHoles.filter(h => h.ok).length} for the handles (see Handle mounting). Other mounting points for the front plate are still to do.` : 'none yet. Pick a handle set to add its mounting holes; other mounting points are still to do.'}</div>
       <button class="btn primary" id="olNext" ${st.usable ? '' : 'disabled'}>Continue to 2D design</button>`;
   }
   $('olNext').addEventListener('click', () => setView('design'));
@@ -2151,7 +2109,9 @@ function handlesUnavailable(){
 }
 // The two size inputs: [state key, label, min, max] per handle style.
 function handleInputs(){
-  return plate().handles && plate().handles.style === 'rally'
+  const st = plate().handles && plate().handles.style;
+  if (st === 'cad') return { hW: ['width', 'Grip width (mm)', 15, 60], hD: ['depth', 'Grip depth (mm)', 15, 80], fixed: true };
+  return st === 'rally'
     ? { hW: ['rim', 'Rim Ø (mm)', 200, 450], hD: ['tube', 'Tube Ø (mm)', 15, 50] }
     : { hW: ['width', 'Grip width (mm)', 15, 60], hD: ['depth', 'Grip depth (mm)', 15, 80] };
 }
@@ -2162,13 +2122,16 @@ function renderHandles(){
     const [key, label, min, max] = inp[id], v = hs[key], def = H && H[key];
     $(id + 'L').textContent = label; $(id).min = min; $(id).max = max;
     if ($(id) !== a) $(id).value = v === null ? '' : v;
-    $(id).placeholder = def ? String(def) : ''; $(id).disabled = !H || !hs.show;
+    $(id).placeholder = def ? String(def) : ''; $(id).disabled = !H || !hs.show || !!inp.fixed;
   }
   const why = handlesUnavailable();
   const val = id => hs[inp[id][0]] ?? (H && H[inp[id][0]]);
   const hh = handlesHoles, tail = ' Shown in the 3D preview only, to judge the look; they aren\'t exported.' + (handlesError ? ` Last build failed: ${handlesError}.` : '');
   let text = '';
   if (!H){}
+  else if (H.style === 'cad'){
+    text = `${H.name} handles from CAD: the ${fmt(H.thickness)} mm core plates, held between the back plate and the front plate at ${H.set.areas.length} mounting areas with ${H.holes.length} screws. The grips themselves aren't modelled yet.`;
+  }
   else if (H.style === 'rally'){
     const n = H.spokes.length;
     text = `Rally rim, Ø${fmt(val('hW'))} mm with a ${fmt(val('hD'))} mm tube and a flat bottom, on ${n} spoke${n === 1 ? '' : 's'} bolted behind the back plate through ${H.holes.length} mount hole${H.holes.length === 1 ? '' : 's'}.`;
@@ -2346,10 +2309,19 @@ function mfTray(pl, gap){
       const posts = T(Manifold.union(mounts.map(m => T(T(Manifold.cylinder(gap, tr.boss/2, tr.boss/2, 40)).translate([m.x, m.y, -gap])))));
       const clip = T(T(Manifold.extrude(T(outer.offset(-0.05, 'Round', 2, 48)), H)).translate([0, 0, -H]));
       body = T(Manifold.union([body, T(posts.intersect(clip))]));
-      if (tr.pilot > 0){
-        const pilot = m => T(T(T(Manifold.cylinder(gap + 1, tr.pilot/2, tr.pilot/2, 24)).rotate([0, 0, 1.37])).translate([m.x, m.y, -gap]));
-        body = T(body.subtract(T(Manifold.union(mounts.map(pilot)))));
-      }
+    }
+    // handle mounting areas: solid up to the handle core's thickness below the top, so the core is clamped between
+    // this pad and the front plate (the wall there is lowered by the same amount)
+    const areas = pl.mountAreas || [];
+    if (areas.length){
+      const core = (pl.handles && pl.handles.thickness) || 5;
+      const A = T(new CrossSection(areas.map(ccw), 'Positive'));
+      body = T(Manifold.union([body, T(T(Manifold.extrude(T(A.intersect(outer)), H - core)).translate([0, 0, -H]))]));
+      body = T(body.subtract(T(T(Manifold.extrude(T(A.offset(0.05, 'Round', 2, 48)), core + 1)).translate([0, 0, -core]))));
+    }
+    if (mounts.length && tr.pilot > 0){
+      const pilot = m => T(T(T(Manifold.cylinder(gap + 1, tr.pilot/2, tr.pilot/2, 24)).rotate([0, 0, 1.37])).translate([m.x, m.y, -gap]));
+      body = T(body.subtract(T(Manifold.union(mounts.map(pilot)))));
     }
     // hub: opening and quick-release bolt holes through the floor, at each round no-go zone of the hub's size
     if (tr.hub) for (const hz of pl.holes.filter(h => h.role !== 'mount' && !h.poly && Math.abs(h.d - tr.hub.bore) < 0.5 && pointInPoly(h.x, h.y, pl.outline))){
@@ -2689,6 +2661,16 @@ function mfRally(H, hs, T){
   return { parts: [{ name: 'rim', m: rim, color: GRIP_COLOR, rough: 0.85 }, ...(sp ? [{ name: 'spokes', m: sp, color: '#A7B0B9', rough: 0.35, metal: 0.6 }] : [])],
            used: H.holes, unused: [] };
 }
+// CAD handles: each core plate (outline minus its holes) as a slab of its thickness right under the front plate.
+function mfCadHandles(H, T){
+  const { Manifold, CrossSection } = MF, t = H.thickness, parts = [];
+  H.set.cores.forEach((c, i) => {
+    let cs = T(new CrossSection([c.poly], 'Positive'));
+    if (c.circles.length) cs = T(cs.subtract(T(new CrossSection(c.circles.map(h => ccw(circlePoly(h.x, h.y, h.d/2))), 'Positive'))));
+    parts.push({ name: 'core-' + i, m: T(Manifold.extrude(cs, t)).translate([0, 0, -t]), color: GRIP_COLOR, rough: 0.85 });
+  });
+  return { parts, used: H.holes, unused: [] };
+}
 // Returns { parts: [{name, m, color}], used, unused } with Manifolds (caller deletes), or null.
 function mfHandles(){
   const pl = plate(), H = pl.handles, hs = state.handles || {};
@@ -2697,6 +2679,7 @@ function mfHandles(){
   const T = x => (trash.push(x), x);
   try {
     if (H.style === 'rally') return mfRally(H, hs, T);
+    if (H.style === 'cad') return mfCadHandles(H, T);
     const w = numOr(hs.width, H.width), d = numOr(hs.depth, H.depth);
     // The grip's top sits just below the front plate's underside (z = 0), whatever the plate spacing.
     const zc = -H.gapBelowFront - d/2, zMin = zc - d/2;
@@ -2824,7 +2807,8 @@ function rebuild3d(){
   if (three.group){ scene.remove(three.group); disposeGroup(three.group); }
   const g = new THREE.Group();
   const pl = plate(), t = state.thickness, gap = state.gap;
-  const handleSpan = !pl.handles ? 0 : pl.handles.style === 'rally' ? numOr((state.handles || {}).rim, pl.handles.rim)
+  const handleSpan = !pl.handles ? 0 : pl.handles.style === 'cad' ? 2*Math.max(...pl.handles.set.cores.flatMap(c => c.poly.map(([x]) => Math.abs(x))))
+    : pl.handles.style === 'rally' ? numOr((state.handles || {}).rim, pl.handles.rim)
     : Math.max(2*Math.max(...pl.handles.path.map(([x]) => Math.abs(x))) + pl.handles.width, pl.handles.closed ? pl.handles.diameter : 0);
   const S = Math.max(pl.width, pl.height, handleSpan);
   const mat = (c, o={}) => new THREE.MeshStandardMaterial({color:new THREE.Color(c), roughness:0.75, metalness:0.05, ...o});
@@ -3035,7 +3019,7 @@ function toast(msg){ const t = $('toast'); t.textContent = msg; placeNearPointer
 
 /* ---------------- Boot ---------------- */
 async function boot(){
-  await Promise.all([loadParts(), loadWheels()]);
+  await Promise.all([loadParts(), loadWheels(), loadHandles()]);
   let saved = null;
   try { saved = localStorage.getItem(STORE_KEY); } catch(e){}
   try { if (saved) loadState(saved); else loadState(makeExample(PLATES[0].id)); }
