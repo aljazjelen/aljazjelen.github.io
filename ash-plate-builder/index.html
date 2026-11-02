@@ -357,7 +357,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
   <div class="grid3d" id="viewPreview" role="tabpanel" aria-labelledby="tabPreview" hidden>
     <main class="viewer-col">
       <section class="card viewer">
-        <h2><span class="grow">3D preview</span><span class="pvchecks"><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="partsChk" checked> Parts</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="hideFrontChk"> Hide front plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="transBackChk" checked> Transparent back plate</label></span></h2>
+        <h2><span class="grow">3D preview</span><span class="pvchecks"><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="partsChk" checked> Parts</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="hideFrontChk"> Hide front plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="hideHandlesChk"> Hide handles</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="transBackChk" checked> Transparent back plate</label></span></h2>
         <div class="body"><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
           <p class="note">Drag to orbit, scroll or pinch to zoom. Translucent bodies show depth behind the plate; the lower slab is the back plate. Parts are placed in the 2D design view.</p></div>
       </section>
@@ -975,7 +975,7 @@ let nextId = 1;
 let selected = null;
 let issues = [], errIds = new Set(), warnIds = new Set();
 let undoStack = [], redoStack = [];
-let showKO = true, show3dParts = true, hide3dFront = false, transBack3d = true;
+let showKO = true, show3dParts = true, hide3dFront = false, transBack3d = true, hide3dHandles = false;
 
 const $ = id => document.getElementById(id);
 
@@ -2054,6 +2054,7 @@ function initControls(){
   $('koChk').addEventListener('change', e => { showKO = e.target.checked; render2d(); });
   $('partsChk').addEventListener('change', e => { show3dParts = e.target.checked; schedule3d(); });
   $('hideFrontChk').addEventListener('change', e => { hide3dFront = e.target.checked; schedule3d(); });
+  $('hideHandlesChk').addEventListener('change', e => { hide3dHandles = e.target.checked; schedule3d(); });
   $('transBackChk').addEventListener('change', e => { transBack3d = e.target.checked; schedule3d(); });
   $('undoBtn').addEventListener('click', undo);
   $('redoBtn').addEventListener('click', redo);
@@ -2815,7 +2816,7 @@ function rebuild3d(){
   const dgeo = decoGeometry(!!(drag || rotDrag));
   if (dgeo && !hide3dFront) g.add(new THREE.Mesh(dgeo, mat(css('--accent'), {roughness: 0.55})));
   const hgeos = handleGeometries(!!(drag || rotDrag));
-  if (hgeos) for (const q of hgeos) g.add(new THREE.Mesh(q.geo.clone(), mat(q.color, {roughness: q.rough ?? 0.6, metalness: q.metal ?? 0.05})));
+  if (hgeos && !hide3dHandles) for (const q of hgeos) g.add(new THREE.Mesh(q.geo.clone(), mat(q.color, {roughness: q.rough ?? 0.6, metalness: q.metal ?? 0.05})));
   const backShape = outlineShape(pl.outline);
   for (const m of pl.holes){
     const ph = new THREE.Path();
