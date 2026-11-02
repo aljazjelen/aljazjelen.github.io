@@ -1,10 +1,4 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-</head>
-<body style="margin:0">
 <title>ASH Front Plate Builder</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -245,6 +239,7 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
 kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:3px;padding:0 4px;background:var(--panel-2)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.pvchecks{display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:flex-end}
 </style>
 
 <div class="wrap">
@@ -362,7 +357,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
   <div class="grid3d" id="viewPreview" role="tabpanel" aria-labelledby="tabPreview" hidden>
     <main class="viewer-col">
       <section class="card viewer">
-        <h2><span class="grow">3D preview</span><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="partsChk" checked> Parts</label></h2>
+        <h2><span class="grow">3D preview</span><span class="pvchecks"><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="partsChk" checked> Parts</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="hideFrontChk"> Hide front plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="transBackChk" checked> Transparent back plate</label></span></h2>
         <div class="body"><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
           <p class="note">Drag to orbit, scroll or pinch to zoom. Translucent bodies show depth behind the plate; the lower slab is the back plate. Parts are placed in the 2D design view.</p></div>
       </section>
@@ -980,7 +975,7 @@ let nextId = 1;
 let selected = null;
 let issues = [], errIds = new Set(), warnIds = new Set();
 let undoStack = [], redoStack = [];
-let showKO = true, show3dParts = true;
+let showKO = true, show3dParts = true, hide3dFront = false, transBack3d = true;
 
 const $ = id => document.getElementById(id);
 
@@ -2058,6 +2053,8 @@ function initControls(){
   $('snapSel').addEventListener('change', e => { state.snap = +e.target.value; persist(); renderProps(); });
   $('koChk').addEventListener('change', e => { showKO = e.target.checked; render2d(); });
   $('partsChk').addEventListener('change', e => { show3dParts = e.target.checked; schedule3d(); });
+  $('hideFrontChk').addEventListener('change', e => { hide3dFront = e.target.checked; schedule3d(); });
+  $('transBackChk').addEventListener('change', e => { transBack3d = e.target.checked; schedule3d(); });
   $('undoBtn').addEventListener('click', undo);
   $('redoBtn').addEventListener('click', redo);
   $('resetBtn').addEventListener('click', () => { const ex = makeExample(state.plateId); mutate(() => { loadState(ex); selected=null; }); syncInputs(); });
@@ -2814,9 +2811,9 @@ function rebuild3d(){
   const mat = (c, o={}) => new THREE.MeshStandardMaterial({color:new THREE.Color(c), roughness:0.75, metalness:0.05, ...o});
   let geo;
   try { geo = frontPlateGeometry(); } catch(e){ geo = null; }
-  if (geo) g.add(new THREE.Mesh(geo, mat(css('--plate'))));
+  if (geo && !hide3dFront) g.add(new THREE.Mesh(geo, mat(css('--plate'))));
   const dgeo = decoGeometry(!!(drag || rotDrag));
-  if (dgeo) g.add(new THREE.Mesh(dgeo, mat(css('--accent'), {roughness: 0.55})));
+  if (dgeo && !hide3dFront) g.add(new THREE.Mesh(dgeo, mat(css('--accent'), {roughness: 0.55})));
   const hgeos = handleGeometries(!!(drag || rotDrag));
   if (hgeos) for (const q of hgeos) g.add(new THREE.Mesh(q.geo.clone(), mat(q.color, {roughness: q.rough ?? 0.6, metalness: q.metal ?? 0.05})));
   const backShape = outlineShape(pl.outline);
@@ -2827,8 +2824,9 @@ function rebuild3d(){
     backShape.holes.push(ph);
   }
   const tgeo = trayGeometry();
-  if (tgeo) g.add(new THREE.Mesh(tgeo.clone(), mat(css('--zone'), {transparent:true, opacity:0.32, depthWrite:false, side:THREE.DoubleSide})));
-  else { const back = new THREE.Mesh(new THREE.ExtrudeGeometry(backShape, {depth:3, bevelEnabled:false, curveSegments:40}), mat(css('--zone'), {transparent:true, opacity:0.28, depthWrite:false})); back.position.z = -gap - 3; g.add(back); }
+  const backMat = o => transBack3d ? mat(css('--zone'), {transparent:true, opacity:o, depthWrite:false, side:THREE.DoubleSide}) : mat(css('--zone'), {side:THREE.DoubleSide});
+  if (tgeo) g.add(new THREE.Mesh(tgeo.clone(), backMat(0.32)));
+  else { const back = new THREE.Mesh(new THREE.ExtrudeGeometry(backShape, {depth:3, bevelEnabled:false, curveSegments:40}), backMat(0.28)); back.position.z = -gap - 3; g.add(back); }
   if (!tgeo) for (const m of pl.holes.filter(h => h.role === 'mount')){
     const so = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, gap, 20), mat(css('--zone'), {transparent:true, opacity:0.55}));
     so.rotation.x = Math.PI/2; so.position.set(m.x, m.y, -gap/2); g.add(so);
@@ -3041,6 +3039,3 @@ async function boot(){
 boot();
 })();
 </script>
-
-</body>
-</html>
