@@ -295,6 +295,12 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
           <div class="row">
             <label class="field">Handles<select id="olHandle"></select></label>
           </div>
+          <div class="row" id="olPlace">
+            <label class="field" title="Moves both handles outwards (+) or inwards (−), symmetrically">Spread<input type="number" id="olHdx" step="0.5" min="-40" max="40"> mm</label>
+            <label class="field" title="Moves both handles up (+) or down (−)">Up / down<input type="number" id="olHdy" step="0.5" min="-40" max="40"> mm</label>
+            <label class="field" title="Tilts both handles around the middle of their mounting areas; + leans the tops outwards">Tilt<input type="number" id="olHtilt" step="0.5" min="-30" max="30"> °</label>
+          </div>
+          <div class="row" id="olPlaceBtns"><button class="btn sm ghost" id="olHreset" type="button">Reset position</button></div>
           <p class="note" id="olHandleNote"></p>
         </div>
       </section>
@@ -1115,7 +1121,9 @@ function cleanOutline(o, plateId){
   const h = o.handles && typeof o.handles === 'object' ? o.handles : {};
   const out = { mode, sym, pts, radius: clampNum(Number.isFinite(+o.radius) ? +o.radius : 5, 0, 40),
            snap: OL_SNAPS.includes(+o.snap) ? +o.snap : 1, preset: typeof o.preset === 'string' ? o.preset : null,
-           handles: { type: typeof h.type === 'string' && HANDLE_SETS[h.type] ? h.type : 'none' } };
+           handles: { type: typeof h.type === 'string' && HANDLE_SETS[h.type] ? h.type : 'none',
+                      dx: clampNum(Number.isFinite(+h.dx) ? r2(+h.dx) : 0, -HP.dx, HP.dx), dy: clampNum(Number.isFinite(+h.dy) ? r2(+h.dy) : 0, -HP.dy, HP.dy),
+                      tilt: clampNum(Number.isFinite(+h.tilt) ? r2(+h.tilt) : 0, -HP.tilt, HP.tilt) } };
   // re-place the fixed points only if they no longer match the handle set (e.g. its CAD changed)
   const have = out.pts.filter(isFixed).map(q => q[0] + ',' + q[1]).sort().join(' '), want = olAnchors(out).map(q => q[0] + ',' + q[1]).sort().join(' ');
   if (have !== want) syncAnchors(out);
@@ -1124,8 +1132,49 @@ function cleanOutline(o, plateId){
 // Fixed points: the handle set's anchors are always points of the drawn outline. They can't be moved or deleted;
 // you add your own points around them. Points are [x, y] (yours) or [x, y, 1] (fixed).
 const isFixed = q => q[2] === 1;
+// Handle placement: move the right handle by dx (out +, in -) and dy, and tilt it by tilt° (top outwards +) around
+// the middle of its mounting areas; the left handle mirrors it. The whole set moves: core, areas, holes, fixed points.
+const HP = { dx: 40, dy: 40, tilt: 30 };
+const placeCache = new Map();
+function placedSet(o){
+  const base = o.handles.type !== 'none' ? HANDLE_SETS[o.handles.type] : null;
+  if (!base) return null;
+  const { dx, dy, tilt } = o.handles;
+  if (!dx && !dy && !tilt) return base;
+  const key = [base.id, dx, dy, tilt].join('|');
+  if (placeCache.has(key)) return placeCache.get(key);
+  const right = base.areas.filter(a => a.reduce((s, q) => s + q[0], 0) > 0).flat();
+  const c = right.length ? [right.reduce((s, q) => s + q[0], 0) / right.length, right.reduce((s, q) => s + q[1], 0) / right.length] : [0, 0];
+  const a = -tilt * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+  const T = (x, y) => { const L = x < 0, X = L ? -x : x, px = X - c[0], py = y - c[1]; const nx = c[0] + px*ca - py*sa + dx, ny = c[1] + px*sa + py*ca + dy; return [L ? -nx : nx, ny]; };
+  const side = P => P.reduce((s, q) => s + q[0], 0) < 0;   // a shape is on the left when its points are, on average
+  const TP = P => { const L = side(P); return P.map(([x, y]) => { const q = T(L ? Math.min(x, -1e-9) : Math.max(x, 1e-9), y); return [r2(q[0]), r2(q[1])]; }); };
+  const TC = (cc, L) => { const q = T(L ? -Math.abs(cc.x) : Math.abs(cc.x), cc.y); return { ...cc, x: r2(q[0]), y: r2(q[1]) }; };
+  const set = { ...base, placed: true,
+    cores: base.cores.map(k => { const L = side(k.poly); return { poly: ccw(TP(k.poly)), circles: k.circles.map(cc => TC(cc, L)) }; }),
+    areas: base.areas.map(P => ccw(TP(P))),
+    holes: base.holes.map(h => TC(h, h.x < 0)),
+    anchors: base.anchors.map(([x, y]) => { const q = T(x, y); return [r2(q[0]), r2(q[1])]; }) };
+  if (placeCache.size > 50) placeCache.clear();
+  placeCache.set(key, set);
+  return set;
+}
+// Every fixed point of the full outline (both halves).
+function olFixedAll(o){
+  const f = o.pts.filter(isFixed).map(q => [q[0], q[1]]);
+  return o.sym ? [...f, ...f.map(([x, y]) => [-x, y])] : f;
+}
+// Moves the fixed points with the handles (keeping where they sit in your outline), or re-places them if their number changed.
+function moveAnchors(o, oldA){
+  const newA = olAnchors(o);
+  if (newA.length !== oldA.length){ syncAnchors(o); return; }
+  for (const q of o.pts) if (isFixed(q)){
+    const k = oldA.findIndex(a => Math.abs(a[0] - q[0]) < 0.02 && Math.abs(a[1] - q[1]) < 0.02);
+    if (k >= 0){ q[0] = newA[k][0]; q[1] = newA[k][1]; }
+  }
+}
 function olAnchors(o){
-  const set = o.handles.type !== 'none' ? HANDLE_SETS[o.handles.type] : null;
+  const set = placedSet(o);
   if (!set) return [];
   const a = o.sym ? set.anchors.filter(([x]) => x > 0.01).concat(set.anchors.filter(([x]) => Math.abs(x) <= 0.01)) : set.anchors;
   return a.map(([x, y]) => [r2(clampNum(x, -OL.W/2, OL.W/2)), r2(clampNum(y, -OL.H/2, OL.H/2))]);
@@ -1191,20 +1240,39 @@ function selfIntersects(P){
   return false;
 }
 // Rounds every corner with radius r (convex and concave) via offsets; keeps the largest piece.
-function roundOutline(P, r){
-  if (!MF || !(r > 0)) return P;
-  const { CrossSection } = MF, trash = [];
-  try {
-    let cs = new CrossSection([ccw(P)], 'Positive'); trash.push(cs);
-    const off = (c, d) => { const x = c.offset(d, 'Round', 2, 48); trash.push(x); return x; };
-    cs = off(off(cs, -r), r); cs = off(off(cs, r), -r);
-    cs = cs.simplify(0.02); trash.push(cs);   // drop the tiny segments the rounding leaves (they trip up the chamfer)
-    const polys = cs.toPolygons();
-    if (!polys.length) return null;
-    let best = polys[0];
-    for (const q of polys) if (Math.abs(polyArea(q)) > Math.abs(polyArea(best))) best = q;
-    return best.map(([x, y]) => [Math.round(x*1000)/1000, Math.round(y*1000)/1000]);
-  } finally { for (const x of trash) x.delete(); }
+// Rounds each corner with radius r (a fillet tangent to both edges, shortened where the edges are too short),
+// except the corners for which sharp(x, y) is true: the handle's fixed points stay exactly where they are.
+function roundOutline(P, r, sharp = () => false){
+  if (!(r > 0)) return P;
+  P = ccw(P);
+  const n = P.length, out = [], cut = [];
+  // how far along each edge a corner's fillet may reach: half the edge when both of its ends are rounded
+  for (let i = 0; i < n; i++){
+    const a = P[(i+n-1)%n], b = P[i], c = P[(i+1)%n];
+    const u = [a[0]-b[0], a[1]-b[1]], v = [c[0]-b[0], c[1]-b[1]], lu = Math.hypot(...u), lv = Math.hypot(...v);
+    const ang = Math.acos(clampNum((u[0]*v[0] + u[1]*v[1]) / (lu*lv || 1), -1, 1));   // inner angle between the edges
+    cut.push(sharp(b[0], b[1]) || ang > Math.PI - 1e-3 || ang < 1e-3 ? 0 : r / Math.tan(ang/2));
+  }
+  for (let i = 0; i < n; i++){
+    const a = P[(i+n-1)%n], b = P[i], c = P[(i+1)%n];
+    if (!cut[i]){ out.push([b[0], b[1]]); continue; }
+    const lu = Math.hypot(a[0]-b[0], a[1]-b[1]), lv = Math.hypot(c[0]-b[0], c[1]-b[1]);
+    const share = (k, len) => cut[k] ? len / 2 : len;             // a sharp neighbour leaves the whole edge
+    const t = Math.min(cut[i], share((i+n-1)%n, lu) * 0.999, share((i+1)%n, lv) * 0.999);
+    const ux = (a[0]-b[0])/lu, uy = (a[1]-b[1])/lu, vx = (c[0]-b[0])/lv, vy = (c[1]-b[1])/lv;
+    const p1 = [b[0] + ux*t, b[1] + uy*t], p2 = [b[0] + vx*t, b[1] + vy*t];
+    // the arc centre lies on the bisector; its radius follows from the (possibly shortened) tangent length
+    const half = Math.acos(clampNum(ux*vx + uy*vy, -1, 1)) / 2, rr = t * Math.tan(half), dc = Math.hypot(t, rr);
+    let bx = ux + vx, by = uy + vy; const bl = Math.hypot(bx, by); bx /= bl; by /= bl;
+    const cx = b[0] + bx*dc, cy = b[1] + by*dc;
+    let a1 = Math.atan2(p1[1]-cy, p1[0]-cx), a2 = Math.atan2(p2[1]-cy, p2[0]-cx), sw = a2 - a1;
+    while (sw > Math.PI) sw -= 2*Math.PI; while (sw < -Math.PI) sw += 2*Math.PI;
+    const steps = Math.max(2, Math.ceil(Math.abs(sw) / (Math.PI/24)));
+    for (let k = 0; k <= steps; k++){ const t2 = a1 + sw*k/steps; out.push([cx + rr*Math.cos(t2), cy + rr*Math.sin(t2)]); }
+  }
+  const res = out.filter((q, k) => { const p = out[(k+out.length-1)%out.length]; return Math.hypot(q[0]-p[0], q[1]-p[1]) > 0.01; })
+    .map(([x, y]) => [Math.round(x*1000)/1000, Math.round(y*1000)/1000]);
+  return res.length >= 3 && !selfIntersects(res) ? res : null;
 }
 const hashStr = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
 let customStatus = { usable: false, errors: [], warnings: [], raw: [], outline: null, set: null, areas: [], handleHoles: [] }, customKey = null;
@@ -1217,21 +1285,24 @@ function rebuildCustomPlate(o){
   if (key === customKey && (!customStatus.usable || PLATES.some(p => p.id === 'custom'))) return;
   customKey = key;
   PLATES = PLATES.filter(p => p.id !== 'custom');
-  const set = o && o.handles.type !== 'none' ? HANDLE_SETS[o.handles.type] || null : null;
+  const set = o && o.handles.type !== 'none' ? placedSet(o) : null;
   const st = { usable: false, errors: [], warnings: [], raw: [], outline: null, set, areas: set ? set.areas.map(poly => ({ poly, ok: false })) : [], handleHoles: [] };
   customStatus = st;
   if (!o) return;
   const raw = fullOutline(o); st.raw = raw;
   if (raw.length < 3 || Math.abs(polyArea(raw)) < 1){ st.errors.push(o.sym ? 'Place at least two points on the right half. The left half is mirrored.' : 'Place at least three points.'); return; }
   if (selfIntersects(raw)){ st.errors.push('The outline crosses itself. Move the points so no edges cross.'); return; }
-  let out = roundOutline(raw, o.radius);
+  const fixed = olFixedAll(o), isSharp = (x, y) => fixed.some(f => Math.abs(f[0] - x) < 0.02 && Math.abs(f[1] - y) < 0.02);
+  let out = roundOutline(raw, o.radius, isSharp);
   if (!out || out.length < 3){ st.errors.push('Rounding the corners leaves nothing of the outline. Lower Round corners.'); return; }
   out = ccw(out);
-  if (o.radius > 0 && !MF) st.warnings.push('Corners get rounded once the 3D engine has loaded.');
   if (set){
     if (!MF) st.warnings.push('The handle mounting areas are added once the 3D engine has loaded.');
     else {
-      const cs = new MF.CrossSection([out, ...set.areas], 'Positive'), polys = cs.toPolygons().filter(q => polyArea(q) > 0); cs.delete();
+      // simplify drops the slivers and tiny steps where the outline meets an area (they trip up the chamfer)
+      // a tiny closing (out and back in by 0.05 mm) fuses places where outline and area only touch in a point
+      const cs0 = new MF.CrossSection([out, ...set.areas], 'Positive'), c1 = cs0.offset(0.05, 'Round', 2, 24), c2 = c1.offset(-0.05, 'Round', 2, 24), cs = c2.simplify(0.02);
+      const polys = cs.toPolygons().filter(q => polyArea(q) > 0); for (const x of [cs0, c1, c2, cs]) x.delete();
       const main = polys.find(q => pointInPoly(0, 0, q)) || polys.sort((p, q) => polyArea(q) - polyArea(p))[0];
       if (main){
         out = ccw(main.map(([x, y]) => [Math.round(x*1000)/1000, Math.round(y*1000)/1000]));
@@ -1716,6 +1787,9 @@ function initOutline(){
   $('olStart').addEventListener('change', e => { const v = e.target.value; e.target.value = ''; if (v){ olSel = null; outlineStart(v); } });
   $('olHandle').innerHTML = `<option value="none">None</option>` + Object.values(HANDLE_SETS).map(h => `<option value="${esc(h.id)}">${esc(h.name)}</option>`).join('');
   $('olHandle').addEventListener('change', e => { olSel = null; mutate(() => { state.outline.handles.type = e.target.value; syncAnchors(state.outline); }); });
+  const place = (k, lim) => e => { const v = clampNum(r2(+e.target.value || 0), -lim, lim), o = state.outline; if (v === o.handles[k]) return; const oldA = olAnchors(o); mutate(() => { o.handles[k] = v; moveAnchors(o, oldA); }); };
+  $('olHdx').addEventListener('change', place('dx', HP.dx)); $('olHdy').addEventListener('change', place('dy', HP.dy)); $('olHtilt').addEventListener('change', place('tilt', HP.tilt));
+  $('olHreset').addEventListener('click', () => { const o = state.outline; if (!o.handles.dx && !o.handles.dy && !o.handles.tilt) return; const oldA = olAnchors(o); mutate(() => { o.handles.dx = o.handles.dy = o.handles.tilt = 0; moveAnchors(o, oldA); }); });
   $('olClear').addEventListener('click', () => { if (!state.outline.pts.some(q => !isFixed(q))) return; olSel = null; mutate(() => { state.outline.pts = state.outline.pts.filter(isFixed); }); });
   olSvg.addEventListener('pointerdown', e => {
     if (state.outline.mode !== 'custom' || e.button > 0) return;
@@ -1787,6 +1861,8 @@ function renderOutline(){
   $('olHandleCard').hidden = !custom;
   const ht = o.handles.type, set = st.set;
   $('olHandle').value = ht;
+  $('olPlace').hidden = $('olPlaceBtns').hidden = ht === 'none';
+  for (const [id, k] of [['olHdx', 'dx'], ['olHdy', 'dy'], ['olHtilt', 'tilt']]) if ($(id) !== document.activeElement) $(id).value = o.handles[k];
   const nBadA = st.areas.filter(a => !a.ok).length;
   $('olHandleNote').textContent = ht === 'none' ? 'No handles. Pick a handle set to add its mounting areas and holes to your outline and see the handles in the 3D preview.'
     : !set ? '' : `${set.name}: ${set.areas.length} mounting areas with ${set.holes.length} Ø${fmt(set.holes[0].d)} holes, from the handle CAD. The areas are always part of your outline and can't be deleted by editing points. Parts keep clear of them, because the ${fmt(set.thickness)} mm handle core sits behind the plate there.` +
@@ -2370,24 +2446,31 @@ function mfTray(pl, gap){
   const T = x => (trash.push(x), x);
   try {
     const H = gap + tr.floor, outer = T(new CrossSection([pl.outline]));
-    let body = T(T(Manifold.extrude(outer, H)).translate([0, 0, -H]));
     const inner = T(outer.offset(-tr.wall, 'Round', 2, 48));
-    if (!inner.isEmpty()) body = T(body.subtract(T(T(Manifold.extrude(inner, gap + 1)).translate([0, 0, -gap]))));
+    const areas = pl.mountAreas || [], core = Math.min((pl.handles && pl.handles.thickness) || 5, gap - 1);
+    // Built in 2D layers so nothing meets only along a line: each region gets a tiny closing (fuses places where
+    // two pieces touch in a single point) and is simplified before it's extruded.
+    const clean = cs => { const a = T(cs.offset(0.02, 'Round', 2, 24)), b = T(a.offset(-0.02, 'Round', 2, 24)); return T(b.simplify(0.01)); };
+    const wall = T(outer.subtract(inner));
+    const prism = (cs, z0, z1) => T(T(Manifold.extrude(cs, z1 - z0)).translate([0, 0, z0]));
+    const layers = [prism(outer, -H, -gap)];                           // floor
+    if (areas.length){
+      // handle mounting areas: solid up to the handle core's thickness below the top, so the core is clamped between
+      // this pad and the front plate (the wall there is lowered by the same amount)
+      const A = T(new CrossSection(areas.map(ccw), 'Positive')), Ao = T(A.offset(0.05, 'Round', 2, 48));
+      layers.push(prism(clean(T(wall.add(T(A.intersect(outer))))), -gap, -core));
+      const top = clean(T(wall.subtract(Ao)));
+      if (!top.isEmpty()) layers.push(prism(top, -core, 0));
+    } else layers.push(prism(clean(wall), -gap, 0));
+    let body = T(Manifold.union(layers));
     const mounts = pl.holes.filter(h => h.role === 'mount');
     if (mounts.length){
-      // posts from the floor up to the front plate, trimmed to the outline so a post near the edge never sticks out
+      // posts from the floor up to the front plate (or up to a pad's top), trimmed to the outline
       const posts = T(Manifold.union(mounts.map(m => T(T(Manifold.cylinder(gap, tr.boss/2, tr.boss/2, 40)).translate([m.x, m.y, -gap])))));
       const clip = T(T(Manifold.extrude(T(outer.offset(-0.05, 'Round', 2, 48)), H)).translate([0, 0, -H]));
-      body = T(Manifold.union([body, T(posts.intersect(clip))]));
-    }
-    // handle mounting areas: solid up to the handle core's thickness below the top, so the core is clamped between
-    // this pad and the front plate (the wall there is lowered by the same amount)
-    const areas = pl.mountAreas || [];
-    if (areas.length){
-      const core = (pl.handles && pl.handles.thickness) || 5;
-      const A = T(new CrossSection(areas.map(ccw), 'Positive'));
-      body = T(Manifold.union([body, T(T(Manifold.extrude(T(A.intersect(outer)), H - core)).translate([0, 0, -H]))]));
-      body = T(body.subtract(T(T(Manifold.extrude(T(A.offset(0.05, 'Round', 2, 48)), core + 1)).translate([0, 0, -core]))));
+      let p2 = T(posts.intersect(clip));
+      if (areas.length){ const A = T(new CrossSection(areas.map(ccw), 'Positive')); p2 = T(p2.subtract(prism(T(A.offset(0.05, 'Round', 2, 48)), -core, 1))); }
+      body = T(Manifold.union([body, p2]));
     }
     if (mounts.length && tr.pilot > 0){
       const pilot = m => T(T(T(Manifold.cylinder(gap + 1, tr.pilot/2, tr.pilot/2, 24)).rotate([0, 0, 1.37])).translate([m.x, m.y, -gap]));
@@ -2951,18 +3034,23 @@ function stlFromGeometry(geo, hdr){
   const n = idx ? idx.length/3 : pos.length/9;
   const buf = new ArrayBuffer(84 + 50*n), dv = new DataView(buf);
   for (let i=0;i<Math.min(80,hdr.length);i++) dv.setUint8(i, hdr.charCodeAt(i));
-  dv.setUint32(80, n, true);
-  let o = 84;
-  const v = k => { const i = (idx ? idx[k] : k)*3; return [pos[i],pos[i+1],pos[i+2]]; };
+  let o = 84, kept = 0;
+  // STL stores float32: vertices that are distinct in the model but equal in float32 would give zero-area
+  // triangles, so those are left out (the rest of the mesh still closes up around them)
+  const f32 = Math.fround, v = k => { const i = (idx ? idx[k] : k)*3; return [f32(pos[i]), f32(pos[i+1]), f32(pos[i+2])]; };
+  const same = (p, q) => p[0] === q[0] && p[1] === q[1] && p[2] === q[2];
   for (let f=0; f<n; f++){
     const a=v(f*3), b=v(f*3+1), c=v(f*3+2);
+    if (same(a, b) || same(b, c) || same(a, c)) continue;
+    kept++;
     const ux=b[0]-a[0], uy=b[1]-a[1], uz=b[2]-a[2], wx=c[0]-a[0], wy=c[1]-a[1], wz=c[2]-a[2];
     let nx=uy*wz-uz*wy, ny=uz*wx-ux*wz, nz=ux*wy-uy*wx; const L=Math.hypot(nx,ny,nz)||1;
     for (const val of [nx/L,ny/L,nz/L,...a,...b,...c]){ dv.setFloat32(o, val, true); o+=4; }
     dv.setUint16(o, 0, true); o+=2;
   }
+  dv.setUint32(80, kept, true);
   geo.dispose();
-  return buf;
+  return buf.slice(0, 84 + 50*kept);
 }
 function cutEntities(){
   const pl = plate();
