@@ -169,6 +169,12 @@ A first test of the part that attaches behind the core plate, shown in the 3D pr
 - Where a 10 mm inset closes up narrow parts of the outline (Zeus' handle notches), the chamfer is built from thin 0.2 mm steps instead of one smooth surface.
 - Not yet: fixing to the core plate (screws or clips).
 
+### Adapter: `adapter/`
+The quick-release adapter that bolts to the back: a standard part, the same on every wheel (`adapter/adapter.json` + `adapter.stl`, "ASH short adapter"). It's bolted with the 6 quick-release bolts (Ø5.3 on 70 mm) through the back plate and the core plate's floor, its Ø83 flange sitting in the back plate's Ø84 recess.
+- **3D preview:** centred on the hub, flange on the recess floor, pointing backwards (**Adapter** checkbox).
+- **Export:** *Adapter .stl* (and the zip) gives the file unchanged.
+- The STL is in its own CAD coordinates: axis along Y, the flange face against the back plate at `faceY` (−7), the rest towards −Y. The preview turns it 180° about X to point backwards.
+
 ### Built-in copy
 `index.html` carries a built-in copy of `parts.json` and `wheels/`. It's only used when those files can't be loaded, for example when the page is opened straight from disk.
 

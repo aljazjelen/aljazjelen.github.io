@@ -1,0 +1,9 @@
+{
+  "_help": [
+    "The quick-release adapter at the back of the wheel: a standard part, the same on every wheel. It's bolted through the back plate and the core plate's floor with the 6 quick-release bolts (Ø5.3 on 70 mm), its flange sitting in the back plate's Ø84 recess.",
+    "stl: the adapter's model in its own CAD coordinates: its axis along Y, the flange face that sits against the back plate at Y = faceY, and the rest of it towards -Y. The 3D preview turns it to point backwards from the wheel and centres it on the hub; Export gives the file unchanged."
+  ],
+  "name": "ASH short adapter",
+  "stl": "adapter.stl",
+  "faceY": -7
+}

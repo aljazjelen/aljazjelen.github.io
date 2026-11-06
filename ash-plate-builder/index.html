@@ -373,7 +373,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
   <div class="grid3d" id="viewPreview" role="tabpanel" aria-labelledby="tabPreview" hidden>
     <main class="viewer-col">
       <section class="card viewer">
-        <h2><span class="grow">3D preview <button class="btn sm ghost" id="resetView" type="button" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;margin-left:10px;vertical-align:middle" title="Back to the starting view, the wheel the right way up">Reset view</button></span><span class="pvchecks"><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="partsChk" checked> Parts</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="frontChk" checked> Front plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="handlesChk" checked> Handles</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="backChk" checked> Core plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="transBackChk" checked> Transparent</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="bpChk" checked> Back plate</label></span></h2>
+        <h2><span class="grow">3D preview <button class="btn sm ghost" id="resetView" type="button" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;margin-left:10px;vertical-align:middle" title="Back to the starting view, the wheel the right way up">Reset view</button></span><span class="pvchecks"><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="partsChk" checked> Parts</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="frontChk" checked> Front plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="handlesChk" checked> Handles</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="backChk" checked> Core plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="transBackChk" checked> Transparent</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="bpChk" checked> Back plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="adChk" checked> Adapter</label></span></h2>
         <div class="body"><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
           <p class="note">Drag to turn the wheel any way you like, right-drag to move it, scroll or pinch to zoom. Reset view straightens it again. Translucent bodies show depth behind the plate; the lower slab is the core plate. Parts are placed in the 2D design view.</p></div>
       </section>
@@ -388,6 +388,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
             <button class="btn" id="exDeco">Deco <em>.stl</em></button>
             <button class="btn" id="exTray">Core plate <em>.stl</em></button>
             <button class="btn" id="exBack">Back plate <em>.stl</em></button>
+            <button class="btn" id="exAdapter">Adapter <em>.stl</em></button>
             <button class="btn" id="exDxf">Cut outline <em>.dxf</em></button>
             <button class="btn" id="exSvg">Cut outline <em>.svg</em></button>
             <button class="btn" id="exBom">Parts list <em>.csv</em></button>
@@ -970,7 +971,7 @@ let nextId = 1;
 let selected = null;
 let issues = [], errIds = new Set(), warnIds = new Set();
 let undoStack = [], redoStack = [];
-let showKO = true, show3dParts = true, show3dFront = true, transBack3d = true, show3dHandles = true, show3dBack = true, show3dBackPlate = true;
+let showKO = true, show3dParts = true, show3dFront = true, transBack3d = true, show3dHandles = true, show3dBack = true, show3dBackPlate = true, show3dAdapter = true;
 
 const $ = id => document.getElementById(id);
 
@@ -1091,18 +1092,46 @@ const handleOffset = cfg => Array.isArray(cfg.offset) ? [numOr(cfg.offset[0], 0)
    plane is the STL's XZ plane (Onshape's Front plane: X right, Z up), and the driver looks from −Y. plateFaceY is the
    Y of the core face that touches the front plate. In wheel coordinates: x = X, y = Z (both + offset), z = plateFaceY − Y,
    so the core sits at z = −thickness … 0, right under the front plate. Binary or ASCII STL. */
-function loadGrip(buf, g, cfg){
-  const [ox, oy] = handleOffset(cfg), face = numOr(g.plateFaceY, 0), dv = new DataView(buf);
-  let raw;
-  const n = buf.byteLength >= 84 ? dv.getUint32(80, true) : 0;
+// Triangle corners of an STL (binary or ASCII) as a flat Float32Array: x, y, z, x, y, z, …
+function stlTriangles(buf){
+  const dv = new DataView(buf), n = buf.byteLength >= 84 ? dv.getUint32(80, true) : 0;
   if (n > 0 && 84 + 50*n === buf.byteLength){
-    raw = new Float32Array(n * 9);
+    const raw = new Float32Array(n * 9);
     for (let i = 0; i < n; i++) for (let k = 0; k < 9; k++) raw[i*9 + k] = dv.getFloat32(84 + i*50 + 12 + k*4, true);
-  } else {
-    const nums = [...new TextDecoder().decode(buf).matchAll(/vertex\s+(\S+)\s+(\S+)\s+(\S+)/g)].flatMap(m => [+m[1], +m[2], +m[3]]);
-    if (!nums.length || nums.length % 9) throw new Error('the grip STL could not be read');
-    raw = new Float32Array(nums);
+    return raw;
   }
+  const nums = [...new TextDecoder().decode(buf).matchAll(/vertex\s+(\S+)\s+(\S+)\s+(\S+)/g)].flatMap(m => [+m[1], +m[2], +m[3]]);
+  if (!nums.length || nums.length % 9) throw new Error('the STL could not be read');
+  return new Float32Array(nums);
+}
+/* The quick-release adapter (adapter/adapter.json + its STL): a standard part, the same for every wheel. In the 3D
+   preview it's centred on the hub with its flange face in the back plate's recess, pointing backwards. Its STL has
+   the axis along Y and the flange face at faceY; turned 180° about X so it points to −z: x = X, y = −Z, z = Y − faceY. */
+let ADAPTER = null;
+async function loadAdapter(){
+  try {
+    const cfg = parseJson(await fetchText('adapter/adapter.json'), 'adapter/adapter.json');
+    const r = await fetch('adapter/' + cfg.stl, { cache: 'no-cache' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const buf = await r.arrayBuffer(), raw = stlTriangles(buf), face = numOr(cfg.faceY, 0), pos = new Float32Array(raw.length);
+    for (let i = 0; i < raw.length; i += 3){ pos[i] = raw[i]; pos[i+1] = -raw[i+2]; pos[i+2] = raw[i+1] - face; }
+    ADAPTER = { name: String(cfg.name || 'Adapter'), file: cfg.stl, buf, pos };
+  } catch(e){ ADAPTER = null; if (!(e instanceof TypeError)) wheelWarnings.push(`The adapter couldn't be loaded (${e.message}).`); }
+}
+let adapterGeo = null;
+function adapterGeometry(){
+  if (!ADAPTER) return null;
+  if (!adapterGeo){ adapterGeo = new THREE.BufferGeometry(); adapterGeo.setAttribute('position', new THREE.BufferAttribute(ADAPTER.pos, 3)); adapterGeo.computeVertexNormals(); }
+  return adapterGeo;
+}
+// Where the adapter sits: on each hub zone, its flange face on the back plate's recess floor (or the core plate's bottom).
+function adapterSpots(pl, gap){
+  const tr = pl.tray || cleanTray(), bp = pl.back || cleanBack(), H = gap + tr.floor;
+  const z = -H - bp.thickness + (bp.holeDepth > 0 && bp.holeDepth < bp.thickness ? bp.holeDepth : 0);
+  return pl.holes.filter(h => h.role !== 'mount' && !h.poly && tr.hub && Math.abs(h.d - tr.hub.bore) < 0.5 && pointInPoly(h.x, h.y, pl.outline)).map(h => [h.x, h.y, z]);
+}
+function loadGrip(buf, g, cfg){
+  const [ox, oy] = handleOffset(cfg), face = numOr(g.plateFaceY, 0), raw = stlTriangles(buf);
   const pos = new Float32Array(raw.length);
   let sx = 0;
   for (let i = 0; i < raw.length; i += 3){ pos[i] = raw[i] + ox; pos[i+1] = raw[i+2] + oy; pos[i+2] = face - raw[i+1]; sx += pos[i]; }
@@ -2258,6 +2287,7 @@ function initControls(){
   $('transBackChk').addEventListener('change', e => { transBack3d = e.target.checked; schedule3d(); });
   $('resetView').addEventListener('click', () => resetView());
   $('bpChk').addEventListener('change', e => { show3dBackPlate = e.target.checked; schedule3d(); });
+  $('adChk').addEventListener('change', e => { show3dAdapter = e.target.checked; schedule3d(); });
   $('undoBtn').addEventListener('click', undo);
   $('redoBtn').addEventListener('click', redo);
   $('resetBtn').addEventListener('click', () => { const ex = makeExample(state.plateId); mutate(() => { loadState(ex); selected=null; }); syncInputs(); });
@@ -2906,7 +2936,7 @@ function init3d(){
   if (THREE.TrackballControls){
     controls = new THREE.TrackballControls(camera, renderer.domElement);
     controls.rotateSpeed = 3; controls.zoomSpeed = 1.2; controls.panSpeed = 0.8;
-    controls.staticMoving = false; controls.dynamicDampingFactor = 0.2;
+    controls.staticMoving = true;   // stops when you let go (no drifting)
     controls.keys = [null, null, null];   // no A/S/D modifier keys: they'd react to typing elsewhere on the page
     const tick = () => { if (!$('viewPreview').hidden) controls.update(); requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
@@ -2987,6 +3017,8 @@ function rebuild3d(){
   if (!show3dBack){}
   else if (tgeo) g.add(new THREE.Mesh(tgeo.clone(), backMat(0.32)));
   else { const back = new THREE.Mesh(new THREE.ExtrudeGeometry(backShape, {depth:3, bevelEnabled:false, curveSegments:40}), backMat(0.28)); back.position.z = -gap - 3; g.add(back); }
+  const ageo = show3dAdapter ? adapterGeometry() : null;
+  if (ageo) for (const [x, y, z] of adapterSpots(pl, gap)){ const m = new THREE.Mesh(ageo.clone(), mat('#9AA5B1', {roughness: 0.4, metalness: 0.2})); m.position.set(x, y, z); g.add(m); }
   const bgeo = show3dBackPlate ? backPlateGeometry() : null;
   if (bgeo) g.add(new THREE.Mesh(bgeo.clone(), mat('#5E6B79', {roughness: 0.6, side: THREE.DoubleSide})));
   if (!tgeo && show3dBack) for (const m of pl.holes.filter(h => h.role === 'mount')){
@@ -3159,6 +3191,10 @@ $('exBack').addEventListener('click', () => {
   if (!geo){ toast('The back plate needs the 3D engine, which has not loaded.'); return; }
   saveFile(baseName()+'-back.stl', stlFromGeometry(geo, 'ASH back plate - Immersion Dynamics'));
 });
+$('exAdapter').addEventListener('click', () => {
+  if (!ADAPTER){ toast('The adapter model couldn\'t be loaded.'); return; }
+  saveFile(ADAPTER.file, ADAPTER.buf);
+});
 $('exDxf').addEventListener('click', () => guarded(() => saveFile(baseName()+'.dxf', dxfText())));
 $('exSvg').addEventListener('click', () => guarded(() => saveFile(baseName()+'.svg', svgText())));
 $('exBom').addEventListener('click', () => saveFile(baseName()+'-parts.csv', bomCsv()));
@@ -3171,6 +3207,7 @@ async function exportAll(){
   const dgeo = decoGeometry(); if (dgeo) z.file(b+'-deco.stl', stlFromGeometry(dgeo, 'ASH deco - Immersion Dynamics'));
   const tgeo = trayGeometry(); if (tgeo) z.file(b+'-core.stl', stlFromGeometry(tgeo, 'ASH core plate - Immersion Dynamics'));
   const bgeo = backPlateGeometry(); if (bgeo) z.file(b+'-back.stl', stlFromGeometry(bgeo, 'ASH back plate - Immersion Dynamics'));
+  if (ADAPTER) z.file(ADAPTER.file.replace(/\.stl$/i, '') + '.stl', ADAPTER.buf);
   z.file(b+'-parts.csv', bomCsv()); z.file(b+'-layout.json', layoutJson());
   saveFile(b+'.zip', await z.generateAsync({type:'blob'}));
 }
@@ -3254,7 +3291,7 @@ function toast(msg){ const t = $('toast'); t.textContent = msg; placeNearPointer
 
 /* ---------------- Boot ---------------- */
 async function boot(){
-  await Promise.all([loadParts(), loadWheels(), loadHandles()]);
+  await Promise.all([loadParts(), loadWheels(), loadHandles(), loadAdapter()]);
   attachHandleSets();
   let saved = null;
   try { saved = localStorage.getItem(STORE_KEY); } catch(e){}
