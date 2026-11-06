@@ -150,10 +150,11 @@ What a handle set does, on a preset core plate and on your own outline alike:
 
 ### Core plate (tray)
 The core plate is generated as a tray from the same outline as the front plate, and exported as its own STL (`-core.stl`, also in the zip), in the same coordinates as the plate STL. Its top touches the underside of the front plate, which sits on its wall like a lid.
+- **Sloped sides:** the outside leans inward towards the bottom, 10° from vertical over the lowest 20 mm (with the 20 mm spacing that's almost the whole 23 mm height), so the bottom is about 3.5 mm smaller all round. The inside follows the slope, so the wall stays 4 mm thick. Because of that, a part that reaches deep behind the front plate must stay further from the edge: the checks use the part's body and depth (e.g. a 15 mm deep part needs about 6.1 mm from the edge instead of 4.5). Set per wheel in `wheel.json` under `tray.taper` (`angle`, `height`), or `"taper": false` for straight sides.
 - **Wall:** 4 mm thick, all round the outline. **Floor:** 3 mm. The plate spacing is the tray's inside depth, so the tray is spacing + 3 mm tall and the part depth check still applies.
 - **Screw bosses:** a Ø8 post at every front plate mounting hole, from the floor up to the front plate, with a Ø2.8 pilot hole for an M3 self-tapping screw. Posts near the outline are trimmed to it.
 - **Hub:** wherever the plate has a round Ø46 no-go zone, the floor gets that opening (for the electronics) plus the quick-release pattern: 6 × Ø5.3 holes on a 70 mm circle. Merida, which has no hub zone, gets a plain floor.
-- Every size can be changed per wheel in `wheel.json` under `tray`: `wall`, `floor`, `boss`, `pilot`, and `hub` (`bore`, `pcd`, `bolts`, `bolt`, `angle`), or `"hub": false`.
+- Every size can be changed per wheel in `wheel.json` under `tray`: `wall`, `floor`, `boss`, `pilot`, `taper`, and `hub` (`bore`, `pcd`, `bolts`, `bolt`, `angle`), or `"hub": false`.
 - The tray's interior (the outline minus the 4 mm wall) is where everything behind the front plate has to fit. The existing checks already keep parts there: the 4.5 mm edge margin is wider than the wall, and a mounting hole's keep-out is wider than its boss.
 - **Handle mounting areas:** with a handle set, the tray is solid at each mounting area up to the handle core's thickness (7 mm for GT3 Closed) below its top, and the wall there is lowered by the same amount, so the handle core is clamped between the tray and the front plate. The screws go through the front plate and the core into pilot holes in these pads.
 
