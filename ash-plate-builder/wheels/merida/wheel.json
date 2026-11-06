@@ -1,9 +1,9 @@
 {
   "_help": [
     "Settings for one wheel. The folder name is the wheel's id; list it in wheels/index.json.",
-    "All sizes in mm. The back plate DXF should be drawn in mm with the wheel centre at 0,0 (or set origin).",
+    "All sizes in mm. The core plate DXF should be drawn in mm with the wheel centre at 0,0 (or set origin).",
     "name: shown in the wheel list.",
-    "dxf: the back plate drawing in this folder. The largest closed shape becomes the outline; circles become holes; other closed shapes inside become no-go areas.",
+    "dxf: the core plate drawing in this folder. The largest closed shape becomes the outline; circles become holes; other closed shapes inside become no-go areas.",
     "outline / extraHoles: use instead of (or next to) a DXF. outline = [[x,y], ...]; extraHoles = [{\"x\":0,\"y\":0,\"d\":3.3,\"role\":\"mount\"|\"noGo\"}].",
     "origin (optional): [x, y] of the wheel centre in the DXF, if it isn't at 0,0.",
     "edgeMargin: how far parts must stay from the outline (the wheel's border).",
@@ -13,11 +13,11 @@
     "plateSpacing / frontPlateThickness: defaults applied when this wheel is picked.",
     "chamfer: 45° chamfer on the top edge of the front plate, in mm. outline = the outer edge, mountHoles = the mounting holes. 0 or left out = no chamfer.",
     "layers (optional): only read these DXF layers.",
-    "handles: optional, {\"set\": \"<id>\"} names a handle set in handles/ (CAD core, mounting areas, grip model). Its mounting areas become no-go zones, the back plate gets pads there, and the 3D preview shows the handles.",
+    "handles: optional, {\"set\": \"<id>\"} names a handle set in handles/ (CAD core, mounting areas, grip model). Its mounting areas become no-go zones, the core plate gets pads there, and the 3D preview shows the handles.",
     "example: the layout loaded by 'Load example' for this wheel."
   ],
   "name": "Merida · Button box",
-  "dxf": "backplate.dxf",
+  "dxf": "coreplate.dxf",
   "edgeMargin": 4.5,
   "plateSpacing": 20,
   "frontPlateThickness": 4,

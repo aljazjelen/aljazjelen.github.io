@@ -1,6 +1,6 @@
 {
   "_help": [
-    "Placeholder wheel without a DXF: the outline and holes are written here directly. See wheels/backplate-5/wheel.json for all settings."
+    "Placeholder wheel without a DXF: the outline and holes are written here directly. See wheels/zeus/wheel.json for all settings."
   ],
   "name": "Ares · GT3 wide (placeholder)",
   "edgeMargin": 5,
