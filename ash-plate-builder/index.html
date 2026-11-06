@@ -369,7 +369,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
   <div class="grid3d" id="viewPreview" role="tabpanel" aria-labelledby="tabPreview" hidden>
     <main class="viewer-col">
       <section class="card viewer">
-        <h2><span class="grow">3D preview</span><span class="pvchecks"><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="partsChk" checked> Parts</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="frontChk" checked> Front plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="handlesChk" checked> Handles</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="backChk" checked> Core plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="transBackChk" checked> Transparent</label></span></h2>
+        <h2><span class="grow">3D preview</span><span class="pvchecks"><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="partsChk" checked> Parts</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="frontChk" checked> Front plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="handlesChk" checked> Handles</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="backChk" checked> Core plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="transBackChk" checked> Transparent</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="bpChk" checked> Back plate</label></span></h2>
         <div class="body"><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
           <p class="note">Drag to orbit, scroll or pinch to zoom. Translucent bodies show depth behind the plate; the lower slab is the core plate. Parts are placed in the 2D design view.</p></div>
       </section>
@@ -383,6 +383,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
             <button class="btn" id="exStl">Front plate <em>.stl</em></button>
             <button class="btn" id="exDeco">Deco <em>.stl</em></button>
             <button class="btn" id="exTray">Core plate <em>.stl</em></button>
+            <button class="btn" id="exBack">Back plate <em>.stl</em></button>
             <button class="btn" id="exDxf">Cut outline <em>.dxf</em></button>
             <button class="btn" id="exSvg">Cut outline <em>.svg</em></button>
             <button class="btn" id="exBom">Parts list <em>.csv</em></button>
@@ -745,7 +746,7 @@ function buildWheel(folder, cfg, dxfText){
     },
     example: Array.isArray(cfg.example) ? cfg.example : [], notes,
     handleSetId: cleanHandlesCfg(cfg.handles, notes), handles: null,
-    tray: cleanTray(cfg.tray),
+    tray: cleanTray(cfg.tray), back: cleanBack(cfg.back),
   };
   finalizePlate(pl);
   const cxo = (pl.bbox.minX + pl.bbox.maxX)/2, cyo = (pl.bbox.minY + pl.bbox.maxY)/2;
@@ -759,6 +760,15 @@ function buildWheel(folder, cfg, dxfText){
 // taper: the outside slopes inward towards the bottom, angle° from vertical over the lowest `height` mm (0 = straight).
 // Only the outside: the inside stays straight, so the wall gets thinner towards the bottom.
 const TRAY_DEFAULTS = { wall: 4, floor: 5, boss: 8, pilot: 2.8, taper: { angle: 7, height: 20 }, hub: { bore: 46, pcd: 70, bolts: 6, bolt: 5.3, angle: 30 } };
+// The back plate (test): a plate under the core plate, with the core plate's bottom outline, `thickness` thick, a wide
+// chamfer on its bottom edge (`width` mm inward at `angle`° from vertical) and a round opening of `hole` mm at the hub.
+const BACK_DEFAULTS = { thickness: 5, chamfer: { width: 10, angle: 70 }, hole: 90 };
+function cleanBack(b){
+  b = b && typeof b === 'object' ? b : {};
+  const c = b.chamfer && typeof b.chamfer === 'object' ? b.chamfer : {}, D = BACK_DEFAULTS;
+  return { thickness: clampNum(numOr(b.thickness, D.thickness), 1, 30), hole: clampNum(numOr(b.hole, D.hole), 0, 300),
+           chamfer: { width: clampNum(numOr(c.width, D.chamfer.width), 0, 50), angle: clampNum(numOr(c.angle, D.chamfer.angle), 0, 85) } };
+}
 function cleanTray(t){
   t = t && typeof t === 'object' ? t : {};
   const h = t.hub && typeof t.hub === 'object' ? t.hub : {}, D = TRAY_DEFAULTS, H = D.hub;
@@ -953,7 +963,7 @@ let nextId = 1;
 let selected = null;
 let issues = [], errIds = new Set(), warnIds = new Set();
 let undoStack = [], redoStack = [];
-let showKO = true, show3dParts = true, show3dFront = true, transBack3d = true, show3dHandles = true, show3dBack = true;
+let showKO = true, show3dParts = true, show3dFront = true, transBack3d = true, show3dHandles = true, show3dBack = true, show3dBackPlate = true;
 
 const $ = id => document.getElementById(id);
 
@@ -2239,6 +2249,7 @@ function initControls(){
   $('handlesChk').addEventListener('change', e => { show3dHandles = e.target.checked; schedule3d(); });
   $('backChk').addEventListener('change', e => { show3dBack = e.target.checked; $('transBackChk').disabled = !show3dBack; schedule3d(); });
   $('transBackChk').addEventListener('change', e => { transBack3d = e.target.checked; schedule3d(); });
+  $('bpChk').addEventListener('change', e => { show3dBackPlate = e.target.checked; schedule3d(); });
   $('undoBtn').addEventListener('click', undo);
   $('redoBtn').addEventListener('click', redo);
   $('resetBtn').addEventListener('click', () => { const ex = makeExample(state.plateId); mutate(() => { loadState(ex); selected=null; }); syncInputs(); });
@@ -2445,13 +2456,14 @@ function mfPlate(){
 }
 // The tray (core plate), in the same coordinates as the plate STL: its top touches the front plate's underside (z = 0).
 // A solid from zBot to zTop whose outline is cs at the top and moves `inset` mm inward over the lowest `band` mm
-// (a draft). Built as one mesh (chamferedPrism upside down); if that isn't possible, as thin stacked slices.
+// (a draft). Built as one mesh (chamferedPrism upside down); if that isn't possible (a big inset can close up narrow
+// parts of the outline), as thin stacked slices.
 function taperedSolid(cs, zBot, zTop, inset, band){
   const { Manifold } = MF, h = zTop - zBot;
   if (!(inset > 0) || !(band > 0)) return Manifold.extrude(cs, h).translate([0, 0, zBot]);
   const m = chamferedPrism(cs, 0, h, inset, Math.min(band, h));
   if (m){ const r = m.mirror([0, 0, 1]).translate([0, 0, zTop]); m.delete(); return r; }
-  const n = Math.max(4, Math.ceil(band / 0.5)), parts = [], trash = [];
+  const n = Math.min(60, Math.max(4, Math.ceil(Math.max(band / 0.2, inset / 0.5)))), parts = [], trash = [];   // steps of ≤ 0.2 mm up and ≤ 0.5 mm in
   try {
     parts.push(Manifold.extrude(cs, h - band).translate([0, 0, zBot + band]));
     for (let k = 0; k < n; k++){
@@ -2505,6 +2517,38 @@ function mfTray(pl, gap){
     }
     return body.translate([0, 0, 0]);
   } finally { for (const x of trash) x.delete(); }
+}
+// The back plate, right under the core plate (its top touches the core plate's bottom at z = -(spacing + floor)).
+function mfBackPlate(pl, gap){
+  const { Manifold, CrossSection } = MF, tr = pl.tray || cleanTray(), bp = pl.back || cleanBack(), trash = [];
+  const T = x => (trash.push(x), x);
+  try {
+    const H = gap + tr.floor, outer = T(new CrossSection([pl.outline]));
+    // the core plate's bottom outline: its outside slope ends there
+    const tan = tr.taper && tr.taper.angle > 0 ? Math.tan(tr.taper.angle * Math.PI/180) : 0;
+    const inset0 = tan ? Math.min(tr.taper.height, H - 0.5) * tan : 0;
+    const top = inset0 > 0 ? T(outer.offset(-inset0, 'Miter', 4)) : outer;
+    if (top.isEmpty()) return null;
+    // the chamfer: `width` mm inward over the height that gives the angle, at most the plate's thickness
+    const ch = bp.chamfer, ang = ch.angle * Math.PI/180;
+    const chH = ch.width > 0 && ang > 0 ? Math.min(bp.thickness, ch.width / Math.tan(ang)) : 0, chW = chH ? chH * Math.tan(ang) : 0;
+    let body = T(taperedSolid(top, -H - bp.thickness, -H, chW, chH));
+    // the opening at the hub: at each round no-go zone of the hub's size (or the wheel centre for your own outline)
+    const hubs = pl.holes.filter(h => h.role !== 'mount' && !h.poly && tr.hub && Math.abs(h.d - tr.hub.bore) < 0.5 && pointInPoly(h.x, h.y, pl.outline));
+    if (bp.hole > 0 && hubs.length)
+      body = T(body.subtract(T(Manifold.union(hubs.map(h => T(T(Manifold.cylinder(bp.thickness + 2, bp.hole/2, bp.hole/2, 96)).translate([h.x, h.y, -H - bp.thickness - 1])))))));
+    return body.translate([0, 0, 0]);
+  } finally { for (const x of trash) x.delete(); }
+}
+const backCache = { key: null, geo: null };
+function backPlateGeometry(){
+  const pl = plate(), key = JSON.stringify([pl.key || pl.id, state.gap, mfState]);
+  if (backCache.key === key) return backCache.geo;
+  let geo = null;
+  try { if (MF){ const m = mfBackPlate(pl, state.gap); if (m){ geo = mfToGeometry(m); m.delete(); } } } catch(e){ console.warn('Back plate could not be built.', e); }
+  if (backCache.geo) backCache.geo.dispose();
+  backCache.key = key; backCache.geo = geo;
+  return geo;
 }
 const trayCache = { key: null, geo: null };
 function trayGeometry(){
@@ -2563,7 +2607,19 @@ function chamferedPrism(fp, z0, h, c, bh = c){
     const n = q.length, g = q.map((_, i) => i);
     let groups = q.map((_, i) => [i]);
     for (let pass = 0; pass < n; pass++){
-      const pos = groups.map(gr => [gr.reduce((s, i) => s + mq[i][0], 0) / gr.length, gr.reduce((s, i) => s + mq[i][1], 0) / gr.length]);
+      // a merged point sits where the inward-moved edges on either side of it meet (their miter), or at the
+      // average if those edges are (nearly) parallel
+      const pos = groups.map(gr => {
+        const avg = [gr.reduce((s, i) => s + mq[i][0], 0) / gr.length, gr.reduce((s, i) => s + mq[i][1], 0) / gr.length];
+        if (gr.length === 1) return mq[gr[0]];
+        const i0 = gr[0], i1 = gr[gr.length - 1], a0 = q[(i0 - 1 + n) % n], b0 = q[i0], a1 = q[i1], b1 = q[(i1 + 1) % n];
+        const line = (u, v) => { const dx = v[0] - u[0], dy = v[1] - u[1], l = Math.hypot(dx, dy) || 1; return { p: [u[0] - dy/l*c, u[1] + dx/l*c], d: [dx/l, dy/l] }; };
+        const L1 = line(a0, b0), L2 = line(a1, b1), den = L1.d[0]*L2.d[1] - L1.d[1]*L2.d[0];
+        if (Math.abs(den) < 0.05) return avg;
+        const t = ((L2.p[0] - L1.p[0])*L2.d[1] - (L2.p[1] - L1.p[1])*L2.d[0]) / den;
+        const x = [L1.p[0] + L1.d[0]*t, L1.p[1] + L1.d[1]*t];
+        return Math.hypot(x[0] - avg[0], x[1] - avg[1]) > 4*c ? avg : x;   // a far-off miter (very sharp turn): stay near
+      });
       const m = groups.length;
       if (m < 3) return null;
       let k = -1;
@@ -2893,6 +2949,8 @@ function rebuild3d(){
   if (!show3dBack){}
   else if (tgeo) g.add(new THREE.Mesh(tgeo.clone(), backMat(0.32)));
   else { const back = new THREE.Mesh(new THREE.ExtrudeGeometry(backShape, {depth:3, bevelEnabled:false, curveSegments:40}), backMat(0.28)); back.position.z = -gap - 3; g.add(back); }
+  const bgeo = show3dBackPlate ? backPlateGeometry() : null;
+  if (bgeo) g.add(new THREE.Mesh(bgeo.clone(), mat('#5E6B79', {roughness: 0.6, side: THREE.DoubleSide})));
   if (!tgeo && show3dBack) for (const m of pl.holes.filter(h => h.role === 'mount')){
     const so = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, gap, 20), mat(css('--zone'), {transparent:true, opacity:0.55}));
     so.rotation.x = Math.PI/2; so.position.set(m.x, m.y, -gap/2); g.add(so);
@@ -3057,6 +3115,12 @@ $('exTray').addEventListener('click', () => {
   if (!geo){ toast('The core plate needs the 3D engine, which has not loaded.'); return; }
   saveFile(baseName()+'-core.stl', stlFromGeometry(geo, 'ASH core plate - Immersion Dynamics'));
 });
+$('exBack').addEventListener('click', () => {
+  if (!needThree()) return;
+  const geo = backPlateGeometry();
+  if (!geo){ toast('The back plate needs the 3D engine, which has not loaded.'); return; }
+  saveFile(baseName()+'-back.stl', stlFromGeometry(geo, 'ASH back plate - Immersion Dynamics'));
+});
 $('exDxf').addEventListener('click', () => guarded(() => saveFile(baseName()+'.dxf', dxfText())));
 $('exSvg').addEventListener('click', () => guarded(() => saveFile(baseName()+'.svg', svgText())));
 $('exBom').addEventListener('click', () => saveFile(baseName()+'-parts.csv', bomCsv()));
@@ -3068,6 +3132,7 @@ async function exportAll(){
   z.file(b+'.stl', stlBinary()); z.file(b+'.dxf', dxfText()); z.file(b+'.svg', svgText());
   const dgeo = decoGeometry(); if (dgeo) z.file(b+'-deco.stl', stlFromGeometry(dgeo, 'ASH deco - Immersion Dynamics'));
   const tgeo = trayGeometry(); if (tgeo) z.file(b+'-core.stl', stlFromGeometry(tgeo, 'ASH core plate - Immersion Dynamics'));
+  const bgeo = backPlateGeometry(); if (bgeo) z.file(b+'-back.stl', stlFromGeometry(bgeo, 'ASH back plate - Immersion Dynamics'));
   z.file(b+'-parts.csv', bomCsv()); z.file(b+'-layout.json', layoutJson());
   saveFile(b+'.zip', await z.generateAsync({type:'blob'}));
 }

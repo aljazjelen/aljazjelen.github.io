@@ -159,6 +159,16 @@ The core plate is generated as a tray from the same outline as the front plate, 
 - **Handle mounting areas:** with a handle set, the tray is solid at each mounting area up to the handle core's thickness (7 mm for GT3 Closed) below its top, and the wall there is lowered by the same amount, so the handle core is clamped between the tray and the front plate. The screws go through the front plate and the core into pilot holes in these pads.
 
 
+### Back plate (test)
+A first test of the part that attaches behind the core plate, shown in the 3D preview (**Back plate** checkbox) and exported as `-back.stl` (also in the zip), in the same coordinates as the other STLs.
+- **Outline:** the core plate's bottom outline (after its outside slope), so the two line up.
+- **Thickness:** 5 mm, right under the core plate.
+- **Chamfer:** an aggressive one on the bottom edge: 10 mm inward at 70° from vertical, so it rises about 3.6 mm of the 5 mm.
+- **Hub opening:** a Ø90 mm hole centred on the hub (wherever the plate has the Ø46 hub zone; Merida has none, so no hole).
+- Per wheel in `wheel.json` under `back`: `thickness`, `chamfer` (`width`, `angle`), `hole`.
+- Where a 10 mm inset closes up narrow parts of the outline (Zeus' handle notches), the chamfer is built from thin 0.2 mm steps instead of one smooth surface.
+- Not yet: fixing to the core plate (screws or clips).
+
 ### Built-in copy
 `index.html` carries a built-in copy of `parts.json` and `wheels/`. It's only used when those files can't be loaded, for example when the page is opened straight from disk.
 
