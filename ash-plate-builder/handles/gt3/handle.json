@@ -3,7 +3,7 @@
     "One handle set, exported from CAD. All DXFs in mm, with the wheel centre (the hub) at 0,0.",
     "core: the handle's core plate seen from the front: its outline (the largest closed shape) and holes (circles). side = which side the DXF shows; mirror adds the other side. thickness = core plate thickness; the back plate is lowered by this much at the mounting areas so the core is clamped between back plate and front plate.",
     "mountAreas: closed shapes where the handle sits on the plate. They are always part of the outline (they can't be deleted), parts keep clear of them, and their circles become the mounting holes through the front plate and into the back plate.",
-    "Fixed outline points: round a corner of a mounting area with R0.5 in CAD and the centre of that arc becomes a point of the outline that can't be moved or deleted. Without R0.5 corners: \"anchors\": [[x, y], ...] here, else the outermost corners of the areas."
+    "Fixed outline points: round a corner of a mounting area with R0.1 in CAD and the centre of that arc becomes a point of the outline that can't be moved or deleted. Without R0.1 corners: \"anchors\": [[x, y], ...] here, else the outermost corners of the areas."
   ],
   "name": "GT3 open",
   "core": {
