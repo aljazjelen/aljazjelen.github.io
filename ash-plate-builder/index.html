@@ -763,15 +763,16 @@ function buildWheel(folder, cfg, dxfText){
    round no-go zone of the hub's size. wheel.json "tray" can change every size; these are the defaults. */
 // taper: the outside slopes inward towards the bottom, angle° from vertical over the lowest `height` mm (0 = straight).
 // Only the outside: the inside stays straight, so the wall gets thinner towards the bottom.
-const TRAY_DEFAULTS = { wall: 4, floor: 5, boss: 8, pilot: 2.8, taper: { angle: 7, height: 20 }, hub: { bore: 46, pcd: 70, bolts: 6, bolt: 5.3, angle: 30 } };
+const TRAY_DEFAULTS = { wall: 4, floor: 5, boss: 8, pilot: 2.8, taper: { angle: 7, height: 20 }, hub: { bore: 46, pcd: 70, bolts: 6, bolt: 5.3, angle: 0 } };
 // The back plate (test): a plate under the core plate, with the core plate's bottom outline, `thickness` thick, a wide
 // chamfer on its bottom edge (`width` mm inward at `angle`° from vertical) and a round recess of `hole` mm at the hub,
-// `holeDepth` mm deep from the bottom (outside) face (0 or ≥ thickness = straight through).
-const BACK_DEFAULTS = { thickness: 5, chamfer: { width: 10, angle: 70 }, hole: 84, holeDepth: 2 };
+// `holeDepth` mm deep from the bottom (outside) face (0 or ≥ thickness = straight through), with a `through` mm opening
+// in its middle (0 = none).
+const BACK_DEFAULTS = { thickness: 5, chamfer: { width: 10, angle: 70 }, hole: 84, holeDepth: 2, through: 56 };
 function cleanBack(b){
   b = b && typeof b === 'object' ? b : {};
   const c = b.chamfer && typeof b.chamfer === 'object' ? b.chamfer : {}, D = BACK_DEFAULTS;
-  return { thickness: clampNum(numOr(b.thickness, D.thickness), 1, 30), hole: clampNum(numOr(b.hole, D.hole), 0, 300), holeDepth: clampNum(numOr(b.holeDepth, D.holeDepth), 0, 30),
+  return { thickness: clampNum(numOr(b.thickness, D.thickness), 1, 30), hole: clampNum(numOr(b.hole, D.hole), 0, 300), holeDepth: clampNum(numOr(b.holeDepth, D.holeDepth), 0, 30), through: clampNum(numOr(b.through, D.through), 0, 300),
            chamfer: { width: clampNum(numOr(c.width, D.chamfer.width), 0, 50), angle: clampNum(numOr(c.angle, D.chamfer.angle), 0, 85) } };
 }
 function cleanTray(t){
@@ -2544,6 +2545,9 @@ function mfBackPlate(pl, gap){
     const dep = bp.holeDepth > 0 && bp.holeDepth < bp.thickness ? bp.holeDepth : bp.thickness + 1;
     if (bp.hole > 0 && hubs.length)
       body = T(body.subtract(T(Manifold.union(hubs.map(h => T(T(Manifold.cylinder(dep + 1, bp.hole/2, bp.hole/2, 96)).translate([h.x, h.y, -H - bp.thickness - 1])))))));
+    // and a through opening in its middle
+    if (bp.through > 0 && hubs.length)
+      body = T(body.subtract(T(Manifold.union(hubs.map(h => T(T(Manifold.cylinder(bp.thickness + 2, bp.through/2, bp.through/2, 96)).translate([h.x, h.y, -H - bp.thickness - 1])))))));
     return body.translate([0, 0, 0]);
   } finally { for (const x of trash) x.delete(); }
 }

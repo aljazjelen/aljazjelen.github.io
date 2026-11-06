@@ -153,7 +153,7 @@ The core plate is generated as a tray from the same outline as the front plate, 
 - **Sloped sides:** the outside leans inward towards the bottom, 7° from vertical over the lowest 20 mm (with the 20 mm spacing that's most of the 25 mm height), so the bottom is about 2.5 mm smaller all round. The inside stays straight, so the wall gets thinner towards the bottom: 4 mm at the top, about 2.2 mm where it meets the floor (with the defaults). Set per wheel in `wheel.json` under `tray.taper` (`angle`, `height`), or `"taper": false` for straight sides.
 - **Wall:** 4 mm thick at the top, all round the outline. **Floor:** 5 mm (it carries the hub and the quick-release bolts). The plate spacing is the tray's inside depth, so the tray is spacing + 5 mm tall and the part depth check still applies.
 - **Screw bosses:** a Ø8 post at every front plate mounting hole, from the floor up to the front plate, with a Ø2.8 pilot hole for an M3 self-tapping screw. Posts near the outline are trimmed to it.
-- **Hub:** wherever the plate has a round Ø46 no-go zone, the floor gets that opening (for the electronics) plus the quick-release pattern: 6 × Ø5.3 holes on a 70 mm circle. Merida, which has no hub zone, gets a plain floor.
+- **Hub:** wherever the plate has a round Ø46 no-go zone, the floor gets that opening (for the electronics) plus the quick-release pattern: 6 × Ø5.3 holes on a 70 mm circle, at 0°, 60°, … 300° (one on each side, none at the top or bottom). Merida, which has no hub zone, gets a plain floor.
 - Every size can be changed per wheel in `wheel.json` under `tray`: `wall`, `floor`, `boss`, `pilot`, `taper`, and `hub` (`bore`, `pcd`, `bolts`, `bolt`, `angle`), or `"hub": false`.
 - The tray's interior (the outline minus the 4 mm wall) is where everything behind the front plate has to fit. The existing checks already keep parts there: the 4.5 mm edge margin is wider than the wall, and a mounting hole's keep-out is wider than its boss.
 - **Handle mounting areas:** with a handle set, the tray is solid at each mounting area up to the handle core's thickness (7 mm for GT3 Closed) below its top, and the wall there is lowered by the same amount, so the handle core is clamped between the tray and the front plate. The screws go through the front plate and the core into pilot holes in these pads.
@@ -164,8 +164,8 @@ A first test of the part that attaches behind the core plate, shown in the 3D pr
 - **Outline:** the core plate's bottom outline (after its outside slope), so the two line up.
 - **Thickness:** 5 mm, right under the core plate.
 - **Chamfer:** an aggressive one on the bottom edge: 10 mm inward at 70° from vertical, so it rises about 3.6 mm of the 5 mm.
-- **Hub recess:** a Ø84 mm blind hole centred on the hub, 2 mm deep from the bottom (outside) face, so 3 mm of plate stays behind it (wherever the plate has the Ø46 hub zone; Merida has none).
-- Per wheel in `wheel.json` under `back`: `thickness`, `chamfer` (`width`, `angle`), `hole` and `holeDepth` (0 = straight through).
+- **Hub recess:** a Ø84 mm blind hole centred on the hub, 2 mm deep from the bottom (outside) face, so 3 mm of plate stays behind it, with a Ø56 mm opening straight through in its middle (wherever the plate has the Ø46 hub zone; Merida has none).
+- Per wheel in `wheel.json` under `back`: `thickness`, `chamfer` (`width`, `angle`), `hole`, `holeDepth` (0 = straight through) and `through` (the opening in the middle, 0 = none).
 - Where a 10 mm inset closes up narrow parts of the outline (Zeus' handle notches), the chamfer is built from thin 0.2 mm steps instead of one smooth surface.
 - Not yet: fixing to the core plate (screws or clips).
 
