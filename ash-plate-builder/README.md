@@ -196,7 +196,7 @@ The app has three views, switched at the top. It remembers the last one; add `#o
   - **Import / Export:** *Export .json* saves the outline as you edited it (points, fixed points, symmetry, rounding, handle set and its position) to open again exactly; *Export .dxf* writes the finished outline (rounded, joined with the handle mounting areas) with the mounting holes and the hub zone, for CAD. *Import…* opens either: a DXF's largest closed shape becomes your points (wheel centre at 0,0, simplified to within 0.2 mm; a shape that's symmetric about the centre line opens with Symmetric on, and the chosen handle set's fixed points are added).
   - The outline is saved with the layout. Until it's usable, the 2D design keeps showing the previous core plate and says so.
 - **2D design:** the chosen core plate (**Change** goes back to Outline), the parts list, the plate editor, the selected part and the checks. The parts list shows its groups (Buttons/Rotaries, Encoders & switches, Indicators, Displays, Custom) collapsed. Click a group to open it; only one is open at a time.
-- **3D preview:** a large 3D view of the plate, deco and handles, with the Export, Deco and Handles panels (Handles only describes the wheel's handle set).
+- **3D preview:** a large 3D view of the plate, deco and handles, with the Export, Deco and Handles panels (Handles only describes the wheel's handle set). Drag turns the wheel freely in every direction (over the top and underneath), right-drag moves it, scroll or pinch zooms; **Reset view** puts it back the right way up.
 
 ## Controls
 In the editor:

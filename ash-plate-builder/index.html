@@ -373,9 +373,9 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
   <div class="grid3d" id="viewPreview" role="tabpanel" aria-labelledby="tabPreview" hidden>
     <main class="viewer-col">
       <section class="card viewer">
-        <h2><span class="grow">3D preview</span><span class="pvchecks"><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="partsChk" checked> Parts</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="frontChk" checked> Front plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="handlesChk" checked> Handles</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="backChk" checked> Core plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="transBackChk" checked> Transparent</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="bpChk" checked> Back plate</label></span></h2>
+        <h2><span class="grow">3D preview <button class="btn sm ghost" id="resetView" type="button" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;margin-left:10px;vertical-align:middle" title="Back to the starting view, the wheel the right way up">Reset view</button></span><span class="pvchecks"><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="partsChk" checked> Parts</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="frontChk" checked> Front plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="handlesChk" checked> Handles</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="backChk" checked> Core plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="transBackChk" checked> Transparent</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="bpChk" checked> Back plate</label></span></h2>
         <div class="body"><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
-          <p class="note">Drag to orbit, scroll or pinch to zoom. Translucent bodies show depth behind the plate; the lower slab is the core plate. Parts are placed in the 2D design view.</p></div>
+          <p class="note">Drag to turn the wheel any way you like, right-drag to move it, scroll or pinch to zoom. Reset view straightens it again. Translucent bodies show depth behind the plate; the lower slab is the core plate. Parts are placed in the 2D design view.</p></div>
       </section>
     </main>
     <aside class="right">
@@ -466,6 +466,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TrackballControls.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 (() => {
@@ -2255,6 +2256,7 @@ function initControls(){
   $('handlesChk').addEventListener('change', e => { show3dHandles = e.target.checked; schedule3d(); });
   $('backChk').addEventListener('change', e => { show3dBack = e.target.checked; $('transBackChk').disabled = !show3dBack; schedule3d(); });
   $('transBackChk').addEventListener('change', e => { transBack3d = e.target.checked; schedule3d(); });
+  $('resetView').addEventListener('click', () => resetView());
   $('bpChk').addEventListener('change', e => { show3dBackPlate = e.target.checked; schedule3d(); });
   $('undoBtn').addEventListener('click', undo);
   $('redoBtn').addEventListener('click', redo);
@@ -2898,17 +2900,35 @@ function init3d(){
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, 1, 1, 6000);
   camera.up.set(0,0,1);
-  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  // Trackball: turn the wheel freely in every direction, over the top and underneath (Reset view straightens it).
+  // Orbit (keeps "up" fixed) only if the trackball script didn't load.
+  let controls;
+  if (THREE.TrackballControls){
+    controls = new THREE.TrackballControls(camera, renderer.domElement);
+    controls.rotateSpeed = 3; controls.zoomSpeed = 1.2; controls.panSpeed = 0.8;
+    controls.staticMoving = false; controls.dynamicDampingFactor = 0.2;
+    controls.keys = [null, null, null];   // no A/S/D modifier keys: they'd react to typing elsewhere on the page
+    const tick = () => { if (!$('viewPreview').hidden) controls.update(); requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  } else controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.target.set(0,0,-12);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 0.85));
   const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(-120, -200, 320); scene.add(sun);
   const fill = new THREE.DirectionalLight(0xffffff, 0.25); fill.position.set(200, 150, 100); scene.add(fill);
   const draw = () => renderer.render(scene, camera);
   controls.addEventListener('change', draw);
-  const resize = () => { const w = host.clientWidth, h = host.clientHeight; if(!w||!h) return; renderer.setSize(w,h,false); camera.aspect = w/h; camera.updateProjectionMatrix(); draw(); };
+  const resize = () => { const w = host.clientWidth, h = host.clientHeight; if(!w||!h) return; renderer.setSize(w,h,false); camera.aspect = w/h; camera.updateProjectionMatrix(); if (controls.handleResize) controls.handleResize(); draw(); };
   new ResizeObserver(resize).observe(host);
   three = { renderer, scene, camera, controls, draw, resize, group:null, framedFor:null };
   rebuild3d();
+}
+// The starting view: from the front, a bit to the right and above, with the wheel's top up.
+function resetView(redraw = true){
+  if (!three) return;
+  const S = three.S || 300, { camera, controls } = three;
+  camera.up.set(0, 0, 1); camera.position.set(S*0.25, -S*1.45, S*1.25);
+  controls.target.set(0, 0, -12); camera.lookAt(controls.target); controls.update();
+  if (redraw) three.draw();
 }
 // The 3D scene is only rebuilt while the 3D preview is showing; switching to it catches up.
 let preview3dStale = true;
@@ -2999,10 +3019,10 @@ function rebuild3d(){
     }
   }
   scene.add(g); three.group = g;
+  three.S = S;
   if (three.framedFor !== (pl.key || pl.id)){
     three.framedFor = pl.key || pl.id;
-    three.camera.position.set(S*0.25, -S*1.45, S*1.25);
-    three.controls.update();
+    resetView(false);
   }
   three.resize(); three.draw();
 }
