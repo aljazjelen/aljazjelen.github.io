@@ -767,8 +767,8 @@ const TRAY_DEFAULTS = { wall: 4, floor: 5, boss: 8, pilot: 2.8, taper: { angle: 
 // The back plate (test): a plate under the core plate, with the core plate's bottom outline, `thickness` thick, a wide
 // chamfer on its bottom edge (`width` mm inward at `angle`° from vertical) and a round recess of `hole` mm at the hub,
 // `holeDepth` mm deep from the bottom (outside) face (0 or ≥ thickness = straight through), with a `through` mm opening
-// in its middle (0 = none).
-const BACK_DEFAULTS = { thickness: 5, chamfer: { width: 10, angle: 70 }, hole: 84, holeDepth: 2, through: 56 };
+// in its middle (0 = none). The core plate's quick-release bolt holes go through it too.
+const BACK_DEFAULTS = { thickness: 5, chamfer: { width: 10, angle: 70 }, hole: 84, holeDepth: 1, through: 56 };
 function cleanBack(b){
   b = b && typeof b === 'object' ? b : {};
   const c = b.chamfer && typeof b.chamfer === 'object' ? b.chamfer : {}, D = BACK_DEFAULTS;
@@ -2545,9 +2545,16 @@ function mfBackPlate(pl, gap){
     const dep = bp.holeDepth > 0 && bp.holeDepth < bp.thickness ? bp.holeDepth : bp.thickness + 1;
     if (bp.hole > 0 && hubs.length)
       body = T(body.subtract(T(Manifold.union(hubs.map(h => T(T(Manifold.cylinder(dep + 1, bp.hole/2, bp.hole/2, 96)).translate([h.x, h.y, -H - bp.thickness - 1])))))));
-    // and a through opening in its middle
-    if (bp.through > 0 && hubs.length)
-      body = T(body.subtract(T(Manifold.union(hubs.map(h => T(T(Manifold.cylinder(bp.thickness + 2, bp.through/2, bp.through/2, 96)).translate([h.x, h.y, -H - bp.thickness - 1])))))));
+    // a through opening in its middle, and the quick-release bolt holes (the same pattern as the core plate's floor)
+    const cuts = [];
+    for (const h of hubs){
+      if (bp.through > 0) cuts.push(T(T(Manifold.cylinder(bp.thickness + 2, bp.through/2, bp.through/2, 96)).translate([h.x, h.y, -H - bp.thickness - 1])));
+      if (tr.hub) for (let k = 0; k < tr.hub.bolts; k++){
+        const a = (tr.hub.angle + 360*k/tr.hub.bolts) * Math.PI/180;
+        cuts.push(T(T(Manifold.cylinder(bp.thickness + 2, tr.hub.bolt/2, tr.hub.bolt/2, 24)).translate([h.x + tr.hub.pcd/2*Math.cos(a), h.y + tr.hub.pcd/2*Math.sin(a), -H - bp.thickness - 1])));
+      }
+    }
+    if (cuts.length) body = T(body.subtract(T(Manifold.union(cuts))));
     return body.translate([0, 0, 0]);
   } finally { for (const x of trash) x.delete(); }
 }

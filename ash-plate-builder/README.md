@@ -164,7 +164,7 @@ A first test of the part that attaches behind the core plate, shown in the 3D pr
 - **Outline:** the core plate's bottom outline (after its outside slope), so the two line up.
 - **Thickness:** 5 mm, right under the core plate.
 - **Chamfer:** an aggressive one on the bottom edge: 10 mm inward at 70° from vertical, so it rises about 3.6 mm of the 5 mm.
-- **Hub recess:** a Ø84 mm blind hole centred on the hub, 2 mm deep from the bottom (outside) face, so 3 mm of plate stays behind it, with a Ø56 mm opening straight through in its middle (wherever the plate has the Ø46 hub zone; Merida has none).
+- **Hub recess:** a Ø84 mm blind hole centred on the hub, 1 mm deep from the bottom (outside) face, with a Ø56 mm opening straight through in its middle and the quick-release bolt holes (6 × Ø5.3 on 70 mm, the same as the core plate's floor) through the plate (wherever the plate has the Ø46 hub zone; Merida has none).
 - Per wheel in `wheel.json` under `back`: `thickness`, `chamfer` (`width`, `angle`), `hole`, `holeDepth` (0 = straight through) and `through` (the opening in the middle, 0 = none).
 - Where a 10 mm inset closes up narrow parts of the outline (Zeus' handle notches), the chamfer is built from thin 0.2 mm steps instead of one smooth surface.
 - Not yet: fixing to the core plate (screws or clips).
