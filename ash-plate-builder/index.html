@@ -758,7 +758,7 @@ function buildWheel(folder, cfg, dxfText){
    round no-go zone of the hub's size. wheel.json "tray" can change every size; these are the defaults. */
 // taper: the outside slopes inward towards the bottom, angle° from vertical over the lowest `height` mm (0 = straight).
 // Only the outside: the inside stays straight, so the wall gets thinner towards the bottom.
-const TRAY_DEFAULTS = { wall: 4, floor: 3, boss: 8, pilot: 2.8, taper: { angle: 10, height: 20 }, hub: { bore: 46, pcd: 70, bolts: 6, bolt: 5.3, angle: 30 } };
+const TRAY_DEFAULTS = { wall: 4, floor: 5, boss: 8, pilot: 2.8, taper: { angle: 7, height: 20 }, hub: { bore: 46, pcd: 70, bolts: 6, bolt: 5.3, angle: 30 } };
 function cleanTray(t){
   t = t && typeof t === 'object' ? t : {};
   const h = t.hub && typeof t.hub === 'object' ? t.hub : {}, D = TRAY_DEFAULTS, H = D.hub;
