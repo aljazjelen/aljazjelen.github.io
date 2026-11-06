@@ -762,7 +762,7 @@ function buildWheel(folder, cfg, dxfText){
 const TRAY_DEFAULTS = { wall: 4, floor: 5, boss: 8, pilot: 2.8, taper: { angle: 7, height: 20 }, hub: { bore: 46, pcd: 70, bolts: 6, bolt: 5.3, angle: 30 } };
 // The back plate (test): a plate under the core plate, with the core plate's bottom outline, `thickness` thick, a wide
 // chamfer on its bottom edge (`width` mm inward at `angle`° from vertical) and a round opening of `hole` mm at the hub.
-const BACK_DEFAULTS = { thickness: 5, chamfer: { width: 10, angle: 70 }, hole: 90 };
+const BACK_DEFAULTS = { thickness: 5, chamfer: { width: 10, angle: 70 }, hole: 84 };
 function cleanBack(b){
   b = b && typeof b === 'object' ? b : {};
   const c = b.chamfer && typeof b.chamfer === 'object' ? b.chamfer : {}, D = BACK_DEFAULTS;
