@@ -300,8 +300,8 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
             <label class="field">Handles<select id="olHandle"></select></label>
           </div>
           <div class="hslides" id="olPlace">
-            <label class="hslide" title="Moves both handles outwards (+) or inwards (−), symmetrically"><span>Spread</span><input type="range" id="olHdx" step="0.5" min="-50" max="50"><output id="olHdxV"></output></label>
-            <label class="hslide" title="Moves both handles up (+) or down (−)"><span>Up / down</span><input type="range" id="olHdy" step="0.5" min="-30" max="30"><output id="olHdyV"></output></label>
+            <label class="hslide" title="Overall width across both handles. Moves both handles outwards or inwards, symmetrically"><span>Spread</span><input type="range" id="olHdx" step="1" min="-20" max="20"><output id="olHdxV"></output></label>
+            <label class="hslide" title="Moves both handles up (+) or down (−)"><span>Up / down</span><input type="range" id="olHdy" step="0.5" min="-10" max="10"><output id="olHdyV"></output></label>
             <label class="hslide" title="Tilts both handles around the middle of their mounting areas; + leans the tops outwards"><span>Tilt</span><input type="range" id="olHtilt" step="0.5" min="-15" max="15"><output id="olHtiltV"></output></label>
           </div>
           <div class="row" id="olPlaceBtns"><button class="btn sm ghost" id="olHreset" type="button">Reset position</button></div>
@@ -1138,7 +1138,9 @@ function cleanOutline(o, plateId){
 const isFixed = q => q[2] === 1;
 // Handle placement: move the right handle by dx (out +, in -) and dy, and tilt it by tilt° (top outwards +) around
 // the middle of its mounting areas; the left handle mirrors it. The whole set moves: core, areas, holes, fixed points.
-const HP = { dx: 50, dy: 30, tilt: 15 };
+const HP = { dx: 10, dy: 10, tilt: 15 };   // each handle moves ±10 mm, so the spread (overall width) changes by ±20 mm
+// Spread as you see it: the overall width across both handle cores, for the handles as placed
+const handleSpread = set => r2(2 * Math.max(...set.cores.flatMap(c => c.poly.map(([x]) => Math.abs(x)))));
 const placeCache = new Map();
 function placedSet(o){
   const base = o.handles.type !== 'none' ? HANDLE_SETS[o.handles.type] : null;
@@ -1163,6 +1165,8 @@ function placedSet(o){
   placeCache.set(key, set);
   return set;
 }
+// The spread of the handle set as designed (no placement), rounded to whole mm so the slider steps land on round numbers.
+const spreadBase = o => Math.round(handleSpread(HANDLE_SETS[o.handles.type]));
 // Every fixed point of the full outline (both halves).
 function olFixedAll(o){
   const f = o.pts.filter(isFixed).map(q => [q[0], q[1]]);
@@ -1796,7 +1800,7 @@ function initOutline(){
   const slide = (k, id) => {
     const el = $(id);
     el.addEventListener('input', () => {
-      const o = state.outline, v = clampNum(r2(+el.value || 0), -HP[k], HP[k]);
+      const o = state.outline, raw = k === 'dx' ? (+el.value - spreadBase(o)) / 2 : +el.value, v = clampNum(r2(raw || 0), -HP[k], HP[k]);
       if (v === o.handles[k]) return;
       if (slideBefore === null) slideBefore = serialize();
       const oldA = olAnchors(o); o.handles[k] = v; moveAnchors(o, oldA);
@@ -1878,9 +1882,15 @@ function renderOutline(){
   const ht = o.handles.type, set = st.set;
   $('olHandle').value = ht;
   $('olPlace').hidden = $('olPlaceBtns').hidden = ht === 'none';
-  for (const [id, k, u] of [['olHdx', 'dx', ' mm'], ['olHdy', 'dy', ' mm'], ['olHtilt', 'tilt', '°']]){
-    if (slideBefore === null) $(id).value = o.handles[k];
-    $(id + 'V').textContent = (o.handles[k] > 0 ? '+' : '') + fmt(o.handles[k]) + u;
+  if (ht !== 'none' && HANDLE_SETS[ht]){
+    const base = spreadBase(o), w = $('olHdx');
+    w.min = String(base - 2*HP.dx); w.max = String(base + 2*HP.dx);
+    if (slideBefore === null) w.value = String(base + 2*o.handles.dx);
+    $('olHdxV').textContent = fmt(r2(base + 2*o.handles.dx)) + ' mm';
+    for (const [id, k, u] of [['olHdy', 'dy', ' mm'], ['olHtilt', 'tilt', '°']]){
+      if (slideBefore === null) $(id).value = o.handles[k];
+      $(id + 'V').textContent = (o.handles[k] > 0 ? '+' : '') + fmt(o.handles[k]) + u;
+    }
   }
   const nBadA = st.areas.filter(a => !a.ok).length;
   $('olHandleNote').textContent = ht === 'none' ? 'No handles. Pick a handle set to add its mounting areas and holes to your outline and see the handles in the 3D preview.'
