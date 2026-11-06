@@ -2502,8 +2502,29 @@ function trayGeometry(){
 // directly as a mesh: bottom face, vertical walls up to z0 + h - c, a sloped band up to the outline moved c
 // inward (each corner moved along its bisector, so every band face is exactly 45°), and the top face.
 // Returns null when the inward outline isn't valid (e.g. a neck narrower than 2c); the caller then falls back.
+// Triangles for a flat face bounded by contours (CCW outers, CW holes): [[i, j, k], ...] indexing the contours'
+// points in order. manifold's triangulate is tried first; on long dense outlines (e.g. a DXF spline) it can return
+// overlapping triangles, which show as thin planes across the plate, so its result is checked by area and earcut
+// (three.js) is used instead when it doesn't add up.
+function faceTris(contours){
+  const area = t => { let s = 0; for (const [a, b, c] of t) s += Math.abs((pt[b][0]-pt[a][0])*(pt[c][1]-pt[a][1]) - (pt[b][1]-pt[a][1])*(pt[c][0]-pt[a][0])) / 2; return s; };
+  const pt = contours.flat(), want = contours.reduce((s, q) => s + polyArea(q), 0);
+  const ok = t => Math.abs(area(t) - want) <= 1e-4 * Math.max(1, want);
+  try { const t = MF.triangulate(contours); if (ok(t)) return t; } catch(e){}
+  const starts = []; let n = 0; for (const q of contours){ starts.push(n); n += q.length; }
+  const outers = contours.map((q, i) => i).filter(i => polyArea(contours[i]) > 0), out = [];
+  for (const o of outers){
+    const holes = contours.map((q, i) => i).filter(i => polyArea(contours[i]) < 0 && pointInPoly(contours[i][0][0], contours[i][0][1], contours[o])
+      && !outers.some(o2 => o2 !== o && pointInPoly(contours[i][0][0], contours[i][0][1], contours[o2]) && pointInPoly(contours[o2][0][0], contours[o2][0][1], contours[o])));
+    const idx = [o, ...holes], V = idx.map(i => contours[i].map(([x, y]) => new THREE.Vector2(x, y)));
+    const map = idx.flatMap(i => contours[i].map((_, k) => starts[i] + k));
+    for (const [a, b, c] of THREE.ShapeUtils.triangulateShape(V[0], V.slice(1))) out.push([map[a], map[b], map[c]]);
+  }
+  // keep every triangle counter-clockwise, like manifold's
+  return out.map(([a, b, c]) => ((pt[b][0]-pt[a][0])*(pt[c][1]-pt[a][1]) - (pt[b][1]-pt[a][1])*(pt[c][0]-pt[a][0])) < 0 ? [a, c, b] : [a, b, c]);
+}
 function chamferedPrism(fp, z0, h, c){
-  const { Manifold, Mesh, CrossSection, triangulate } = MF;
+  const { Manifold, Mesh, CrossSection } = MF;
   const P = fp.toPolygons().filter(q => q.length >= 3);
   if (!P.length) return null;
   const inward = q => q.map((p, i) => {          // material is on the left of each contour's direction
@@ -2517,30 +2538,65 @@ function chamferedPrism(fp, z0, h, c){
     if (cos < 0.25) return null;                  // corner too sharp for a clean miter
     return [p[0] + m[0]/lm * c/cos, p[1] + m[1]/lm * c/cos];
   });
-  const Q = c > 0 ? P.map(inward) : null;
-  if (Q){
-    if (Q.some(q => q.some(v => !v))) return null;
-    // valid only if the moved outlines don't cross: their filled area must equal their signed area
+  // Moved inward, the corners of a small fillet (tighter than the chamfer) cross over each other: an edge comes out
+  // reversed. Such neighbours are merged into one top point, so that bit of band becomes triangles and the top
+  // outline stays simple. g[i] = the top point of contour point i; tops = those points in order.
+  const merge = (q, mq) => {
+    const n = q.length, g = q.map((_, i) => i);
+    let groups = q.map((_, i) => [i]);
+    for (let pass = 0; pass < n; pass++){
+      const pos = groups.map(gr => [gr.reduce((s, i) => s + mq[i][0], 0) / gr.length, gr.reduce((s, i) => s + mq[i][1], 0) / gr.length]);
+      const m = groups.length;
+      if (m < 3) return null;
+      let k = -1;
+      for (let a = 0; a < m; a++){
+        const b = (a + 1) % m, pa = q[groups[a][groups[a].length - 1]], pb = q[groups[b][0]];
+        const dq = [pos[b][0] - pos[a][0], pos[b][1] - pos[a][1]], dp = [pb[0] - pa[0], pb[1] - pa[1]];
+        if (dq[0]*dp[0] + dq[1]*dp[1] <= 1e-9){ k = a; break; }
+      }
+      if (k < 0){
+        groups.forEach((gr, gi) => gr.forEach(i => { g[i] = gi; }));
+        return { g, tops: pos };
+      }
+      const b = (k + 1) % m;
+      if (b === 0){ groups[0] = [...groups[k], ...groups[0]]; groups.splice(k, 1); }
+      else { groups[k] = [...groups[k], ...groups[b]]; groups.splice(b, 1); }
+    }
+    return null;
+  };
+  let M = null;
+  if (c > 0){
+    const Q0 = P.map(inward);
+    if (Q0.some(q => q.some(v => !v))) return null;
+    M = P.map((q, i) => merge(q, Q0[i]));
+    if (M.some(x => !x)) return null;
+    const Q = M.map(x => x.tops);
+    // valid only if the top outlines are simple and don't cross: their filled area must equal their signed area
     const signed = Q.reduce((s, q) => s + polyArea(q), 0);
     const cs = new CrossSection(Q, 'Positive'), area = cs.area(); cs.delete();
-    if (!(signed > 0) || Math.abs(area - signed) > 1e-3 * Math.max(1, signed)) return null;
+    if (!(signed > 0) || Math.abs(area - signed) > 1e-6 * Math.max(1, signed)) return null;
   }
   const verts = [], tris = [];
   const layer = (contours, z) => { const base = verts.length/3; for (const q of contours) for (const [x, y] of q) verts.push(x, y, z); return base; };
-  const L0 = layer(P, z0), L1 = layer(P, z0 + h - (Q ? c : 0)), L2 = Q ? layer(Q, z0 + h) : L1;
-  for (const [a, b, d] of triangulate(P)) tris.push(L0 + a, L0 + d, L0 + b);          // bottom, facing down
-  for (const [a, b, d] of triangulate(Q || P)) tris.push(L2 + a, L2 + b, L2 + d);      // top, facing up
-  let off = 0;
-  for (const q of P){
+  const L0 = layer(P, z0), L1 = layer(P, z0 + h - (M ? c : 0)), L2 = M ? layer(M.map(x => x.tops), z0 + h) : L1;
+  for (const [a, b, d] of faceTris(P)) tris.push(L0 + a, L0 + d, L0 + b);                              // bottom, facing down
+  for (const [a, b, d] of faceTris(M ? M.map(x => x.tops) : P)) tris.push(L2 + a, L2 + b, L2 + d);       // top, facing up
+  let off = 0, offT = 0;
+  P.forEach((q, ci) => {
     const n = q.length;
     for (let i = 0; i < n; i++){
       const j = (i + 1) % n, a = off + i, b = off + j;
-      tris.push(L0 + a, L0 + b, L1 + b, L0 + a, L1 + b, L1 + a);                       // wall
-      if (Q) tris.push(L1 + a, L1 + b, L2 + b, L1 + a, L2 + b, L2 + a);                // 45° band
+      tris.push(L0 + a, L0 + b, L1 + b, L0 + a, L1 + b, L1 + a);                                         // wall
+      if (M){                                                                                            // 45° band
+        const ta = L2 + offT + M[ci].g[i], tb = L2 + offT + M[ci].g[j];
+        tris.push(L1 + a, L1 + b, tb);
+        if (ta !== tb) tris.push(L1 + a, tb, ta);
+      }
     }
-    off += n;
-  }
-  const m = new Manifold(new Mesh({ numProp: 3, vertProperties: new Float32Array(verts), triVerts: new Uint32Array(tris) }));
+    off += n; if (M) offT += M[ci].tops.length;
+  });
+  let m;
+  try { m = new Manifold(new Mesh({ numProp: 3, vertProperties: new Float32Array(verts), triVerts: new Uint32Array(tris) })); } catch(e){ return null; }
   if (m.status() !== 'NoError'){ m.delete(); return null; }
   return m;
 }
