@@ -2501,15 +2501,24 @@ function taperedSolid(cs, zBot, zTop, inset, band){
   if (!(inset > 0) || !(band > 0)) return Manifold.extrude(cs, h).translate([0, 0, zBot]);
   const m = chamferedPrism(cs, 0, h, inset, Math.min(band, h));
   if (m){ const r = m.mirror([0, 0, 1]).translate([0, 0, zTop]); m.delete(); return r; }
-  const n = Math.min(60, Math.max(4, Math.ceil(Math.max(band / 0.2, inset / 0.5)))), parts = [], trash = [];   // steps of ≤ 0.2 mm up and ≤ 0.5 mm in
+  // Otherwise (a big inset that closes up narrow parts of the outline): cut the slope with cones. A cone standing
+  // on every outline corner, tip at the top of the slope and `inset` wide at the bottom, and the hull of the cones at
+  // the two ends of every edge, together hold everything closer to the edge than the slope allows; subtracting them
+  // leaves a smooth slope (rounded around outward corners), wherever the outline is wide enough for it.
+  const trash = [];
+  const T = x => (trash.push(x), x);
   try {
-    parts.push(Manifold.extrude(cs, h - band).translate([0, 0, zBot + band]));
-    for (let k = 0; k < n; k++){
-      const off = cs.offset(-inset * (n - k - 0.5) / n, 'Round', 2, 48); trash.push(off);
-      if (!off.isEmpty()) parts.push(Manifold.extrude(off, band / n + 1e-3).translate([0, 0, zBot + band * k / n]));
+    const src = T(cs.simplify(0.05)), polys = src.toPolygons().filter(q => q.length >= 3);
+    const e = 0.5, tan = inset / band, z0 = zBot - e, z1 = zBot + band;          // cones start e below the plate
+    const cone = (x, y) => T(T(Manifold.cylinder(z1 - z0 + 0.01, inset + e*tan, 0.001, 32)).translate([x, y, z0]));
+    const cuts = [];
+    for (const q of polys) for (let i = 0; i < q.length; i++){
+      const a = q[i], b = q[(i + 1) % q.length];
+      cuts.push(T(Manifold.hull([cone(a[0], a[1]), cone(b[0], b[1])])));
     }
-    return Manifold.union(parts);
-  } finally { for (const x of [...parts, ...trash]) x.delete(); }
+    const prism = T(T(Manifold.extrude(cs, h)).translate([0, 0, zBot]));
+    return prism.subtract(T(Manifold.union(cuts)));
+  } finally { for (const x of trash) x.delete(); }
 }
 function mfTray(pl, gap){
   const { Manifold, CrossSection } = MF, tr = pl.tray || cleanTray(), trash = [];
@@ -2847,6 +2856,7 @@ function mfDeco(){
    The handle set's grip model (an STL from the CAD) on both sides, or, without one, its handle cores as slabs of
    their thickness right under the front plate. Placement (spread, up/down, tilt) moves them like everything else. */
 const GRIP_COLOR = '#2B3036';   // grips: dark, like suede
+const SHELL_COLOR = '#3C434C';  // core plate and back plate: the grips' colour, a little brighter
 // Handle cores (outline minus holes) as Manifolds.
 function mfCores(H, T){
   const { Manifold, CrossSection } = MF, t = H.thickness, parts = [];
@@ -3013,14 +3023,14 @@ function rebuild3d(){
     backShape.holes.push(ph);
   }
   const tgeo = trayGeometry();
-  const backMat = o => transBack3d ? mat(css('--zone'), {transparent:true, opacity:o, depthWrite:false, side:THREE.DoubleSide}) : mat(css('--zone'), {side:THREE.DoubleSide});
+  const backMat = o => transBack3d ? mat(SHELL_COLOR, {transparent:true, opacity:Math.min(1, o*1.6), depthWrite:false, side:THREE.DoubleSide, roughness:0.8}) : mat(SHELL_COLOR, {side:THREE.DoubleSide, roughness:0.8});
   if (!show3dBack){}
   else if (tgeo) g.add(new THREE.Mesh(tgeo.clone(), backMat(0.32)));
   else { const back = new THREE.Mesh(new THREE.ExtrudeGeometry(backShape, {depth:3, bevelEnabled:false, curveSegments:40}), backMat(0.28)); back.position.z = -gap - 3; g.add(back); }
   const ageo = show3dAdapter ? adapterGeometry() : null;
-  if (ageo) for (const [x, y, z] of adapterSpots(pl, gap)){ const m = new THREE.Mesh(ageo.clone(), mat('#9AA5B1', {roughness: 0.4, metalness: 0.2})); m.position.set(x, y, z); g.add(m); }
+  if (ageo) for (const [x, y, z] of adapterSpots(pl, gap)){ const m = new THREE.Mesh(ageo.clone(), mat(GRIP_COLOR, {roughness: 0.6, metalness: 0.1})); m.position.set(x, y, z); g.add(m); }
   const bgeo = show3dBackPlate ? backPlateGeometry() : null;
-  if (bgeo) g.add(new THREE.Mesh(bgeo.clone(), mat('#5E6B79', {roughness: 0.6, side: THREE.DoubleSide})));
+  if (bgeo) g.add(new THREE.Mesh(bgeo.clone(), mat(SHELL_COLOR, {roughness: 0.8, side: THREE.DoubleSide})));
   if (!tgeo && show3dBack) for (const m of pl.holes.filter(h => h.role === 'mount')){
     const so = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, gap, 20), mat(css('--zone'), {transparent:true, opacity:0.55}));
     so.rotation.x = Math.PI/2; so.position.set(m.x, m.y, -gap/2); g.add(so);
