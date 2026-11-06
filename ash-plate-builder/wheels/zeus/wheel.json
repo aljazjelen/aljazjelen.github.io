@@ -13,7 +13,7 @@
     "plateSpacing / frontPlateThickness: defaults applied when this wheel is picked.",
     "chamfer: 45° chamfer on the top edge of the front plate, in mm. outline = the outer edge, mountHoles = the mounting holes. 0 or left out = no chamfer.",
     "layers (optional): only read these DXF layers.",
-    "handles: optional, shown in the 3D preview only. style gt3 or rally; bolt = hole and head diameters, seat = material left under the bolt head. gt3: open grips on both sides. left.holes = the mount holes on the left, left.path = the grip centre line (plate coordinates); mirror copies them to the right. grip = oval cross-section width x depth; its top sits gapBelowFrontPlate mm below the underside of the front plate. rally: a round rim with a flat bottom. rim.diameter = outside diameter, rim.tube = tube diameter, rim.flatBottom = centre to the outside of the flat bottom, rim.cornerRadius = the rounding into the flat. spokes = [{holes: [[x, y], ...]}], each a pad bolted behind the back plate and swept up to the rim; spoke = width x thickness; mirror copies spokes that aren't on the centre line.",
+    "handles: optional, {\"set\": \"<id>\"} names a handle set in handles/ (CAD core, mounting areas, grip model). Its mounting areas become no-go zones, the back plate gets pads there, and the 3D preview shows the handles.",
     "example: the layout loaded by 'Load example' for this wheel."
   ],
   "name": "Zeus · GT3",
@@ -37,16 +37,7 @@
     "otherCircles": "noGo",
     "otherShapes": "noGo"
   },
-  "handles": {
-    "style": "gt3",
-    "left": {
-      "holes": [[-88.707, -59.618], [-92, -7], [-92, 5], [-113.393, 43.1], [-125, 50.929]],
-      "path": [[-88.707, -59.618], [-108, -72], [-132, -66], [-146, -40], [-149, -5], [-145, 25], [-133, 40], [-119.2, 47]]
-    },
-    "mirror": true,
-    "grip": { "width": 30, "depth": 38, "gapBelowFrontPlate": 0.5 },
-    "bolt": { "hole": 4.2, "head": 8, "seat": 6 }
-  },
+  "handles": { "set": "gt3" },
   "example": [
     { "type": "led3", "x": -40, "y": 44, "label": "SL1" },
     { "type": "led3", "x": -32, "y": 44, "label": "SL2" },
@@ -68,8 +59,8 @@
     { "type": "btn12", "x": 48, "y": -6, "label": "PIT" },
     { "type": "btn12", "x": -48, "y": -26, "label": "LIGHTS" },
     { "type": "btn12", "x": 48, "y": -26, "label": "FLASH" },
-    { "type": "btn7", "x": -80, "y": -1, "label": "THUMB L" },
-    { "type": "btn7", "x": 80, "y": -1, "label": "THUMB R" },
+    { "type": "btn7", "x": -78.5, "y": -1, "label": "THUMB L" },
+    { "type": "btn7", "x": 78.5, "y": -1, "label": "THUMB R" },
     { "type": "btn12", "x": -20, "y": -38, "label": "BACK" },
     { "type": "btn12", "x": 20, "y": -38, "label": "OK" },
     { "type": "btn12", "x": -96.5, "y": 59, "rot": 355, "label": "WING L" },

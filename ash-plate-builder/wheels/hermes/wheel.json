@@ -13,7 +13,7 @@
     "plateSpacing / frontPlateThickness: defaults applied when this wheel is picked.",
     "chamfer: 45° chamfer on the top edge of the front plate, in mm. outline = the outer edge, mountHoles = the mounting holes. 0 or left out = no chamfer.",
     "layers (optional): only read these DXF layers.",
-    "handles: optional, shown in the 3D preview only. style gt3 or rally; bolt = hole and head diameters, seat = material left under the bolt head. gt3: open grips on both sides. left.holes = the mount holes on the left, left.path = the grip centre line (plate coordinates); mirror copies them to the right. grip = oval cross-section width x depth; its top sits gapBelowFrontPlate mm below the underside of the front plate. rally: a round rim with a flat bottom. rim.diameter = outside diameter, rim.tube = tube diameter, rim.flatBottom = centre to the outside of the flat bottom, rim.cornerRadius = the rounding into the flat. spokes = [{holes: [[x, y], ...]}], each a pad bolted behind the back plate and swept up to the rim; spoke = width x thickness; mirror copies spokes that aren't on the centre line.",
+    "handles: optional, {\"set\": \"<id>\"} names a handle set in handles/ (CAD core, mounting areas, grip model). Its mounting areas become no-go zones, the back plate gets pads there, and the 3D preview shows the handles.",
     "example: the layout loaded by 'Load example' for this wheel."
   ],
   "name": "Hermes · Rally",
@@ -36,17 +36,6 @@
     },
     "otherCircles": "noGo",
     "otherShapes": "noGo"
-  },
-  "handles": {
-    "style": "rally",
-    "rim": { "diameter": 320, "tube": 30, "flatBottom": 132, "cornerRadius": 40, "gapBelowFrontPlate": 0.5 },
-    "spokes": [
-      { "holes": [[-48.061, 10.275]] },
-      { "holes": [[-18.584, -43.664], [18.584, -43.664]] }
-    ],
-    "mirror": true,
-    "spoke": { "width": 26, "thickness": 8 },
-    "bolt": { "hole": 3.3, "head": 6, "seat": 4 }
   },
   "example": [
     { "type": "btn12", "x": -32.5, "y": -26, "label": "BTN L1" },

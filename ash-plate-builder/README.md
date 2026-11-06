@@ -45,8 +45,8 @@ wheels/
 ```
 
 There are three categories: GT3 and rally wheels, and button boxes. The plates are:
-- **Zeus · GT3** (`zeus`): 267 × 142 mm plate with 13 mounting holes, and GT3-style open grips in the preview.
-- **Hermes · Rally** (`hermes`): compact 147 × 108 mm plate with 6 mounting holes, and a rally rim in the preview.
+- **Zeus · GT3** (`zeus`): 267 × 142 mm plate with 13 mounting holes, with the GT3 Closed handles.
+- **Hermes · Rally** (`hermes`): compact 147 × 108 mm plate with 6 mounting holes. No handles until there's a rally handle set.
 - **Merida · Button box** (`merida`): a 120 × 120 mm button box plate with 4 corner mounting holes and no handles.
 - **Ares · GT3 wide** (`ares`): a placeholder defined without a DXF.
 
@@ -125,8 +125,8 @@ The deco is a separate printed piece that sits on top of the front plate, export
 
 The deco settings are saved with the layout.
 
-### Handle sets: `handles/`
-Handles are designed in CAD and exported as DXFs, one folder per set, listed in `handles/index.json`:
+### Handles: `handles/`
+There's one way to do handles: a **handle set** designed in CAD, one folder per set, listed in `handles/index.json`. Your own outline picks a set in the Outline tab; a preset back plate names one in its `wheel.json` as `"handles": { "set": "gt3" }` (Zeus does).
 ```
 handles/
   index.json
@@ -134,8 +134,19 @@ handles/
     handle.json
     core.dxf        the handle's core plate seen from the front: outline + holes
     area1.dxf ...   the mounting areas, each a closed shape with its holes as circles
+    grip.stl        optional: one whole handle (core + grip) for the 3D preview
 ```
-`handle.json` names the set and its files, optionally lists `anchors` (fixed outline points), says which side each DXF shows (`left`/`right`), and `mirror: true` adds the other side. `core.thickness` (5 mm) is how far the back plate is lowered at the mounting areas, so the core is clamped between back plate and front plate. All DXFs are in mm with the wheel centre (the hub) at 0,0.
+`handle.json` (its `_help` explains every field):
+- `name` ("GT3 Closed"), `mirror: true` for both sides from one.
+- `offset` [x, y]: moves everything from the CAD's coordinates to the wheel's, where the hub is at 0,0. GT3 Closed uses [0, −12.75], which puts its holes exactly on Zeus' handle holes.
+- `core.thickness`: the core plate's thickness at the mounting areas (7 mm, measured from the STL). The back plate is lowered by this much there, so the core is clamped between back plate and front plate.
+- `mountAreas`: closed shapes with their screw holes. Corners rounded with **R0.1** mark the fixed outline points.
+- `grip`: `{ "stl": "grip.stl", "plateFaceY": -7.5 }`. The STL is one handle in the same CAD coordinates as the DXFs: the DXFs' plane is the STL's XZ plane (Onshape's Front plane), the driver looks from −Y, and `plateFaceY` is the Y of the core face that touches the front plate. It's shown on both sides and follows Spread / Up / down / Tilt. The supplied model was reduced to about 20,000 triangles (1 MB) to keep the page light. Without a grip the core plates are shown.
+
+What a handle set does, on a preset back plate and on your own outline alike:
+- **Front plate:** the areas' holes are mounting holes (on a preset only where its DXF doesn't already have them), and the areas are no-go zones for parts, because the core sits behind the plate there.
+- **Back plate:** a pad at each mounting area (see below).
+- **3D preview:** the grips, toggled with Handles above the preview. Handles aren't exported: they're your CAD parts.
 
 ### Back plate (tray)
 The back plate is generated as a tray from the same outline as the front plate, and exported as its own STL (`-back.stl`, also in the zip), in the same coordinates as the plate STL. Its top touches the underside of the front plate, which sits on its wall like a lid.
@@ -144,22 +155,8 @@ The back plate is generated as a tray from the same outline as the front plate, 
 - **Hub:** wherever the plate has a round Ø46 no-go zone, the floor gets that opening (for the electronics) plus the quick-release pattern: 6 × Ø5.3 holes on a 70 mm circle. Merida, which has no hub zone, gets a plain floor.
 - Every size can be changed per wheel in `wheel.json` under `tray`: `wall`, `floor`, `boss`, `pilot`, and `hub` (`bore`, `pcd`, `bolts`, `bolt`, `angle`), or `"hub": false`.
 - The tray's interior (the outline minus the 4 mm wall) is where everything behind the front plate has to fit. The existing checks already keep parts there: the 4.5 mm edge margin is wider than the wall, and a mounting hole's keep-out is wider than its boss.
-- **Handle mounting areas:** with a handle set, the tray is solid at each mounting area up to the core's thickness (5 mm) below its top, and the wall there is lowered by the same amount, so the handle core is clamped between the tray and the front plate. The screws go through the front plate and the core into pilot holes in these pads.
+- **Handle mounting areas:** with a handle set, the tray is solid at each mounting area up to the core's thickness (7 mm for GT3 Closed) below its top, and the wall there is lowered by the same amount, so the handle core is clamped between the tray and the front plate. The screws go through the front plate and the core into pilot holes in these pads.
 
-
-A wheel can define handles in its `wheel.json`, so the style follows the wheel. For now they're a cosmetic addition to the 3D preview, to judge how the wheel looks, and aren't exported. There are two styles:
-
-**`gt3`** (Zeus): open grips on both sides.
-- **Grip:** a 30 × 38 mm oval tube (width in the plate's plane × depth front to back) with rounded ends, along a smooth curve through `left.path`. On Zeus the curve starts at the bottom-corner mount hole, runs beside the wheel, and ends over the two top mount holes.
-- **Height:** the top of the grip always sits just below the underside of the front plate (`grip.gapBelowFrontPlate`, 0.5 mm), whatever the plate spacing.
-- **Bolting:** the grip shows bolt holes where it covers a mount hole. The Handles panel lists the holes it doesn't cover.
-- **Mirroring:** the right handle is the left one mirrored.
-
-**`rally`** (Hermes): a round rim with a flat bottom, on spokes.
-- **Rim:** `rim.diameter` is the outside diameter (320 mm) and `rim.tube` the tube diameter (30 mm). `rim.flatBottom` is the distance from the centre to the outside of the flat bottom (132 mm), and `rim.cornerRadius` rounds the flat into the circle (40 mm). The top of the rim sits just below the front plate, like the GT3 grips.
-- **Spokes:** each entry in `spokes` lists the mount holes it bolts to. A spoke is a pad behind the back plate, swept up to the rim, so the rim is dished towards the driver. The spoke runs outward from the centre through its holes. Spokes off the centre line are mirrored. Hermes has three: left, right, and a wide bottom spoke on the two bottom holes. `spoke` sets the width and thickness.
-
-The **Handles** panel can hide them and change the main sizes: grip width and depth for `gt3`, rim and tube diameter for `rally`. To reshape them, edit `wheel.json`.
 
 ### Built-in copy
 `index.html` carries a built-in copy of `parts.json` and `wheels/`. It's only used when those files can't be loaded, for example when the page is opened straight from disk.
@@ -183,11 +180,11 @@ The app has three views, switched at the top. It remembers the last one; add `#o
     - **Fixed points** (filled squares): the handle set puts points on your outline that you can't move or delete: marked in CAD by rounding a mounting area's corner with **R0.1**: the centre of each R0.1 arc becomes a fixed point. Without R0.1 corners, the points listed as `"anchors": [[x, y], ...]` in `handle.json` (right side; mirrored like the rest), else the outermost corners of the mounting areas (the corners of the convex hull around them). Your own points are added around them, and Clear keeps them. Round corners leaves the fixed points sharp.
     - Its **mounting areas** are always part of your outline: they're joined to what you draw and can't be deleted by editing points. An area your outline doesn't touch shows in red, and the handles wait until the outline reaches it.
     - The areas' holes become mounting holes through the front plate and into the back plate. Parts keep clear of the areas (they're no-go zones), because the handle core sits behind the plate there.
-    - The handle cores are drawn around your outline, and shown in the 3D preview as plates of their thickness.
+    - The handle cores are drawn around your outline, and the 3D preview shows the handles' grip model.
   - Your own outline uses a 4.5 mm edge margin, 20 mm plate spacing, 4 mm thickness, and a 0.5 mm top chamfer. Other mounting points for the front plate are still to do.
   - The outline is saved with the layout. Until it's usable, the 2D design keeps showing the previous back plate and says so.
 - **2D design:** the chosen back plate (**Change** goes back to Outline), the parts list, the plate editor, the selected part and the checks. The parts list shows its groups (Buttons/Rotaries, Encoders & switches, Indicators, Displays, Custom) collapsed. Click a group to open it; only one is open at a time.
-- **3D preview:** a large 3D view of the plate, deco and handles, with the Export, Deco and Handles panels.
+- **3D preview:** a large 3D view of the plate, deco and handles, with the Export, Deco and Handles panels (Handles only describes the wheel's handle set).
 
 ## Controls
 In the editor:
