@@ -107,6 +107,10 @@ header.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom
 #outlineSvg .ol-pt{fill:var(--panel);stroke:var(--accent);stroke-width:.7;cursor:grab}
 #outlineSvg .ol-pt:hover{fill:var(--accent-soft)}
 #outlineSvg .ol-pt.sel{fill:var(--accent)}
+#olPlace{display:grid;gap:6px;margin:4px 0 2px}
+.hslide{display:grid;grid-template-columns:5.2em 1fr 4.6em;align-items:center;gap:8px;font-size:13px}
+.hslide input{width:100%;accent-color:var(--accent);margin:0}
+.hslide output{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink-2,var(--ink))}
 #outlineSvg .ol-pt.fixed{fill:var(--accent);stroke:var(--panel);stroke-width:.6;cursor:not-allowed}
 #outlineSvg .ol-pt.fixed:hover{fill:var(--accent)}
 #outlineSvg .ol-ghost{fill:var(--accent);opacity:.4;pointer-events:none}
@@ -295,10 +299,10 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
           <div class="row">
             <label class="field">Handles<select id="olHandle"></select></label>
           </div>
-          <div class="row" id="olPlace">
-            <label class="field" title="Moves both handles outwards (+) or inwards (−), symmetrically">Spread<input type="number" id="olHdx" step="0.5" min="-40" max="40"> mm</label>
-            <label class="field" title="Moves both handles up (+) or down (−)">Up / down<input type="number" id="olHdy" step="0.5" min="-40" max="40"> mm</label>
-            <label class="field" title="Tilts both handles around the middle of their mounting areas; + leans the tops outwards">Tilt<input type="number" id="olHtilt" step="0.5" min="-30" max="30"> °</label>
+          <div class="hslides" id="olPlace">
+            <label class="hslide" title="Moves both handles outwards (+) or inwards (−), symmetrically"><span>Spread</span><input type="range" id="olHdx" step="0.5" min="-50" max="50"><output id="olHdxV"></output></label>
+            <label class="hslide" title="Moves both handles up (+) or down (−)"><span>Up / down</span><input type="range" id="olHdy" step="0.5" min="-30" max="30"><output id="olHdyV"></output></label>
+            <label class="hslide" title="Tilts both handles around the middle of their mounting areas; + leans the tops outwards"><span>Tilt</span><input type="range" id="olHtilt" step="0.5" min="-15" max="15"><output id="olHtiltV"></output></label>
           </div>
           <div class="row" id="olPlaceBtns"><button class="btn sm ghost" id="olHreset" type="button">Reset position</button></div>
           <p class="note" id="olHandleNote"></p>
@@ -1134,7 +1138,7 @@ function cleanOutline(o, plateId){
 const isFixed = q => q[2] === 1;
 // Handle placement: move the right handle by dx (out +, in -) and dy, and tilt it by tilt° (top outwards +) around
 // the middle of its mounting areas; the left handle mirrors it. The whole set moves: core, areas, holes, fixed points.
-const HP = { dx: 40, dy: 40, tilt: 30 };
+const HP = { dx: 50, dy: 30, tilt: 15 };
 const placeCache = new Map();
 function placedSet(o){
   const base = o.handles.type !== 'none' ? HANDLE_SETS[o.handles.type] : null;
@@ -1745,6 +1749,7 @@ svg.addEventListener('pointerleave', () => { if(!drag) $('readout').textContent 
 /* ---------------- Outline tab ---------------- */
 const olSvg = $('outlineSvg');
 let olDrag = null, olSel = null, olLastDown = { i: -1, t: 0 };
+let slideBefore = null;   // state before a handle slider started moving (one undo step per drag)
 function olWorld(e){
   const pt = olSvg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
   const m = olSvg.getScreenCTM(); if (!m) return {x:0, y:0};
@@ -1787,8 +1792,19 @@ function initOutline(){
   $('olStart').addEventListener('change', e => { const v = e.target.value; e.target.value = ''; if (v){ olSel = null; outlineStart(v); } });
   $('olHandle').innerHTML = `<option value="none">None</option>` + Object.values(HANDLE_SETS).map(h => `<option value="${esc(h.id)}">${esc(h.name)}</option>`).join('');
   $('olHandle').addEventListener('change', e => { olSel = null; mutate(() => { state.outline.handles.type = e.target.value; syncAnchors(state.outline); }); });
-  const place = (k, lim) => e => { const v = clampNum(r2(+e.target.value || 0), -lim, lim), o = state.outline; if (v === o.handles[k]) return; const oldA = olAnchors(o); mutate(() => { o.handles[k] = v; moveAnchors(o, oldA); }); };
-  $('olHdx').addEventListener('change', place('dx', HP.dx)); $('olHdy').addEventListener('change', place('dy', HP.dy)); $('olHtilt').addEventListener('change', place('tilt', HP.tilt));
+  // sliders: the outline and handles follow live while dragging; letting go makes it one undo step
+  const slide = (k, id) => {
+    const el = $(id);
+    el.addEventListener('input', () => {
+      const o = state.outline, v = clampNum(r2(+el.value || 0), -HP[k], HP[k]);
+      if (v === o.handles[k]) return;
+      if (slideBefore === null) slideBefore = serialize();
+      const oldA = olAnchors(o); o.handles[k] = v; moveAnchors(o, oldA);
+      rebuildCustomPlate(); renderOutline();
+    });
+    el.addEventListener('change', () => { if (slideBefore === null) return; const b = slideBefore; slideBefore = null; mutate(() => {}, b); });
+  };
+  slide('dx', 'olHdx'); slide('dy', 'olHdy'); slide('tilt', 'olHtilt');
   $('olHreset').addEventListener('click', () => { const o = state.outline; if (!o.handles.dx && !o.handles.dy && !o.handles.tilt) return; const oldA = olAnchors(o); mutate(() => { o.handles.dx = o.handles.dy = o.handles.tilt = 0; moveAnchors(o, oldA); }); });
   $('olClear').addEventListener('click', () => { if (!state.outline.pts.some(q => !isFixed(q))) return; olSel = null; mutate(() => { state.outline.pts = state.outline.pts.filter(isFixed); }); });
   olSvg.addEventListener('pointerdown', e => {
@@ -1862,7 +1878,10 @@ function renderOutline(){
   const ht = o.handles.type, set = st.set;
   $('olHandle').value = ht;
   $('olPlace').hidden = $('olPlaceBtns').hidden = ht === 'none';
-  for (const [id, k] of [['olHdx', 'dx'], ['olHdy', 'dy'], ['olHtilt', 'tilt']]) if ($(id) !== document.activeElement) $(id).value = o.handles[k];
+  for (const [id, k, u] of [['olHdx', 'dx', ' mm'], ['olHdy', 'dy', ' mm'], ['olHtilt', 'tilt', '°']]){
+    if (slideBefore === null) $(id).value = o.handles[k];
+    $(id + 'V').textContent = (o.handles[k] > 0 ? '+' : '') + fmt(o.handles[k]) + u;
+  }
   const nBadA = st.areas.filter(a => !a.ok).length;
   $('olHandleNote').textContent = ht === 'none' ? 'No handles. Pick a handle set to add its mounting areas and holes to your outline and see the handles in the 3D preview.'
     : !set ? '' : `${set.name}: ${set.areas.length} mounting areas with ${set.holes.length} Ø${fmt(set.holes[0].d)} holes, from the handle CAD. The areas are always part of your outline and can't be deleted by editing points. Parts keep clear of them, because the ${fmt(set.thickness)} mm handle core sits behind the plate there.` +
@@ -2210,8 +2229,9 @@ function initControls(){
   $('clearBtn').addEventListener('click', () => { if (!state.parts.length) return; mutate(() => { state.parts = []; selected = null; }); toast('Parts cleared. Undo brings them back.'); });
   document.addEventListener('keydown', e => {
     const tag = (e.target.tagName||'').toLowerCase();
-    if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
-    const mod = e.ctrlKey || e.metaKey;
+    const mod = e.ctrlKey || e.metaKey, range = tag === 'input' && e.target.type === 'range';
+    if ((tag === 'input' && !range) || tag === 'select' || tag === 'textarea') return;
+    if (range && !mod) return;   // arrow keys move the slider
     if (mod && e.key.toLowerCase() === 'z'){ e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if (mod && e.key.toLowerCase() === 'y'){ e.preventDefault(); redo(); return; }
     if (!$('viewOutline').hidden){ outlineKey(e); return; }
