@@ -765,12 +765,13 @@ function buildWheel(folder, cfg, dxfText){
 // Only the outside: the inside stays straight, so the wall gets thinner towards the bottom.
 const TRAY_DEFAULTS = { wall: 4, floor: 5, boss: 8, pilot: 2.8, taper: { angle: 7, height: 20 }, hub: { bore: 46, pcd: 70, bolts: 6, bolt: 5.3, angle: 30 } };
 // The back plate (test): a plate under the core plate, with the core plate's bottom outline, `thickness` thick, a wide
-// chamfer on its bottom edge (`width` mm inward at `angle`° from vertical) and a round opening of `hole` mm at the hub.
-const BACK_DEFAULTS = { thickness: 5, chamfer: { width: 10, angle: 70 }, hole: 84 };
+// chamfer on its bottom edge (`width` mm inward at `angle`° from vertical) and a round recess of `hole` mm at the hub,
+// `holeDepth` mm deep from the bottom (outside) face (0 or ≥ thickness = straight through).
+const BACK_DEFAULTS = { thickness: 5, chamfer: { width: 10, angle: 70 }, hole: 84, holeDepth: 2 };
 function cleanBack(b){
   b = b && typeof b === 'object' ? b : {};
   const c = b.chamfer && typeof b.chamfer === 'object' ? b.chamfer : {}, D = BACK_DEFAULTS;
-  return { thickness: clampNum(numOr(b.thickness, D.thickness), 1, 30), hole: clampNum(numOr(b.hole, D.hole), 0, 300),
+  return { thickness: clampNum(numOr(b.thickness, D.thickness), 1, 30), hole: clampNum(numOr(b.hole, D.hole), 0, 300), holeDepth: clampNum(numOr(b.holeDepth, D.holeDepth), 0, 30),
            chamfer: { width: clampNum(numOr(c.width, D.chamfer.width), 0, 50), angle: clampNum(numOr(c.angle, D.chamfer.angle), 0, 85) } };
 }
 function cleanTray(t){
@@ -2537,10 +2538,12 @@ function mfBackPlate(pl, gap){
     const ch = bp.chamfer, ang = ch.angle * Math.PI/180;
     const chH = ch.width > 0 && ang > 0 ? Math.min(bp.thickness, ch.width / Math.tan(ang)) : 0, chW = chH ? chH * Math.tan(ang) : 0;
     let body = T(taperedSolid(top, -H - bp.thickness, -H, chW, chH));
-    // the opening at the hub: at each round no-go zone of the hub's size (or the wheel centre for your own outline)
+    // the recess at the hub, from the bottom face: at each round no-go zone of the hub's size (the wheel centre for
+    // your own outline); a depth of 0 or the full thickness cuts straight through
     const hubs = pl.holes.filter(h => h.role !== 'mount' && !h.poly && tr.hub && Math.abs(h.d - tr.hub.bore) < 0.5 && pointInPoly(h.x, h.y, pl.outline));
+    const dep = bp.holeDepth > 0 && bp.holeDepth < bp.thickness ? bp.holeDepth : bp.thickness + 1;
     if (bp.hole > 0 && hubs.length)
-      body = T(body.subtract(T(Manifold.union(hubs.map(h => T(T(Manifold.cylinder(bp.thickness + 2, bp.hole/2, bp.hole/2, 96)).translate([h.x, h.y, -H - bp.thickness - 1])))))));
+      body = T(body.subtract(T(Manifold.union(hubs.map(h => T(T(Manifold.cylinder(dep + 1, bp.hole/2, bp.hole/2, 96)).translate([h.x, h.y, -H - bp.thickness - 1])))))));
     return body.translate([0, 0, 0]);
   } finally { for (const x of trash) x.delete(); }
 }
