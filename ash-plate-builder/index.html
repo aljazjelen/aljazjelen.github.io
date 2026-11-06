@@ -604,7 +604,10 @@ function dxfGeometry(text, cfg){
       case 'ARC': {
         const a0 = dxfNum(e,50,0)*Math.PI/180; let sw = dxfNum(e,51,360)*Math.PI/180 - a0; while (sw <= 1e-12) sw += 2*Math.PI;
         segs.push(ocs(e, arcPoints(dxfNum(e,10,0), dxfNum(e,20,0), dxfNum(e,40,0), a0, sw)));
-        const [[ax, ay]] = ocs(e, [[dxfNum(e,10,0), dxfNum(e,20,0)]]); arcs.push({ x: ax, y: ay, r: dxfNum(e,40,0) }); break;
+        // also the sharp corner the arc rounds off: where the tangents at its two ends meet
+        const ar = dxfNum(e,40,0), mid = a0 + sw/2, dk = sw < Math.PI - 1e-6 ? ar / Math.cos(sw/2) : ar;
+        const [[ax, ay], [kx, ky]] = ocs(e, [[dxfNum(e,10,0), dxfNum(e,20,0)], [dxfNum(e,10,0) + dk*Math.cos(mid), dxfNum(e,20,0) + dk*Math.sin(mid)]]);
+        arcs.push({ x: ax, y: ay, r: ar, cx: kx, cy: ky }); break;
       }
       case 'CIRCLE': {
         const [[x,y]] = ocs(e, [[dxfNum(e,10,0), dxfNum(e,20,0)]]);
@@ -648,7 +651,7 @@ function dxfGeometry(text, cfg){
     }
   }
   const sc = p => [p[0]*scale, p[1]*scale];
-  return { segs: segs.map(s => s.map(sc)), circles: circles.map(c => ({x: c.x*scale, y: c.y*scale, d: c.d*scale})), arcs: arcs.map(a => ({x: a.x*scale, y: a.y*scale, r: a.r*scale})), skipped: [...skipped] };
+  return { segs: segs.map(s => s.map(sc)), circles: circles.map(c => ({x: c.x*scale, y: c.y*scale, d: c.d*scale})), arcs: arcs.map(a => ({x: a.x*scale, y: a.y*scale, r: a.r*scale, cx: a.cx*scale, cy: a.cy*scale})), skipped: [...skipped] };
 }
 function chainLoops(segs){
   const pool = segs.map(s => s.slice()), loops = []; let open = 0;
@@ -1055,8 +1058,9 @@ const ANCHOR_R = 0.1;   // mm: a corner rounded with this radius in a handle DXF
 function dxfShapes(text){
   const g = dxfGeometry(text, {}), { loops } = chainLoops(g.segs), r = v => Math.round(v*1000)/1000;
   const L = loops.map(l => ccw(l.map(([x, y]) => [r(x), r(y)]))).sort((p, q) => Math.abs(polyArea(q)) - Math.abs(polyArea(p)));
-  // Fixed outline points are marked in CAD by R0.1 corners: the centre of each such arc is a fixed point.
-  const marks = g.arcs.filter(a => Math.abs(a.r - ANCHOR_R) < 0.005).map(a => [r(a.x), r(a.y)]);
+  // Fixed outline points are marked in CAD by R0.1 corners. The fixed point is the sharp corner the arc rounds off
+  // (0.14 mm from the arc's centre for a 90° corner), so the outline runs exactly along the area's edges there.
+  const marks = g.arcs.filter(a => Math.abs(a.r - ANCHOR_R) < 0.005).map(a => [r(a.cx), r(a.cy)]);
   return { loops: L, circles: g.circles.map(c => ({ x: r(c.x), y: r(c.y), d: r(c.d) })), marks };
 }
 const handleFiles = cfg => [cfg.core && cfg.core.dxf, ...(Array.isArray(cfg.mountAreas) ? cfg.mountAreas.map(a => a && a.dxf) : [])].filter(Boolean);
