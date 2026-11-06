@@ -107,6 +107,8 @@ header.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom
 #outlineSvg .ol-pt{fill:var(--panel);stroke:var(--accent);stroke-width:.7;cursor:grab}
 #outlineSvg .ol-pt:hover{fill:var(--accent-soft)}
 #outlineSvg .ol-pt.sel{fill:var(--accent)}
+#outlineSvg .ol-pt.fixed{fill:var(--accent);stroke:var(--panel);stroke-width:.6;cursor:not-allowed}
+#outlineSvg .ol-pt.fixed:hover{fill:var(--accent)}
 #outlineSvg .ol-ghost{fill:var(--accent);opacity:.4;pointer-events:none}
 #outlineSvg .ol-grip{fill:var(--grip);stroke:var(--grip-edge);stroke-width:.4;stroke-linejoin:round;pointer-events:none}
 #outlineSvg .ol-spoke{fill:var(--metal);stroke:var(--grip-edge);stroke-width:.35;stroke-linejoin:round;pointer-events:none}
@@ -1044,6 +1046,15 @@ function dxfShapes(text){
   return { loops: L, circles: g.circles.map(c => ({ x: r(c.x), y: r(c.y), d: r(c.d) })) };
 }
 const handleFiles = cfg => [cfg.core && cfg.core.dxf, ...(Array.isArray(cfg.mountAreas) ? cfg.mountAreas.map(a => a && a.dxf) : [])].filter(Boolean);
+// Convex hull (Andrew's monotone chain), counter-clockwise, without collinear points.
+function convexHull(P){
+  const pts = P.map(([x, y]) => [x, y]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  if (pts.length < 3) return pts;
+  const cr = (o, a, b) => (a[0]-o[0])*(b[1]-o[1]) - (a[1]-o[1])*(b[0]-o[0]), lo = [], up = [];
+  for (const p of pts){ while (lo.length >= 2 && cr(lo[lo.length-2], lo[lo.length-1], p) <= 1e-9) lo.pop(); lo.push(p); }
+  for (const p of pts.slice().reverse()){ while (up.length >= 2 && cr(up[up.length-2], up[up.length-1], p) <= 1e-9) up.pop(); up.push(p); }
+  return [...lo.slice(0, -1), ...up.slice(0, -1)];
+}
 function buildHandleSet(id, cfg, files){
   if (!cfg || typeof cfg !== 'object') throw new Error('handle.json is not an object');
   const mirror = cfg.mirror !== false, both = P => mirror ? [P, ccw(mirrorX(P))] : [P];
@@ -1063,7 +1074,13 @@ function buildHandleSet(id, cfg, files){
   }
   if (!areas.length) throw new Error('no mounting areas');
   const uniq = holes.filter((h, i) => holes.findIndex(k => Math.hypot(k.x - h.x, k.y - h.y) < 0.05) === i);
-  return { id, name: String(cfg.name || id), thickness: clampNum(numOr(core.thickness, 5), 1, 20), cores, areas, holes: uniq };
+  // Fixed outline points: from handle.json "anchors" ([[x, y], ...], mirrored like the rest), else the corners of the
+  // convex hull around all mounting areas, i.e. the areas' outermost corners.
+  let anchors = Array.isArray(cfg.anchors) ? cfg.anchors.filter(q => Array.isArray(q) && Number.isFinite(+q[0]) && Number.isFinite(+q[1])).map(([x, y]) => [+x, +y]) : null;
+  if (anchors && mirror) anchors = [...anchors, ...anchors.filter(([x]) => Math.abs(x) > 0.01).map(([x, y]) => [-x, y])];
+  if (!anchors || !anchors.length) anchors = convexHull(areas.flat());
+  anchors = anchors.map(([x, y]) => [r2(x), r2(y)]);
+  return { id, name: String(cfg.name || id), thickness: clampNum(numOr(core.thickness, 5), 1, 20), cores, areas, holes: uniq, anchors };
 }
 async function loadHandles(){
   const sets = {};
@@ -1085,22 +1102,64 @@ function cleanOutline(o, plateId){
   o = o && typeof o === 'object' ? o : {};
   const sym = o.sym !== false;
   const pts = (Array.isArray(o.pts) ? o.pts : []).filter(q => Array.isArray(q) && Number.isFinite(+q[0]) && Number.isFinite(+q[1])).slice(0, 300)
-    .map(([x, y]) => [r2(clampNum(sym ? Math.abs(+x) : +x, -OL.W/2, OL.W/2)), r2(clampNum(+y, -OL.H/2, OL.H/2))]);
+    .map(([x, y, f]) => { const q = [r2(clampNum(sym ? Math.abs(+x) : +x, -OL.W/2, OL.W/2)), r2(clampNum(+y, -OL.H/2, OL.H/2))]; if (f === 1) q.push(1); return q; });
   const mode = o.mode === 'custom' || plateId === 'custom' ? 'custom' : 'preset';
   const h = o.handles && typeof o.handles === 'object' ? o.handles : {};
-  return { mode, sym, pts, radius: clampNum(Number.isFinite(+o.radius) ? +o.radius : 5, 0, 40),
+  const out = { mode, sym, pts, radius: clampNum(Number.isFinite(+o.radius) ? +o.radius : 5, 0, 40),
            snap: OL_SNAPS.includes(+o.snap) ? +o.snap : 1, preset: typeof o.preset === 'string' ? o.preset : null,
            handles: { type: typeof h.type === 'string' && HANDLE_SETS[h.type] ? h.type : 'none' } };
+  // re-place the fixed points only if they no longer match the handle set (e.g. its CAD changed)
+  const have = out.pts.filter(isFixed).map(q => q[0] + ',' + q[1]).sort().join(' '), want = olAnchors(out).map(q => q[0] + ',' + q[1]).sort().join(' ');
+  if (have !== want) syncAnchors(out);
+  return out;
+}
+// Fixed points: the handle set's anchors are always points of the drawn outline. They can't be moved or deleted;
+// you add your own points around them. Points are [x, y] (yours) or [x, y, 1] (fixed).
+const isFixed = q => q[2] === 1;
+function olAnchors(o){
+  const set = o.handles.type !== 'none' ? HANDLE_SETS[o.handles.type] : null;
+  if (!set) return [];
+  const a = o.sym ? set.anchors.filter(([x]) => x > 0.01).concat(set.anchors.filter(([x]) => Math.abs(x) <= 0.01)) : set.anchors;
+  return a.map(([x, y]) => [r2(clampNum(x, -OL.W/2, OL.W/2)), r2(clampNum(y, -OL.H/2, OL.H/2))]);
+}
+// Puts the fixed points into o.pts: removes old ones, then inserts each anchor where it lengthens the outline least
+// (or marks one of your points fixed when it's already there).
+function syncAnchors(o){
+  o.pts = o.pts.filter(q => !isFixed(q));
+  const A = olAnchors(o);
+  if (!A.length) return;
+  const ang = ([x, y]) => Math.atan2(y, x);
+  const todo = [];
+  for (const a of A){
+    const same = o.pts.find(q => Math.hypot(q[0] - a[0], q[1] - a[1]) < 0.05);
+    if (same) same[2] = 1; else todo.push(a);
+  }
+  const minPts = o.sym ? 1 : 3;
+  if (o.pts.length < minPts){
+    // no outline yet: start with the fixed points in clockwise order (from the top)
+    const all = [...o.pts, ...todo.map(([x, y]) => [x, y, 1])];
+    o.pts = all.sort((p, q) => o.sym ? (q[1] - p[1]) || (ang(q) - ang(p)) : ang(q) - ang(p));
+    return;
+  }
+  const d = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
+  for (const a of todo){
+    const P = o.pts, n = P.length;
+    const C = o.sym ? [[0, P[0][1]], ...P, [0, P[n-1][1]]] : [...P, P[0]];
+    let best = 0, bc = Infinity;
+    for (let k = 0; k < C.length - 1; k++){ const c = d(C[k], a) + d(a, C[k+1]) - d(C[k], C[k+1]); if (c < bc){ bc = c; best = k; } }
+    // symmetric: edge k sits before point k; closed: edge k runs from point k to k+1
+    P.splice(o.sym ? best : best + 1, 0, [a[0], a[1], 1]);
+  }
 }
 // The whole drawn polygon (both halves when symmetric), without repeated points.
 function fullOutline(o){
   let out;
-  if (!o.sym) out = o.pts.map(q => [...q]);
+  if (!o.sym) out = o.pts.map(q => [q[0], q[1]]);
   else {
     const p = o.pts; if (!p.length) return [];
     const right = [];
     if (p[0][0] > 0.01) right.push([0, p[0][1]]);
-    right.push(...p.map(q => [...q]));
+    right.push(...p.map(q => [q[0], q[1]]));
     const last = p[p.length-1];
     if (last[0] > 0.01) right.push([0, last[1]]);
     out = [...right, ...right.filter(q => q[0] > 0.01).map(([x, y]) => [-x, y]).reverse()];
@@ -1243,7 +1302,7 @@ function outlineStart(kind){
     const P = pl.outline.slice().reverse();   // clockwise, like the shapes above
     full = simplifyPts([...P, P[0]], 0.6).slice(0, -1).map(([x, y]) => [r2(clampNum(x, -OL.W/2, OL.W/2)), r2(clampNum(y, -OL.H/2, OL.H/2))]);
   }
-  mutate(() => { o.pts = o.sym ? rightHalf(full) : full; if (kind !== 'rect' && kind !== 'round') o.radius = 0; });
+  mutate(() => { o.pts = o.sym ? rightHalf(full) : full; if (kind !== 'rect' && kind !== 'round') o.radius = 0; syncAnchors(o); });
 }
 // Handles: show/export, and optional grip size overrides (null = the wheel's own size).
 function cleanHandles(h){
@@ -1639,7 +1698,7 @@ function initOutline(){
   $('presetList').addEventListener('click', e => { const b = e.target.closest('[data-plate]'); if (b) selectPreset(b.dataset.plate); });
   $('olSym').addEventListener('change', e => {
     const o = state.outline, on = e.target.checked;
-    mutate(() => { o.pts = on ? rightHalf(fullOutline(o)) : fullOutline(o); o.sym = on; });
+    mutate(() => { o.pts = on ? rightHalf(fullOutline(o)) : fullOutline(o); o.sym = on; syncAnchors(o); });
     olSel = null;
   });
   $('olSnap').addEventListener('change', e => { mutate(() => { state.outline.snap = +e.target.value; }); });
@@ -1648,14 +1707,15 @@ function initOutline(){
     PLATES.filter(p => !p.custom).map(p => `<option value="${p.id}">Copy of ${esc(p.name)}</option>`).join('');
   $('olStart').addEventListener('change', e => { const v = e.target.value; e.target.value = ''; if (v){ olSel = null; outlineStart(v); } });
   $('olHandle').innerHTML = `<option value="none">None</option>` + Object.values(HANDLE_SETS).map(h => `<option value="${esc(h.id)}">${esc(h.name)}</option>`).join('');
-  $('olHandle').addEventListener('change', e => { mutate(() => { state.outline.handles.type = e.target.value; }); });
-  $('olClear').addEventListener('click', () => { if (!state.outline.pts.length) return; olSel = null; mutate(() => { state.outline.pts = []; }); });
+  $('olHandle').addEventListener('change', e => { olSel = null; mutate(() => { state.outline.handles.type = e.target.value; syncAnchors(state.outline); }); });
+  $('olClear').addEventListener('click', () => { if (!state.outline.pts.some(q => !isFixed(q))) return; olSel = null; mutate(() => { state.outline.pts = state.outline.pts.filter(isFixed); }); });
   olSvg.addEventListener('pointerdown', e => {
     if (state.outline.mode !== 'custom' || e.button > 0) return;
     const o = state.outline, h = e.target.closest('[data-pt]'), before = serialize();
     if (h){
       const i = +h.dataset.pt, now = performance.now();
       // double-click removes the point (detected here: the redraw on the first click replaces the element)
+      if (isFixed(o.pts[i])){ olSel = null; e.preventDefault(); toast('This point is fixed by the handle mounting. Add your own points around it.'); renderOutline(); return; }
       if (olLastDown.i === i && now - olLastDown.t < 400){ olLastDown = { i: -1, t: 0 }; olSel = null; e.preventDefault(); mutate(() => { o.pts.splice(i, 1); }); return; }
       olLastDown = { i, t: now };
       olSel = i; olDrag = { idx: i, before, moved: false };
@@ -1673,14 +1733,14 @@ function initOutline(){
     $('olReadout').textContent = `x ${fmt(w.x)}  y ${fmt(w.y)} mm`;
     if (!olDrag) return;
     const p = olPoint(w), q = state.outline.pts[olDrag.idx];
-    if (q && (q[0] !== p[0] || q[1] !== p[1])){ state.outline.pts[olDrag.idx] = p; olDrag.moved = true; rebuildCustomPlate(); renderOutline(); }
+    if (q && !isFixed(q) && (q[0] !== p[0] || q[1] !== p[1])){ state.outline.pts[olDrag.idx] = p; olDrag.moved = true; rebuildCustomPlate(); renderOutline(); }
   });
   const end = () => { if (!olDrag) return; const d = olDrag; olDrag = null; if (d.moved){ undoStack.push(d.before); redoStack = []; afterChange(); } };
   olSvg.addEventListener('pointerup', end); olSvg.addEventListener('pointercancel', end);
   olSvg.addEventListener('pointerleave', () => { if (!olDrag) $('olReadout').textContent = 'x — y —'; });
 }
 function outlineKey(e){
-  if (state.outline.mode !== 'custom' || olSel === null) return;
+  if (state.outline.mode !== 'custom' || olSel === null || !state.outline.pts[olSel] || isFixed(state.outline.pts[olSel])) return;
   if (e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); const i = olSel; olSel = null; mutate(() => { state.outline.pts.splice(i, 1); }); }
   else if (e.key === 'Escape'){ olSel = null; renderOutline(); }
   else if (e.key.startsWith('Arrow')){
@@ -1759,7 +1819,10 @@ function renderOutline(){
     for (const a of st.areas) g += `<polygon class="ol-marea${a.ok ? '' : ' bad'}" points="${polySvgPts(a.poly)}"><title>Handle mounting area${a.ok ? '' : ': not joined to your outline'}</title></polygon>`;
     for (const h of st.handleHoles) g += `<circle class="ol-hhole${h.ok ? '' : ' bad'}" cx="${h.x}" cy="${-h.y}" r="${Math.max(h.d/2, 1.6)}"><title>Handle mounting hole Ø${fmt(h.d)} at ${fmt(h.x)}, ${fmt(h.y)}${h.ok ? '' : ': not on the outline'}</title></circle>`;
     if (o.sym) for (const [x, y] of o.pts) if (x > 0.01) g += `<circle class="ol-ghost" cx="${-x}" cy="${-y}" r="1.4"/>`;
-    o.pts.forEach(([x, y], i) => { g += `<circle class="ol-pt${i === olSel ? ' sel' : ''}" data-pt="${i}" cx="${x}" cy="${-y}" r="2.4"><title>Point ${i+1}: ${fmt(x)}, ${fmt(y)} mm</title></circle>`; });
+    o.pts.forEach(([x, y, f], i) => { g += f === 1
+      ? `<rect class="ol-pt fixed" data-pt="${i}" x="${x - 2}" y="${-y - 2}" width="4" height="4" rx=".6"><title>Fixed by the handle mounting: ${fmt(x)}, ${fmt(y)} mm</title></rect>`
+      : `<circle class="ol-pt${i === olSel ? ' sel' : ''}" data-pt="${i}" cx="${x}" cy="${-y}" r="2.4"><title>Point ${i+1}: ${fmt(x)}, ${fmt(y)} mm</title></circle>`; });
+    if (o.sym) for (const [x, y, f] of o.pts) if (f === 1 && x > 0.01) g += `<rect class="ol-ghost fixed" x="${-x - 1.2}" y="${-y - 1.2}" width="2.4" height="2.4"/>`;
     if (!o.pts.length) g += `<text class="ol-hint" x="${o.sym ? 70 : 0}" y="${-60}">${o.sym ? 'Click on the right half to place points from top to bottom' : 'Click to place the outline’s corners'}</text><text class="ol-hint" x="${o.sym ? 70 : 0}" y="${-52}">or pick a shape under “Start from”</text>`;
   }
   olSvg.innerHTML = g;
@@ -1778,7 +1841,7 @@ function renderOutline(){
     if (st.usable && !st.errors.length && !st.warnings.length) items.push(`<li class="ok">The outline is ready for the 2D design.</li>`);
     const cp = PLATES.find(p => p.id === 'custom');
     box.innerHTML = `<dl class="kv"><dt>Size</dt><dd>${cp ? `${fmt(cp.width)} × ${fmt(cp.height)} mm` : '—'}</dd>
-      <dt>Points</dt><dd>${o.pts.length}${o.sym ? ` (${st.raw.length} with the mirrored half)` : ''}</dd><dt>Round corners</dt><dd>${fmt(o.radius)} mm</dd><dt>Edge margin</dt><dd>${OL.margin} mm</dd></dl>
+      <dt>Points</dt><dd>${o.pts.length}${o.pts.some(isFixed) ? `, ${o.pts.filter(isFixed).length} fixed` : ''}${o.sym ? ` (${st.raw.length} with the mirrored half)` : ''}</dd><dt>Round corners</dt><dd>${fmt(o.radius)} mm</dd><dt>Edge margin</dt><dd>${OL.margin} mm</dd></dl>
       <ul class="olstat">${items.join('')}</ul>
       <div class="oltodo"><b>Mounting holes:</b> ${st.handleHoles.length ? `${st.handleHoles.filter(h => h.ok).length} for the handles (see Handle mounting). Other mounting points for the front plate are still to do.` : 'none yet. Pick a handle set to add its mounting holes; other mounting points are still to do.'}</div>
       <button class="btn primary" id="olNext" ${st.usable ? '' : 'disabled'}>Continue to 2D design</button>`;

@@ -135,7 +135,7 @@ handles/
     core.dxf        the handle's core plate seen from the front: outline + holes
     area1.dxf ...   the mounting areas, each a closed shape with its holes as circles
 ```
-`handle.json` names the set and its files, says which side each DXF shows (`left`/`right`), and `mirror: true` adds the other side. `core.thickness` (5 mm) is how far the back plate is lowered at the mounting areas, so the core is clamped between back plate and front plate. All DXFs are in mm with the wheel centre (the hub) at 0,0.
+`handle.json` names the set and its files, optionally lists `anchors` (fixed outline points), says which side each DXF shows (`left`/`right`), and `mirror: true` adds the other side. `core.thickness` (5 mm) is how far the back plate is lowered at the mounting areas, so the core is clamped between back plate and front plate. All DXFs are in mm with the wheel centre (the hub) at 0,0.
 
 ### Back plate (tray)
 The back plate is generated as a tray from the same outline as the front plate, and exported as its own STL (`-back.stl`, also in the zip), in the same coordinates as the plate STL. Its top touches the underside of the front plate, which sits on its wall like a lid.
@@ -179,6 +179,7 @@ The app has three views, switched at the top. It remembers the last one; add `#o
   - **Start from** fills the canvas with a rectangle, a round shape, or a simplified copy of one of the existing designs to modify.
   - The outline must not cross itself. It should go around the electronics zone with at least 4.5 mm to spare; the panel on the right says when it doesn't.
   - **Handle mounting** (right column) picks a handle set from `handles/` (or None). A handle set comes from CAD (see *Handle sets* below):
+    - **Fixed points** (filled squares): the handle set puts points on your outline that you can't move or delete: by default the outermost corners of its mounting areas (the corners of the convex hull around them), or the points listed as `"anchors": [[x, y], ...]` in `handle.json` (right side; mirrored like the rest). Your own points are added around them, and Clear keeps them.
     - Its **mounting areas** are always part of your outline: they're joined to what you draw and can't be deleted by editing points. An area your outline doesn't touch shows in red, and the handles wait until the outline reaches it.
     - The areas' holes become mounting holes through the front plate and into the back plate. Parts keep clear of the areas (they're no-go zones), because the handle core sits behind the plate there.
     - The handle cores are drawn around your outline, and shown in the 3D preview as plates of their thickness.
