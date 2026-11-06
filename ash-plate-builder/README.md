@@ -180,7 +180,7 @@ The chamfered plate is built with [manifold-3d](https://github.com/elalish/manif
 ## Views
 The app has three views, switched at the top. It remembers the last one; add `#outline`, `#design` or `#preview` to the link to open a specific view. A first visit starts on Outline.
 - **Outline:** where the core plate comes from. Either pick an **existing design** (the wheels in `wheels/`, shown as cards with a small picture), or draw **your own outline**:
-  - The drawing area is 300 × 200 mm, with the Ø46 mm electronics zone in the middle (a no-go area, like the hub on the other plates).
+  - The drawing area is 320 × 200 mm, with the Ø46 mm electronics zone in the middle (a no-go area, like the hub on the other plates).
   - Click to place points, drag a point to move it, double-click it or press <kbd>Del</kbd> to remove it, and use the arrow keys to nudge the selected point. A click within 6 mm of an edge adds a point into that edge; otherwise it's added after the last point.
   - **Symmetric** (on by default): you draw the right half from top to bottom, its ends join the centre line, and the left half is mirrored.
   - **Round corners** rounds every corner, inner and outer, with one radius (5 mm by default).
@@ -193,6 +193,7 @@ The app has three views, switched at the top. It remembers the last one; add `#o
     - The areas' holes become mounting holes through the front plate and into the core plate. Parts keep clear of the areas (they're no-go zones), because the handle core sits behind the plate there.
     - The handle cores are drawn around your outline, and the 3D preview shows the handles' grip model.
   - Your own outline uses a 4.5 mm edge margin, 20 mm plate spacing, 4 mm thickness, and a 0.5 mm top chamfer. Other mounting points for the front plate are still to do.
+  - **Import / Export:** *Export .json* saves the outline as you edited it (points, fixed points, symmetry, rounding, handle set and its position) to open again exactly; *Export .dxf* writes the finished outline (rounded, joined with the handle mounting areas) with the mounting holes and the hub zone, for CAD. *Import…* opens either: a DXF's largest closed shape becomes your points (wheel centre at 0,0, simplified to within 0.2 mm; a shape that's symmetric about the centre line opens with Symmetric on, and the chosen handle set's fixed points are added).
   - The outline is saved with the layout. Until it's usable, the 2D design keeps showing the previous core plate and says so.
 - **2D design:** the chosen core plate (**Change** goes back to Outline), the parts list, the plate editor, the selected part and the checks. The parts list shows its groups (Buttons/Rotaries, Encoders & switches, Indicators, Displays, Custom) collapsed. Click a group to open it; only one is open at a time.
 - **3D preview:** a large 3D view of the plate, deco and handles, with the Export, Deco and Handles panels (Handles only describes the wheel's handle set).

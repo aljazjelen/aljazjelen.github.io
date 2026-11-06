@@ -273,7 +273,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
           </div>
           <div class="presets" id="presetList"></div>
           <div id="customIntro" hidden>
-            <p class="note">Draw the outline of your wheel inside the 300 × 200 mm area. The Ø46 mm electronics zone in the middle stays free. The 2D design and 3D preview use this outline.</p>
+            <p class="note">Draw the outline of your wheel inside the 320 × 200 mm area. The Ø46 mm electronics zone in the middle stays free. The 2D design and 3D preview use this outline.</p>
           </div>
         </div>
       </section>
@@ -285,6 +285,10 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
           <label class="field inline">Snap<select id="olSnap"><option value="0.5">0.5 mm</option><option value="1">1 mm</option><option value="2.5">2.5 mm</option><option value="5">5 mm</option><option value="10">10 mm</option></select></label>
           <label class="field inline" title="Rounds every corner of the outline with this radius">Round corners<input type="number" id="olRad" min="0" max="40" step="0.5"> mm</label>
           <label class="field inline">Start from<select id="olStart"><option value="">…</option></select></label>
+          <button class="btn sm ghost" id="olImport" title="Open an outline saved with Export (.json), or a closed outline from a DXF with the wheel centre at 0,0">Import…</button>
+          <button class="btn sm ghost" id="olExportJson" title="Save this outline (points, symmetry, rounding, handles and their position) to open again later">Export .json</button>
+          <button class="btn sm ghost" id="olExportDxf" title="The finished outline (rounded, with the handle mounting areas) and its mounting holes, for CAD">Export .dxf</button>
+          <input type="file" id="olFileIn" accept=".json,.dxf,application/json" hidden>
           <button class="btn sm ghost danger" id="olClear">Clear</button>
           <span class="readout" id="olReadout">x — y —</span>
         </div>
@@ -1015,10 +1019,10 @@ function cleanDeco(d){
 }
 /* ---------------- Outline (step 1) ----------------
    Either one of the wheels from wheels/ (a preset) or the user's own outline, drawn as points inside a
-   300 × 200 mm area around a Ø46 mm electronics zone. With Symmetric on, pts is the right half only (x ≥ 0),
+   320 × 200 mm area around a Ø46 mm electronics zone. With Symmetric on, pts is the right half only (x ≥ 0),
    running from top to bottom; the ends join the centre line and the left half is mirrored. The drawn polygon
    is rounded with "Round corners" and becomes the plate with id 'custom'. Mounting holes: to do. */
-const OL = { W: 300, H: 200, hub: 46, margin: 4.5 };
+const OL = { W: 320, H: 200, hub: 46, margin: 4.5 };
 const OL_SNAPS = [0.5, 1, 2.5, 5, 10];
 /* ---------------- Handle sets (from CAD) ----------------
    handles/index.json lists the sets; each handles/<id>/ has a handle.json and DXFs: the handle core and
@@ -1922,7 +1926,7 @@ function renderOutline(){
     `<button type="button" class="preset" data-plate="${p.id}" aria-pressed="${p.id === state.plateId}">${presetThumb(p)}<span><b>${esc(p.name)}</b><i>${fmt(p.width)} × ${fmt(p.height)} mm · ${p.holes.filter(h => h.role === 'mount').length} mount holes${p.handles ? ' · ' + esc(p.handles.name) + ' handles' : ''}</i></span></button>`).join('');
   const a = document.activeElement;
   $('olSym').checked = o.sym; $('olSnap').value = String(o.snap); if ($('olRad') !== a) $('olRad').value = o.radius;
-  // canvas: the 300 × 200 drawing area (or the preset's own size when it's bigger)
+  // canvas: the 320 × 200 drawing area (or the preset's own size when it's bigger)
   const pl = custom ? (PLATES.find(p => p.id === 'custom') || null) : plate();
   let minX = -OL.W/2, maxX = OL.W/2, minY = -OL.H/2, maxY = OL.H/2;
   if (pl && !custom){ minX = Math.min(minX, pl.bbox.minX); maxX = Math.max(maxX, pl.bbox.maxX); minY = Math.min(minY, pl.bbox.minY); maxY = Math.max(maxY, pl.bbox.maxY); }
@@ -3137,6 +3141,69 @@ async function exportAll(){
   saveFile(b+'.zip', await z.generateAsync({type:'blob'}));
 }
 $('imJson').addEventListener('click', () => $('fileIn').click());
+/* ---------------- Own outline: import / export ----------------
+   .json: the outline as edited (points with the fixed ones marked, symmetry, rounding, snap, handle set and its
+   position), to open again exactly. .dxf: the finished outline (rounded, joined with the handle mounting areas) with
+   the mounting holes and the hub zone, for CAD. Import takes either, a DXF's largest closed shape becoming the points
+   (wheel centre at 0,0; a shape that's symmetric about x = 0 is opened with Symmetric on). */
+function outlineJson(){
+  const o = state.outline;
+  return '{"ashOutline":1,"sym":' + o.sym + ',"radius":' + o.radius + ',"snap":' + o.snap + ',"handles":' + JSON.stringify(o.handles) +
+    ',\n "pts":[\n  ' + o.pts.map(q => JSON.stringify(q)).join(',\n  ') + '\n ]}\n';
+}
+function outlineDxf(){
+  const pl = PLATES.find(p => p.id === 'custom');
+  if (!pl) return null;
+  const n = v => (Math.round(v*10000)/10000).toString(), L = [];
+  L.push('0','SECTION','2','HEADER','9','$INSUNITS','70','4','0','ENDSEC','0','SECTION','2','ENTITIES');
+  const P = pl.outline;
+  for (let i = 0; i < P.length; i++){ const a = P[i], b = P[(i+1) % P.length]; L.push('0','LINE','8','OUTLINE','10',n(a[0]),'20',n(a[1]),'30','0','11',n(b[0]),'21',n(b[1]),'31','0'); }
+  for (const h of pl.holes) if (!h.poly) L.push('0','CIRCLE','8',h.role === 'mount' ? 'MOUNTING' : 'HUB','10',n(h.x),'20',n(h.y),'30','0','40',n(h.d/2));
+  L.push('0','ENDSEC','0','EOF');
+  return L.join('\n') + '\n';
+}
+function importOutline(name, text){
+  const o = state.outline;
+  let next;
+  if (/\.dxf$/i.test(name) || /^\s*0\s*[\r\n]+\s*SECTION/.test(text)){
+    const g = dxfGeometry(text, {}), { loops } = chainLoops(g.segs);
+    if (!loops.length) throw new Error('the DXF has no closed outline');
+    loops.sort((a, b) => Math.abs(polyArea(b)) - Math.abs(polyArea(a)));
+    let full = ccw(loops[0]).slice().reverse();                                  // clockwise, like the start shapes
+    full = simplifyPts([...full, full[0]], 0.2).slice(0, -1);   // fewer points to edit; curves stay within 0.2 mm
+    const xs = full.map(p => p[0]), ys = full.map(p => p[1]);
+    const big = Math.max(...xs.map(Math.abs)) > OL.W/2 + 0.01 || Math.max(...ys.map(Math.abs)) > OL.H/2 + 0.01;
+    const C = new MF.CrossSection([ccw(full)]), M = new MF.CrossSection([ccw(full.map(([x, y]) => [-x, y]))]), X = C.subtract(M), Y = M.subtract(C);
+    const sym = X.area() + Y.area() < 0.002 * Math.abs(polyArea(full)); [C, M, X, Y].forEach(c => c.delete());
+    const pts = (sym ? rightHalf(full) : full).map(([x, y]) => [r2(clampNum(x, sym ? 0 : -OL.W/2, OL.W/2)), r2(clampNum(y, -OL.H/2, OL.H/2))]);
+    next = { ...o, mode: 'custom', sym, pts, radius: 0 };
+    if (big) setTimeout(() => toast(`The outline in ${name} is bigger than the ${OL.W} × ${OL.H} mm drawing area; it was cut to fit.`), 0);
+  } else {
+    const d = JSON.parse(text);
+    if (!d || !Array.isArray(d.pts)) throw new Error('this isn\'t an outline file (no "pts")');
+    next = { ...d, mode: 'custom', preset: o.preset };
+  }
+  mutate(() => {
+    const keep = state.outline.handles;
+    state.outline = cleanOutline(next, 'custom');
+    if (/\.dxf$/i.test(name) && keep){ state.outline.handles = { ...keep }; syncAnchors(state.outline); }
+    state.outline.mode = 'custom'; state.plateId = 'custom';
+  });
+  olSel = null; syncInputs();
+}
+$('olImport').addEventListener('click', () => $('olFileIn').click());
+$('olFileIn').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try { if (/\.dxf$/i.test(f.name) && !MF) throw new Error('the 3D engine is still loading; try again in a moment'); importOutline(f.name, r.result); toast(`Opened ${f.name}`); }
+    catch(err){ toast(`Could not open ${f.name}: ${err.message}`); }
+    e.target.value = '';
+  };
+  r.readAsText(f);
+});
+$('olExportJson').addEventListener('click', () => saveFile('ash-outline.json', outlineJson()));
+$('olExportDxf').addEventListener('click', () => { const t = outlineDxf(); if (!t){ toast('Finish the outline first: it isn\'t usable yet.'); return; } saveFile('ash-outline.dxf', t); });
 $('fileIn').addEventListener('change', e => {
   const f = e.target.files && e.target.files[0]; if (!f) return;
   const r = new FileReader();
