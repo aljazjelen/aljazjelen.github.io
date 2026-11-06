@@ -1,0 +1,34 @@
+{
+  "_help": [
+    "One handle set, from CAD. DXFs in mm. offset [x, y] moves everything from the CAD's coordinates to the wheel's, where the hub is at 0,0.",
+    "core: the handle core seen from the front: its outline (the largest closed shape) and holes (circles). mirror adds the other side. thickness = handle core thickness at the mounting areas; the core plate is lowered by this much there so the handle core is clamped between core plate and front plate.",
+    "mountAreas: closed shapes where the handle sits on the plate. They are always part of the outline, parts keep clear of them, and their circles become the mounting holes through the front plate and into the core plate.",
+    "Fixed outline points: round a corner of a mounting area with R0.1 in CAD; the corner it rounds off becomes a point of the outline that can't be moved or deleted. Without R0.1 corners: \"anchors\": [[x, y], ...] here, else the outermost corners of the areas.",
+    "grip: an STL of one whole handle (core and grip), in the same CAD coordinates as the DXFs: the DXFs' plane is the STL's XZ plane (Onshape's Front plane), the driver looks from -Y, and plateFaceY is the Y of the core face that touches the front plate. Shown in the 3D preview on both sides. Without it, the handle cores are shown."
+  ],
+  "name": "GT3 Dual Close",
+  "offset": [
+    0,
+    -12.75
+  ],
+  "core": {
+    "dxf": "core.dxf",
+    "side": "right",
+    "thickness": 7
+  },
+  "mountAreas": [
+    {
+      "dxf": "area1.dxf",
+      "side": "left"
+    },
+    {
+      "dxf": "area2.dxf",
+      "side": "left"
+    }
+  ],
+  "mirror": true,
+  "grip": {
+    "stl": "grip.stl",
+    "plateFaceY": -7.5
+  }
+}

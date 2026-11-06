@@ -6,7 +6,7 @@
     "Fixed outline points: round a corner of a mounting area with R0.1 in CAD; the corner it rounds off becomes a point of the outline that can't be moved or deleted. Without R0.1 corners: \"anchors\": [[x, y], ...] here, else the outermost corners of the areas.",
     "grip: an STL of one whole handle (core and grip), in the same CAD coordinates as the DXFs: the DXFs' plane is the STL's XZ plane (Onshape's Front plane), the driver looks from -Y, and plateFaceY is the Y of the core face that touches the front plate. Shown in the 3D preview on both sides. Without it, the handle cores are shown."
   ],
-  "name": "GT3 Closed",
+  "name": "GT3 Triple Handle",
   "offset": [
     0,
     -12.75

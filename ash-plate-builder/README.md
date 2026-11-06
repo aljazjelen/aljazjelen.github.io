@@ -45,7 +45,7 @@ wheels/
 ```
 
 There are three categories: GT3 and rally wheels, and button boxes. The plates are:
-- **Zeus · GT3** (`zeus`): 267 × 142 mm plate with 13 mounting holes, with the GT3 Closed handles.
+- **Zeus · GT3** (`zeus`): 267 × 142 mm plate with 13 mounting holes, with the GT3 Triple Handle.
 - **Hermes · Rally** (`hermes`): compact 147 × 108 mm plate with 6 mounting holes. No handles until there's a rally handle set.
 - **Merida · Button box** (`merida`): a 120 × 120 mm button box plate with 4 corner mounting holes and no handles.
 - **Ares · GT3 wide** (`ares`): a placeholder defined without a DXF.
@@ -130,15 +130,18 @@ There's one way to do handles: a **handle set** designed in CAD, one folder per 
 ```
 handles/
   index.json
-  gt3/
+  gt3/              GT3 Triple Handle (3 mounting areas, used by Zeus)
+  gt3-dual-close/   GT3 Dual Close
+  gt3-dual-out/     GT3 Dual Out
+  gt3-dual-open/    GT3 Dual Open   (each: 2 mounting areas)
     handle.json
     core.dxf        the handle core seen from the front: outline + holes
     area1.dxf ...   the mounting areas, each a closed shape with its holes as circles
     grip.stl        optional: one whole handle (core + grip) for the 3D preview
 ```
 `handle.json` (its `_help` explains every field):
-- `name` ("GT3 Closed"), `mirror: true` for both sides from one.
-- `offset` [x, y]: moves everything from the CAD's coordinates to the wheel's, where the hub is at 0,0. GT3 Closed uses [0, −12.75], which puts its holes exactly on Zeus' handle holes.
+- `name` (e.g. "GT3 Triple Handle"), `mirror: true` for both sides from one.
+- `offset` [x, y]: moves everything from the CAD's coordinates to the wheel's, where the hub is at 0,0. All four GT3 sets use [0, −12.75] (same CAD origin), which puts GT3 Triple Handle's holes exactly on Zeus' handle holes.
 - `core.thickness`: the handle core's thickness at the mounting areas (7 mm, measured from the STL). The core plate is lowered by this much there, so the handle core is clamped between core plate and front plate.
 - `mountAreas`: closed shapes with their screw holes. Corners rounded with **R0.1** mark the fixed outline points.
 - `grip`: `{ "stl": "grip.stl", "plateFaceY": -7.5 }`. The STL is one handle in the same CAD coordinates as the DXFs: the DXFs' plane is the STL's XZ plane (Onshape's Front plane), the driver looks from −Y, and `plateFaceY` is the Y of the core face that touches the front plate. It's shown on both sides and follows Spread / Up / down / Tilt. The supplied model was reduced to about 20,000 triangles (1 MB) to keep the page light. Without a grip the handle cores are shown.
@@ -156,7 +159,7 @@ The core plate is generated as a tray from the same outline as the front plate, 
 - **Hub:** wherever the plate has a round Ø46 no-go zone, the floor gets that opening (for the electronics) plus the quick-release pattern: 6 × Ø5.3 holes on a 70 mm circle, at 0°, 60°, … 300° (one on each side, none at the top or bottom). Merida, which has no hub zone, gets a plain floor.
 - Every size can be changed per wheel in `wheel.json` under `tray`: `wall`, `floor`, `boss`, `pilot`, `taper`, and `hub` (`bore`, `pcd`, `bolts`, `bolt`, `angle`), or `"hub": false`.
 - The tray's interior (the outline minus the 4 mm wall) is where everything behind the front plate has to fit. The existing checks already keep parts there: the 4.5 mm edge margin is wider than the wall, and a mounting hole's keep-out is wider than its boss.
-- **Handle mounting areas:** with a handle set, the tray is solid at each mounting area up to the handle core's thickness (7 mm for GT3 Closed) below its top, and the wall there is lowered by the same amount, so the handle core is clamped between the tray and the front plate. The screws go through the front plate and the core into pilot holes in these pads.
+- **Handle mounting areas:** with a handle set, the tray is solid at each mounting area up to the handle core's thickness (7 mm for all GT3 sets) below its top, and the wall there is lowered by the same amount, so the handle core is clamped between the tray and the front plate. The screws go through the front plate and the core into pilot holes in these pads.
 
 
 ### Back plate (test)
@@ -193,7 +196,7 @@ The app has three views, switched at the top. It remembers the last one; add `#o
   - **Start from** fills the canvas with a rectangle, a round shape, or a simplified copy of one of the existing designs to modify.
   - The outline must not cross itself. It should go around the electronics zone with at least 4.5 mm to spare; the panel on the right says when it doesn't.
   - **Handle mounting** (right column) picks a handle set from `handles/` (or None). A handle set comes from CAD (see *Handle sets* below):
-    - **Spread / Up / down / Tilt** sliders move the handles (the outline and handles follow while you drag, and each drag is one undo step). Spread shows the overall width across both handles (e.g. 292 mm for GT3 open) and can change it by ±20 mm, moving both handles outwards or inwards symmetrically; Up / down ±10 mm; Tilt ±15°. Tilt turns them around the middle of their mounting areas (+ leans the tops outwards). Everything moves with them: core, mounting areas, holes and fixed points. Reset position puts them back where the CAD has them.
+    - **Spread / Up / down / Tilt** sliders move the handles (the outline and handles follow while you drag, and each drag is one undo step). Spread shows the overall width across both handles (e.g. 292 mm for GT3 Triple Handle) and can change it by ±20 mm, moving both handles outwards or inwards symmetrically; Up / down ±10 mm; Tilt ±15°. Tilt turns them around the middle of their mounting areas (+ leans the tops outwards). Everything moves with them: core, mounting areas, holes and fixed points. Reset position puts them back where the CAD has them.
     - **Fixed points** (filled squares): the handle set puts points on your outline that you can't move or delete: marked in CAD by rounding a mounting area's corner with **R0.1**: the centre of each R0.1 arc becomes a fixed point. Without R0.1 corners, the points listed as `"anchors": [[x, y], ...]` in `handle.json` (right side; mirrored like the rest), else the outermost corners of the mounting areas (the corners of the convex hull around them). Your own points are added around them, and Clear keeps them. Round corners leaves the fixed points sharp.
     - Its **mounting areas** are always part of your outline: they're joined to what you draw and can't be deleted by editing points. An area your outline doesn't touch shows in red, and the handles wait until the outline reaches it.
     - The areas' holes become mounting holes through the front plate and into the core plate. Parts keep clear of the areas (they're no-go zones), because the handle core sits behind the plate there.
