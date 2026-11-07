@@ -3030,7 +3030,7 @@ function rebuild3d(){
   try { geo = frontPlateGeometry(); } catch(e){ geo = null; }
   if (geo && show3dFront) g.add(new THREE.Mesh(geo, mat(FRONT_COLOR)));
   const dgeo = decoGeometry(!!(drag || rotDrag));
-  if (dgeo && show3dFront) g.add(new THREE.Mesh(dgeo, mat(css('--accent'), {roughness: 0.55})));
+  if (dgeo && show3dFront) g.add(new THREE.Mesh(dgeo, mat(GRIP_COLOR, {roughness: 0.6})));   // deco rings: the handles' colour
   const hgeos = handleGeometries(!!(drag || rotDrag));
   if (hgeos && show3dHandles) for (const q of hgeos) g.add(new THREE.Mesh(q.geo.clone(), mat(q.color, {roughness: q.rough ?? 0.6, metalness: q.metal ?? 0.05})));
   const backShape = outlineShape(pl.outline);
@@ -3065,7 +3065,7 @@ function rebuild3d(){
       else { body = new THREE.Mesh(new THREE.BoxGeometry(tp.body.w, tp.body.h, tp.depth), bodyMat); body.rotation.z = p.rot*Math.PI/180; }
       if (body){ body.position.set(p.x, p.y, -tp.depth/2); g.add(body); }
       if (tp.cap){
-        const col = tp.cap.kind==='led' ? '#E8432E' : tp.cap.kind==='lever' ? '#B9C0C7' : tp.cap.kind==='knob' ? '#1C2024' : '#E3E6E9';
+        const col = tp.cap.kind==='led' ? '#E8432E' : tp.cap.kind==='lever' ? '#B9C0C7' : tp.cap.kind==='knob' ? '#1C2024' : css('--accent');   // button caps: accent blue
         const capMat = mat(col, tp.cap.kind==='led'?{emissive:new THREE.Color('#7A1408')}:{});
         let cap;
         if (tp.cap.c === 'rect'){ cap = new THREE.Mesh(new THREE.BoxGeometry(tp.cap.w, tp.cap.h, tp.cap.height), capMat); cap.rotation.z = p.rot*Math.PI/180; }

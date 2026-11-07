@@ -174,7 +174,7 @@ A first test of the part that attaches behind the core plate, shown in the 3D pr
 
 ### Adapter: `adapter/`
 The quick-release adapter that bolts to the back: a standard part, the same on every wheel (`adapter/adapter.json` + `adapter.stl`, "ASH short adapter"). It's bolted with the 6 quick-release bolts (Ø5.3 on 70 mm) through the back plate and the core plate's floor, its Ø83 flange sitting in the back plate's Ø84 recess.
-- **3D preview:** centred on the hub, flange on the recess floor, pointing backwards (**Adapter** toggle), in the handles' colour. 3D colours: handles and adapter `#252A2F`, front plate `#30373D`, core plate and back plate `#272D32` (the 2D views keep the theme's plate colour).
+- **3D preview:** centred on the hub, flange on the recess floor, pointing backwards (**Adapter** toggle), in the handles' colour. 3D colours: handles and adapter `#252A2F`, front plate `#30373D`, core plate and back plate `#272D32`, deco rings `#252A2F` (like the handles), button caps in the accent blue (the 2D views keep the theme's plate colour).
 - **Export:** *Adapter .stl* (and the zip) gives the file unchanged.
 - The STL is in its own CAD coordinates: axis along Y, the flange face against the back plate at `faceY` (−7), the rest towards −Y. The preview turns it 180° about X to point backwards.
 
