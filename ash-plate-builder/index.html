@@ -2651,6 +2651,13 @@ function mfRibs(pl, gap, parts, rb, inner, areas){
     let web = T(box.subtract(T(new CrossSection(holes, 'Positive'))));
     // pockets: every part's keep-out and every no-go zone, each with a ring around it
     const pk = [...parts.map(p => shapePoly(koShape(p))), ...pl.holes.filter(h => h.role !== 'mount').map(h => shapePoly(holeKoShape(h)))];
+    // the quick-release bolts: room for the bolt head and a tool (a hole of twice the bolt's size), so no rib sits on a bolt hole
+    const trc = pl.tray || cleanTray();
+    if (trc.hub) for (const hz of pl.holes.filter(h => h.role !== 'mount' && !h.poly && Math.abs(h.d - trc.hub.bore) < 0.5 && pointInPoly(h.x, h.y, pl.outline)))
+      for (let k = 0; k < trc.hub.bolts; k++){
+        const a = (trc.hub.angle + 360*k/trc.hub.bolts) * Math.PI/180;
+        pk.push(circlePoly(hz.x + trc.hub.pcd/2*Math.cos(a), hz.y + trc.hub.pcd/2*Math.sin(a), trc.hub.bolt));
+      }
     if (pk.length){
       const P = T(new CrossSection(pk, 'Positive')), ring = T(P.offset(rb.ring, 'Round', 2, 48));
       web = T(T(web.add(ring)).subtract(P));
