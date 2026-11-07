@@ -67,7 +67,7 @@
     "encH": {
       "name": "Encoder, horizontal (side exit)", "group": "Encoders & switches", "label": "ENC",
       "side": { "pcb": { "w": 16, "h": 15, "t": 1.6 }, "axis": 7, "height": 17.4,
-                "shaft": { "d": 9, "length": 7 }, "knob": { "d": 25, "w": 14.6 }, "slot": 9.6 },
+                "shaft": { "d": 9, "length": 8 }, "knob": { "d": 25, "w": 11 }, "slot": 9.6 },
       "clearance": 1
     },
     "tgl": {
