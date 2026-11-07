@@ -391,7 +391,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
     <main class="viewer-col">
       <section class="card viewer">
         <h2><span class="grow">3D preview</span><button class="btn sm ghost" id="resetView" type="button" title="Back to the starting view, the wheel the right way up">Reset view</button></h2>
-        <div class="body"><div class="vtool"><div class="vgroup" role="group" aria-label="Plates"><span class="vlabel">Plates</span><label class="chip"><input type="checkbox" id="frontChk" checked><i class="sw" style="--sw:#30373D"></i>Front</label><label class="chip"><input type="checkbox" id="backChk" checked><i class="sw" style="--sw:#272D32"></i>Core</label><label class="chip"><input type="checkbox" id="bpChk" checked><i class="sw" style="--sw:#272D32"></i>Back</label></div><div class="vgroup" role="group" aria-label="Hardware"><span class="vlabel">Hardware</span><label class="chip"><input type="checkbox" id="partsChk" checked><i class="sw" style="--sw:var(--accent)"></i>Parts</label><label class="chip"><input type="checkbox" id="handlesChk" checked><i class="sw" style="--sw:#252A2F"></i>Handles</label><label class="chip"><input type="checkbox" id="adChk" checked><i class="sw" style="--sw:#252A2F"></i>Adapter</label></div><div class="vgroup" role="group" aria-label="Display"><span class="vlabel">Display</span><label class="chip see expl" title="Pull the wheel apart along its axis, in assembly order: adapter, back plate, core plate, handles and displays, front plate, deco, buttons and knobs."><input type="checkbox" id="explChk"><i class="sw"></i>Exploded</label><label class="chip see tex" title="Preview finishes: carbon fibre on the front plate, suede on the grips. Only the look in the 3D preview; the exported files don't change."><input type="checkbox" id="texChk" checked><i class="sw"></i>Textures</label><label class="chip see" title="Show the core plate see-through, to look at the parts behind the front plate"><input type="checkbox" id="transBackChk"><i class="sw"></i>See-through core</label></div></div><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
+        <div class="body"><div class="vtool"><div class="vgroup" role="group" aria-label="Plates"><span class="vlabel">Plates</span><label class="chip"><input type="checkbox" id="frontChk" checked><i class="sw" style="--sw:#30373D"></i>Front</label><label class="chip"><input type="checkbox" id="backChk" checked><i class="sw" style="--sw:#272D32"></i>Core</label><label class="chip"><input type="checkbox" id="insChk" checked><i class="sw" style="--sw:#3A4A5A"></i>Insert</label><label class="chip"><input type="checkbox" id="bpChk" checked><i class="sw" style="--sw:#272D32"></i>Back</label></div><div class="vgroup" role="group" aria-label="Hardware"><span class="vlabel">Hardware</span><label class="chip"><input type="checkbox" id="partsChk" checked><i class="sw" style="--sw:var(--accent)"></i>Parts</label><label class="chip"><input type="checkbox" id="handlesChk" checked><i class="sw" style="--sw:#252A2F"></i>Handles</label><label class="chip"><input type="checkbox" id="adChk" checked><i class="sw" style="--sw:#252A2F"></i>Adapter</label></div><div class="vgroup" role="group" aria-label="Display"><span class="vlabel">Display</span><label class="chip see expl" title="Pull the wheel apart along its axis, in assembly order: adapter, back plate, core plate, handles and displays, front plate, deco, buttons and knobs."><input type="checkbox" id="explChk"><i class="sw"></i>Exploded</label><label class="chip see tex" title="Preview finishes: carbon fibre on the front plate, suede on the grips. Only the look in the 3D preview; the exported files don't change."><input type="checkbox" id="texChk" checked><i class="sw"></i>Textures</label><label class="chip see" title="Show the core plate see-through, to look at the parts behind the front plate"><input type="checkbox" id="transBackChk"><i class="sw"></i>See-through core</label></div></div><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
           <p class="note">Drag to turn the wheel any way you like, right-drag to move it, scroll or pinch to zoom. Reset view straightens it again. The light comes from over your shoulder, so the side you look at is always lit. Parts' bodies are translucent to show their depth behind the front plate; See-through core makes the core plate translucent too. Parts are placed in the 2D design view.</p></div>
       </section>
     </main>
@@ -404,6 +404,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
             <button class="btn" id="exStl">Front plate <em>.stl</em></button>
             <button class="btn" id="exDeco">Deco <em>.stl</em></button>
             <button class="btn" id="exTray">Core plate <em>.stl</em></button>
+            <button class="btn" id="exInsert">Insert <em>.stl</em></button>
             <button class="btn" id="exBack">Back plate <em>.stl</em></button>
             <button class="btn" id="exAdapter">Adapter <em>.stl</em></button>
             <button class="btn" id="exDxf">Cut outline <em>.dxf</em></button>
@@ -476,6 +477,12 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
           </div>
           <label class="check" id="ribTunRow" title="Pointed tunnels through the bottom of the ribs, so wires can get from every part's pocket to the hub. Only for ribs at least 10 mm tall: lower ribs, the wires simply run over them."><input type="checkbox" id="ribTun"> Cable passages through the ribs</label>
           <p class="note" id="ribNote"></p>
+          <label class="check" title="A separate printed piece that drops into the core plate and carries the parts: a hexagon base with a closed silo around every part's PCB."><input type="checkbox" id="insOn"> Insert for the parts</label>
+          <div class="row">
+            <label class="field" title="Thickness of the insert's base plate.">Base (mm)<input type="number" id="insBase" min="1" max="6" step="0.2"></label>
+            <label class="field" title="Wall thickness of the silos around the parts.">Silo wall (mm)<input type="number" id="insWall" min="0.8" max="4" step="0.1"></label>
+          </div>
+          <p class="note" id="insNote"></p>
         </div>
       </section>
       <section class="card" id="handlesCard">
@@ -1042,7 +1049,7 @@ let nextId = 1;
 let selected = null;
 let issues = [], errIds = new Set(), warnIds = new Set();
 let undoStack = [], redoStack = [];
-let showKO = true, show3dParts = true, show3dFront = true, transBack3d = false, finish3d = true, explode3d = false, show3dHandles = true, show3dBack = true, show3dBackPlate = true, show3dAdapter = true;
+let showKO = true, show3dParts = true, show3dFront = true, transBack3d = false, finish3d = true, explode3d = false, show3dHandles = true, show3dBack = true, show3dBackPlate = true, show3dAdapter = true, show3dInsert = true;
 
 const $ = id => document.getElementById(id);
 
@@ -1073,6 +1080,25 @@ const plate = () => PLATES.find(p => p.id === state.plateId) || PLATES[0];
    every no-go zone (the hub). cell = hexagon size across flats, wall = rib thickness. Cable passages: a pointed
    tunnel (`tunnelW` wide, `tunnelH` high, 45° roof, so it prints without support) through the bottom of every rib
    between two cells, so wires can run from any pocket to the hub. Saved with the layout. */
+/* Insert: a separate printed piece that drops into the core plate and carries the parts. A base plate (`base` mm,
+   hexagon openings between the parts, solid under them) on the core plate's floor (or on top of its ribs), and
+   around every part's PCB a closed "silo" (`wall` mm) up to the front plate's underside: it holds the PCB (two small
+   snap lips just above it) and keeps each part's light in. Each silo has a low cable notch towards the hub. The
+   front plate presses the insert down. `clear` = gap to the core plate's wall and posts, `pcb` = PCB thickness. */
+const INSERT_DEFAULTS = { on: true, base: 2, wall: 1.6, clear: 0.4, cell: 20, pcb: 1.6, notchW: 6, notchH: 4 };
+function cleanInsert(r){
+  r = r && typeof r === 'object' ? r : {};
+  const D = INSERT_DEFAULTS, num = (v, def) => (v === undefined || v === null || v === '' || !Number.isFinite(+v)) ? def : +v;
+  return { on: r.on === undefined ? D.on : !!r.on, base: clampNum(num(r.base, D.base), 1, 6), wall: clampNum(num(r.wall, D.wall), 0.8, 4),
+           clear: clampNum(num(r.clear, D.clear), 0.1, 2), cell: clampNum(num(r.cell, D.cell), 8, 60), pcb: clampNum(num(r.pcb, D.pcb), 0.8, 3),
+           notchW: clampNum(num(r.notchW, D.notchW), 2, 20), notchH: clampNum(num(r.notchH, D.notchH), 1, 15) };
+}
+// Where parts stand inside the core plate: the insert's top, or the core plate's floor (z, front plate underside = 0).
+function insertLevels(gap){
+  const ins = cleanInsert(state.insert), rb = cleanRibs(state.ribs);
+  const zb = -gap + (rb.on ? Math.min(rb.height, gap) : 0);
+  return ins.on ? { zb, zt: zb + ins.base, ins } : { zb: -gap, zt: -gap, ins };
+}
 const RIB_DEFAULTS = { on: true, cell: 20, wall: 1.6, ring: 1.6, height: 5, tunnels: true, tunnelW: 8, tunnelH: 7 };
 // Cable tunnels only make sense when the ribs are clearly taller than a tunnel; lower ribs, the wires go over them.
 const ribTunnels = (r, gap) => r.tunnels && Math.min(r.height, gap) >= r.tunnelH + 3;
@@ -1584,7 +1610,7 @@ function autoLabel(short, list){
 }
 function makeExample(plateId){
   const pl = PLATES.find(p => p.id === plateId) || PLATES[0];
-  const s = { plateId: pl.id, thickness: pl.thickness, gap: pl.spacing, snap:1, deco: {...DECO_DEFAULTS}, ribs: {...RIB_DEFAULTS}, parts:[] };
+  const s = { plateId: pl.id, thickness: pl.thickness, gap: pl.spacing, snap:1, deco: {...DECO_DEFAULTS}, ribs: {...RIB_DEFAULTS}, insert: {...INSERT_DEFAULTS}, parts:[] };
   const prev = state; state = s;
   if (prev && prev.outline) s.outline = JSON.parse(JSON.stringify(prev.outline));
   for (const o of pl.example) if (o && knownType(o.type) && Number.isFinite(+o.x) && Number.isFinite(+o.y))
@@ -1606,6 +1632,7 @@ function loadState(json){
   s.gap = clampNum(+s.gap || DEFAULT_GAP, 5, 60);
   s.deco = cleanDeco(s.deco);
   s.ribs = cleanRibs(s.ribs);
+  s.insert = cleanInsert(s.insert);
   delete s.handles;
   s.snap = [0,0.5,1,2.5,5].includes(+s.snap) ? +s.snap : 1;
   const known = s.parts.filter(p => p && knownType(p.type));
@@ -2410,6 +2437,11 @@ function initControls(){
     mutate(() => { state.deco = cleanDeco({...state.deco, [key]: v}); });
     syncInputs();
   });
+  for (const [id, key] of Object.entries({insOn: 'on', insBase: 'base', insWall: 'wall'})) $(id).addEventListener('change', e => {
+    const v = e.target.type === 'checkbox' ? e.target.checked : +e.target.value;
+    mutate(() => { state.insert = cleanInsert({...state.insert, [key]: v}); });
+    syncInputs();
+  });
   const ribInputs = {ribOn: 'on', ribCell: 'cell', ribWall: 'wall', ribH: 'height', ribTun: 'tunnels'};
   for (const [id, key] of Object.entries(ribInputs)) $(id).addEventListener('change', e => {
     const v = e.target.type === 'checkbox' ? e.target.checked : +e.target.value, upd = {[key]: v};
@@ -2429,6 +2461,7 @@ function initControls(){
   $('explChk').addEventListener('change', e => { explode3d = e.target.checked; animateExplode(); });
   $('resetView').addEventListener('click', () => resetView());
   $('bpChk').addEventListener('change', e => { show3dBackPlate = e.target.checked; schedule3d(); });
+  $('insChk').addEventListener('change', e => { show3dInsert = e.target.checked; schedule3d(); });
   $('adChk').addEventListener('change', e => { show3dAdapter = e.target.checked; schedule3d(); });
   $('undoBtn').addEventListener('click', undo);
   $('redoBtn').addEventListener('click', redo);
@@ -2509,7 +2542,15 @@ function renderDecoNote(){
   for (const [k, c] of [['buttons', n], ['encoders', ne]]){ const el = document.querySelector(`#decoSections [data-dsec="${k}"] .pg-count`); if (el) el.textContent = c; }
   $('exDeco').disabled = !!why;
 }
-function syncRibs(){
+function syncInsert(){
+  const r = cleanInsert(state.insert), a = document.activeElement, L = insertLevels(state.gap);
+  $('insOn').checked = r.on;
+  for (const [id, v] of [['insBase', r.base], ['insWall', r.wall]]){ if ($(id) !== a) $(id).value = v; $(id).disabled = !r.on; }
+  $('insNote').textContent = r.on
+    ? `Printed separately and dropped in; the front plate presses it down. Its ${fmt(r.base)} mm base sits ${cleanRibs(state.ribs).on ? 'on the ribs' : 'on the floor'} with hexagon openings between the parts. Around every part's PCB a closed silo reaches up to the front plate (keeps each part's light in), with two small snap lips just above a ${fmt(r.pcb)} mm PCB and a ${fmt(r.notchW)} × ${fmt(r.notchH)} mm cable notch towards the hub. The PCBs stand ${fmt(r2(-L.zt))} mm below the front plate.`
+    : 'No insert: the parts hang from the front plate.';
+}
+function syncRibs(){ syncInsert();
   const r = cleanRibs(state.ribs), a = document.activeElement;
   $('ribOn').checked = r.on; $('ribTun').checked = r.tunnels;
   for (const [id, v] of [['ribCell', r.cell], ['ribWall', r.wall], ['ribH', r.height]]){ if ($(id) !== a) $(id).value = v; $(id).disabled = !r.on; }
@@ -2712,7 +2753,7 @@ function mfTray(pl, gap, parts = [], ribs = null){
     const slots = [];
     for (const p of parts){
       const S = typeOf(p) && typeOf(p).side; if (!S) continue;
-      const z = -gap + S.pcbT + S.axis, r = S.slot/2, x0 = S.pcbW/2 - 0.5, L = S.shaftL + 1;
+      const z = insertLevels(gap).zt + S.pcbT + S.axis, r = S.slot/2, x0 = S.pcbW/2 - 0.5, L = S.shaftL + 1;
       const box = T(T(Manifold.cube([L, S.slot, 0 - z + 1])).translate([x0, -r, z]));
       const cyl = T(T(T(Manifold.cylinder(L, r, r, 40)).rotate([0, 90, 0])).translate([x0, 0, z]));
       slots.push(T(T(T(Manifold.union([box, cyl])).rotate([0, 0, p.rot || 0])).translate([p.x, p.y, 0])));
@@ -2789,6 +2830,81 @@ function mfRibs(pl, gap, parts, rb, inner, areas){
     return ribs.translate([0, 0, 0]);
   } finally { for (const x of trash) x.delete(); }
 }
+// The insert (see INSERT_DEFAULTS), or null.
+function mfInsert(pl, gap, parts){
+  const { Manifold, CrossSection } = MF, trash = [], T = x => (trash.push(x), x);
+  const { zb, zt, ins } = insertLevels(gap), tr = pl.tray || cleanTray(), H = -zt;
+  if (!ins.on || H <= 1) return null;
+  try {
+    const outer = T(new CrossSection([pl.outline])), areas = pl.mountAreas || [];
+    let R = T(outer.offset(-(tr.wall + ins.clear), 'Round', 2, 48));
+    const keepClear = [];
+    for (const h of pl.holes.filter(h => h.role === 'mount')) keepClear.push(circlePoly(h.x, h.y, tr.boss/2 + ins.clear));
+    for (const h of pl.holes.filter(h => h.role !== 'mount')) keepClear.push(shapePoly(holeKoShape(h)));
+    if (areas.length) keepClear.push(...areas.map(ccw));
+    if (keepClear.length) R = T(R.subtract(T(T(new CrossSection(keepClear, 'Positive')).offset(ins.clear, 'Round', 2, 48))));
+    // silos: around every element's PCB (+0.3 mm), wall `ins.wall`; side-exit parts are open towards their shaft
+    const inners = [], outers = [], cuts3d = [], lips = [];
+    const hub = (() => { const hz = pl.holes.find(h => h.role !== 'mount' && !h.poly); return hz ? [hz.x, hz.y] : [0, 0]; })();
+    for (const p of parts.flatMap(elemsOf)){
+      const t = typeOf(p); if (!t) continue;
+      const body = shapeOf(t.body, p), inn = T(T(new CrossSection([shapePoly(body)], 'Positive')).offset(0.3, 'Round', 2, 32));
+      inners.push(inn); outers.push(T(inn.offset(ins.wall, 'Round', 2, 32)));
+      const [cx, cy] = shapeCentre(t.body, p), ext = t.body.c === 'circle' ? t.body.d/2 : Math.hypot(t.body.w, t.body.h)/2;
+      const rot = (p.rot || 0);
+      if (t.side){   // no wall on the shaft side
+        const b = T(T(T(Manifold.cube([ext + ins.wall + 2, (t.body.h || ext*2) + 0.6, H + 2])).translate([0, -((t.body.h || ext*2) + 0.6)/2, zt - 1])).rotate([0, 0, rot]));
+        cuts3d.push(T(b.translate([cx, cy, 0])));
+      } else {   // the cable notch, towards the hub
+        const a = Math.atan2(hub[1] - cy, hub[0] - cx) * 180/Math.PI;
+        const b = T(T(T(Manifold.cube([ext + ins.wall + 2, ins.notchW, ins.pcb + ins.notchH + 0.01])).translate([0, -ins.notchW/2, zt - 0.01])).rotate([0, 0, a]));
+        cuts3d.push(T(b.translate([cx, cy, 0])));
+      }
+      // snap lips: two small ledges on opposite inner faces, just above the PCB
+      const lipZ = zt + ins.pcb + 0.2, half = t.body.c === 'circle' ? t.body.d/2 + 0.3 : t.body.w/2 + 0.3;
+      if (!t.side) for (const sgn of [-1, 1]){
+        const L = Math.min(6, (t.body.c === 'circle' ? t.body.d : t.body.h) * 0.6);
+        const lip = T(T(T(Manifold.cube([0.6, L, 1])).translate([sgn > 0 ? half - 0.6 : -half, -L/2, lipZ])).rotate([0, 0, rot]));
+        lips.push(T(lip.translate([cx, cy, 0])));
+      }
+    }
+    const IN = inners.length ? T(CrossSection.union(inners)) : null, OUT = outers.length ? T(CrossSection.union(outers)) : null;
+    // base: solid at the edge (3 mm) and under the silos, hexagon openings everywhere else
+    const F = ins.cell, sq3 = Math.sqrt(3), b = pl.bbox, ext = Math.max(Math.abs(b.minX), Math.abs(b.maxX), Math.abs(b.minY), Math.abs(b.maxY)) + F;
+    const hr = (F - 2*ins.wall) / sq3, holes = [];
+    for (let j = -Math.ceil(ext / (F*sq3/2)); j <= Math.ceil(ext / (F*sq3/2)); j++){
+      const y = j * F*sq3/2, sh = (j & 1) ? F/2 : 0;
+      for (let i = -Math.ceil(ext / F) - 1; i <= Math.ceil(ext / F) + 1; i++){
+        const x = i*F + sh, q = []; for (let k = 0; k < 6; k++){ const a = (30 + 60*k) * Math.PI/180; q.push([x + hr*Math.cos(a), y + hr*Math.sin(a)]); }
+        holes.push(q);
+      }
+    }
+    let open = T(T(new CrossSection(holes, 'Positive')).intersect(T(R.offset(-3, 'Round', 2, 48))));
+    if (OUT) open = T(open.subtract(T(OUT.offset(1, 'Round', 2, 32))));
+    open = T(T(open.offset(-0.4, 'Round', 2, 24)).offset(0.4, 'Round', 2, 24));
+    let base2d = T(R.subtract(open));
+    let solid = T(T(Manifold.extrude(base2d, ins.base)).translate([0, 0, zb]));
+    if (OUT){
+      const silo2d = T(T(OUT.subtract(IN)).intersect(R));
+      if (!silo2d.isEmpty()){
+        let silos = T(T(Manifold.extrude(silo2d, H + 0.01)).translate([0, 0, zt - 0.01]));
+        if (cuts3d.length) silos = T(silos.subtract(T(Manifold.union(cuts3d))));
+        solid = T(Manifold.union([solid, silos, ...(lips.length ? [T(T(Manifold.union(lips)).intersect(T(T(Manifold.extrude(T(OUT.intersect(R)), H)).translate([0, 0, zt]))))] : [])]));
+      }
+    }
+    return solid.translate([0, 0, 0]);
+  } finally { for (const x of trash) x.delete(); }
+}
+const insertCache = { key: null, geo: null };
+function insertGeometry(allowStale){
+  const pl = plate(), key = JSON.stringify([pl.key || pl.id, state.gap, mfState, cleanInsert(state.insert), cleanRibs(state.ribs), state.parts.map(p => [p.type, p.x, p.y, p.rot, p.dims, p.row])]);
+  if (insertCache.key === key || (allowStale && insertCache.key !== null)) return insertCache.geo;
+  let geo = null;
+  try { if (MF){ const m = mfInsert(pl, state.gap, state.parts); if (m){ geo = mfToGeometry(m); m.delete(); } } } catch(e){ console.warn('Insert could not be built.', e); }
+  if (insertCache.geo) insertCache.geo.dispose();
+  insertCache.key = key; insertCache.geo = geo;
+  return geo;
+}
 // The back plate, right under the core plate (its top touches the core plate's bottom at z = -(spacing + floor)).
 function mfBackPlate(pl, gap){
   const { Manifold, CrossSection } = MF, tr = pl.tray || cleanTray(), bp = pl.back || cleanBack(), trash = [];
@@ -2836,7 +2952,7 @@ function backPlateGeometry(){
 const trayCache = { key: null, geo: null };
 function trayGeometry(allowStale){
   const pl = plate(), rb = cleanRibs(state.ribs);
-  const key = JSON.stringify([pl.key || pl.id, state.gap, mfState, rb, rb.on ? state.parts.map(p => [p.type, p.x, p.y, p.rot, p.dims, p.row]) : state.parts.filter(p => typeOf(p) && typeOf(p).side).map(p => [p.type, p.x, p.y, p.rot])]);
+  const key = JSON.stringify([pl.key || pl.id, state.gap, mfState, rb, cleanInsert(state.insert), rb.on ? state.parts.map(p => [p.type, p.x, p.y, p.rot, p.dims, p.row]) : state.parts.filter(p => typeOf(p) && typeOf(p).side).map(p => [p.type, p.x, p.y, p.rot])]);
   if (trayCache.key === key || (allowStale && trayCache.key !== null)) return trayCache.geo;
   let geo = null;
   try { if (MF){ const m = mfTray(pl, state.gap, state.parts, rb); geo = mfToGeometry(m); m.delete(); } } catch(e){ console.warn('Core plate could not be built.', e); }
@@ -3083,7 +3199,8 @@ function mfDeco(){
    The handle set's grip model (an STL from the CAD) on both sides, or, without one, its handle cores as slabs of
    their thickness right under the front plate. Placement (spread, up/down, tilt) moves them like everything else. */
 const GRIP_COLOR = '#252A2F';   // grips (and the adapter): dark, like suede
-const FRONT_COLOR = '#30373D';  // front plate in 3D (the 2D views keep the theme's --plate)
+const FRONT_COLOR = '#30373D';
+const INSERT_COLOR = '#3A4A5A';   // the insert: a slightly blue grey, to tell it from the core plate  // front plate in 3D (the 2D views keep the theme's --plate)
 const SHELL_COLOR = '#272D32';  // core plate and back plate
 // Handle cores (outline minus holes) as Manifolds.
 function mfCores(H, T){
@@ -3319,7 +3436,7 @@ for (const v of TAB_ORDER){
 function sidePart3d(p, S, gap, mat, L){
   const a = (p.rot || 0) * Math.PI/180, c = Math.cos(a), s = Math.sin(a);
   const at = (lx, ly, z, m) => { m.position.set(p.x + lx*c - ly*s, p.y + lx*s + ly*c, z); m.rotation.z = a; return L(m, 'core'); };
-  const zf = -gap, zAxis = zf + S.pcbT + S.axis;
+  const zf = insertLevels(gap).zt, zAxis = zf + S.pcbT + S.axis;
   at(0, 0, zf + S.pcbT/2, new THREE.Mesh(new THREE.BoxGeometry(S.pcbW, S.pcbH, S.pcbT), mat('#1F5B3A', {roughness: 0.6})));
   const bw = Math.min(S.pcbW * 0.55, 9), bh = Math.max(S.height - S.pcbT, S.axis + 3);
   at(S.pcbW/2 - bw/2, 0, zf + S.pcbT + bh/2, new THREE.Mesh(new THREE.BoxGeometry(bw, Math.min(S.pcbH - 2, 13), bh), mat('#4A4F55', {roughness: 0.5, metalness: 0.2})));
@@ -3363,7 +3480,7 @@ function knobGeometry(d, h){
 function disposeGroup(g){ g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); }
 /* Exploded view: every piece moves along the wheel's axis by its layer's offset (mm), in assembly order.
    The pieces keep their offset in userData; toggling only animates the positions, nothing is rebuilt. */
-const EXPLODE = { adapter: -80, back: -40, core: 0, handles: 28, under: 28, front: 55, deco: 85, parts: 125 };   // under: displays, mounted from behind
+const EXPLODE = { adapter: -80, back: -40, core: 0, insert: 14, handles: 28, under: 28, front: 55, deco: 85, parts: 125 };   // under: displays, mounted from behind
 function applyExplode(k){
   if (!three || !three.group) return;
   for (const o of three.group.children) if (o.userData.ex) o.position.z = o.userData.z0 + o.userData.ex * k;
@@ -3410,6 +3527,8 @@ function rebuild3d(){
   if (!show3dBack){}
   else if (tgeo) L(new THREE.Mesh(tgeo.clone(), backMat(0.32)), 'core');
   else { const back = new THREE.Mesh(new THREE.ExtrudeGeometry(backShape, {depth:3, bevelEnabled:false, curveSegments:40}), backMat(0.28)); back.position.z = -gap - 3; g.add(back); }
+  const igeo = show3dInsert ? insertGeometry(!!(drag || rotDrag)) : null;
+  if (igeo) L(new THREE.Mesh(igeo.clone(), mat(INSERT_COLOR, {roughness: 0.8, side: THREE.DoubleSide})), 'insert');
   const ageo = show3dAdapter ? adapterGeometry() : null;
   if (ageo) for (const [x, y, z] of adapterSpots(pl, gap)){ const m = new THREE.Mesh(ageo.clone(), mat(GRIP_COLOR, {roughness: 0.6, metalness: 0.1})); m.position.set(x, y, z); L(m, 'adapter'); }
   const bgeo = show3dBackPlate ? backPlateGeometry() : null;
@@ -3583,6 +3702,12 @@ $('exTray').addEventListener('click', () => {
   if (!geo){ toast('The core plate needs the 3D engine, which has not loaded.'); return; }
   saveFile(baseName()+'-core.stl', stlFromGeometry(geo, 'ASH core plate - Immersion Dynamics'));
 });
+$('exInsert').addEventListener('click', () => {
+  if (!needThree()) return;
+  const geo = insertGeometry();
+  if (!geo){ toast(cleanInsert(state.insert).on ? 'The insert needs the 3D engine, which has not loaded.' : 'The insert is turned off (Core plate panel).'); return; }
+  saveFile(baseName()+'-insert.stl', stlFromGeometry(geo, 'ASH insert - Immersion Dynamics'));
+});
 $('exBack').addEventListener('click', () => {
   if (!needThree()) return;
   const geo = backPlateGeometry();
@@ -3604,6 +3729,7 @@ async function exportAll(){
   z.file(b+'.stl', stlBinary()); z.file(b+'.dxf', dxfText()); z.file(b+'.svg', svgText());
   const dgeo = decoGeometry(); if (dgeo) z.file(b+'-deco.stl', stlFromGeometry(dgeo, 'ASH deco - Immersion Dynamics'));
   const tgeo = trayGeometry(); if (tgeo) z.file(b+'-core.stl', stlFromGeometry(tgeo, 'ASH core plate - Immersion Dynamics'));
+  const igeo = insertGeometry(); if (igeo) z.file(b+'-insert.stl', stlFromGeometry(igeo, 'ASH insert - Immersion Dynamics'));
   const bgeo = backPlateGeometry(); if (bgeo) z.file(b+'-back.stl', stlFromGeometry(bgeo, 'ASH back plate - Immersion Dynamics'));
   if (ADAPTER) z.file(ADAPTER.file.replace(/\.stl$/i, '') + '.stl', ADAPTER.buf);
   z.file(b+'-parts.csv', bomCsv()); z.file(b+'-layout.json', layoutJson());

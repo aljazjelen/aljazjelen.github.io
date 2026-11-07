@@ -154,6 +154,10 @@ What a handle set does, on a preset core plate and on your own outline alike:
 - **Core plate:** a pad at each mounting area (see below).
 - **3D preview:** the grips, toggled with **Handles** above the preview. Handles aren't exported: they're your CAD parts.
 
+### Insert (test)
+
+A separate printed piece that drops into the core plate and carries the parts (**Insert for the parts** in the Core plate panel on the 3D tab, on by default; **Insert** toggle above the 3D view; **Insert .stl** export, also in the zip). Its base plate (2 mm) sits on the core plate's ribs (or on the floor without ribs), with hexagon openings between the parts and a solid 3 mm rim. Around every part's PCB (each element of an LED row on its own) a closed **silo** reaches up to the front plate's underside, so each part's light stays in, with two small snap lips just above a 1.6 mm PCB and a 6 × 4 mm cable notch at the bottom, towards the hub. Side-exit parts get a silo that's open towards their shaft, and stand on the insert (their U slot moves up with it). The insert keeps clear of the core plate's wall, screw posts, handle mounting areas and the hub. The front plate presses it down; no screws. Settings: base thickness and silo wall. The parts are still drawn hanging from the front plate in 3D; per-part heights come later.
+
 ### Core plate (tray)
 The core plate is generated as a tray from the same outline as the front plate, and exported as its own STL (`-core.stl`, also in the zip), in the same coordinates as the plate STL. Its top touches the underside of the front plate, which sits on its wall like a lid.
 - **Sloped sides:** the outside leans inward towards the bottom, 7° from vertical over the lowest 20 mm (with the 20 mm spacing that's most of the 25 mm height), so the bottom is about 2.5 mm smaller all round. The inside stays straight, so the wall gets thinner towards the bottom: 4 mm at the top, about 2.2 mm where it meets the floor (with the defaults). Set per wheel in `wheel.json` under `tray.taper` (`angle`, `height`), or `"taper": false` for straight sides.
