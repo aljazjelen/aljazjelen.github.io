@@ -149,7 +149,7 @@ handles/
 What a handle set does, on a preset core plate and on your own outline alike:
 - **Front plate:** the areas' holes are mounting holes (on a preset only where its DXF doesn't already have them), and the areas are no-go zones for parts, because the core sits behind the plate there.
 - **Core plate:** a pad at each mounting area (see below).
-- **3D preview:** the grips, toggled with Handles above the preview. Handles aren't exported: they're your CAD parts.
+- **3D preview:** the grips, toggled with **Handles** above the preview. Handles aren't exported: they're your CAD parts.
 
 ### Core plate (tray)
 The core plate is generated as a tray from the same outline as the front plate, and exported as its own STL (`-core.stl`, also in the zip), in the same coordinates as the plate STL. Its top touches the underside of the front plate, which sits on its wall like a lid.
@@ -163,7 +163,7 @@ The core plate is generated as a tray from the same outline as the front plate, 
 
 
 ### Back plate (test)
-A first test of the part that attaches behind the core plate, shown in the 3D preview (**Back plate** checkbox) and exported as `-back.stl` (also in the zip), in the same coordinates as the other STLs.
+A first test of the part that attaches behind the core plate, shown in the 3D preview (**Back** toggle under Plates) and exported as `-back.stl` (also in the zip), in the same coordinates as the other STLs.
 - **Outline:** the core plate's bottom outline (after its outside slope), so the two line up.
 - **Thickness:** 5 mm, right under the core plate.
 - **Chamfer:** an aggressive one on the bottom edge: 10 mm inward at 70° from vertical, so it rises about 3.6 mm of the 5 mm.
@@ -174,7 +174,7 @@ A first test of the part that attaches behind the core plate, shown in the 3D pr
 
 ### Adapter: `adapter/`
 The quick-release adapter that bolts to the back: a standard part, the same on every wheel (`adapter/adapter.json` + `adapter.stl`, "ASH short adapter"). It's bolted with the 6 quick-release bolts (Ø5.3 on 70 mm) through the back plate and the core plate's floor, its Ø83 flange sitting in the back plate's Ø84 recess.
-- **3D preview:** centred on the hub, flange on the recess floor, pointing backwards (**Adapter** checkbox), in the grips' dark colour. The core plate and back plate are shown in the same dark colour, a little brighter.
+- **3D preview:** centred on the hub, flange on the recess floor, pointing backwards (**Adapter** toggle), in the grips' dark colour. The core plate and back plate are shown in the same dark colour, a little brighter.
 - **Export:** *Adapter .stl* (and the zip) gives the file unchanged.
 - The STL is in its own CAD coordinates: axis along Y, the flange face against the back plate at `faceY` (−7), the rest towards −Y. The preview turns it 180° about X to point backwards.
 
@@ -205,7 +205,7 @@ The app has three views, switched at the top. It remembers the last one; add `#o
   - **Import / Export:** *Export .json* saves the outline as you edited it (points, fixed points, symmetry, rounding, handle set and its position) to open again exactly; *Export .dxf* writes the finished outline (rounded, joined with the handle mounting areas) with the mounting holes and the hub zone, for CAD. *Import…* opens either: a DXF's largest closed shape becomes your points (wheel centre at 0,0, simplified to within 0.2 mm; a shape that's symmetric about the centre line opens with Symmetric on, and the chosen handle set's fixed points are added).
   - The outline is saved with the layout. Until it's usable, the 2D design keeps showing the previous core plate and says so.
 - **2D design:** the chosen core plate (**Change** goes back to Outline), the parts list, the plate editor, the selected part and the checks. The parts list shows its groups (Buttons/Rotaries, Encoders & switches, Indicators, Displays, Custom) collapsed. Click a group to open it; only one is open at a time.
-- **3D preview:** a large 3D view of the plate, deco and handles, with the Export, Deco and Handles panels (Handles only describes the wheel's handle set). Drag turns the wheel freely in every direction (over the top and underneath), right-drag moves it, scroll or pinch zooms; **Reset view** puts it back the right way up.
+- **3D preview:** a large 3D view of the plate, deco and handles, with the Export, Deco and Handles panels (Handles only describes the wheel's handle set). Drag turns the wheel freely in every direction (over the top and underneath), right-drag moves it, scroll or pinch zooms; **Reset view** puts it back the right way up. Toggles above the view, in three groups: **Plates** (Front, Core, Back), **Hardware** (Parts, Handles, Adapter) and **Display** (See-through core, off by default: makes the core plate translucent). The key and fill lights move with the camera (over your shoulder), so the side you look at is always lit, from the front or from behind.
 
 ## Controls
 In the editor:

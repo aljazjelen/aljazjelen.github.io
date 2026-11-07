@@ -245,7 +245,20 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
 kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:3px;padding:0 4px;background:var(--panel-2)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-.pvchecks{display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:flex-end}
+.vtool{display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px;margin-bottom:10px}
+.vgroup{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.vlabel{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-right:3px}
+.chip{position:relative;display:inline-flex;align-items:center;gap:6px;padding:4px 11px 4px 8px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--muted);font-size:12.5px;line-height:1.3;cursor:pointer;user-select:none;transition:background .12s,border-color .12s,color .12s}
+.chip:hover{border-color:var(--muted)}
+.chip input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
+.chip .sw{width:11px;height:11px;border-radius:3px;border:1.5px solid var(--sw,var(--muted));box-sizing:border-box;flex:none}
+.chip:has(input:checked){color:var(--ink);background:var(--accent-soft);border-color:var(--accent)}
+.chip:has(input:checked) .sw{background:var(--sw);border-color:var(--accent)}
+.chip.see .sw{border-color:var(--muted);background:linear-gradient(135deg,var(--muted) 50%,transparent 50%);opacity:.6}
+.chip.see:has(input:checked) .sw{border-color:var(--accent);background:linear-gradient(135deg,var(--accent) 50%,transparent 50%);opacity:1;box-shadow:none}
+.chip:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.chip:has(input:disabled){opacity:.45;cursor:not-allowed}
+.card.viewer > h2 #resetView{font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:500}
 </style>
 
 <div class="wrap">
@@ -373,9 +386,9 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
   <div class="grid3d" id="viewPreview" role="tabpanel" aria-labelledby="tabPreview" hidden>
     <main class="viewer-col">
       <section class="card viewer">
-        <h2><span class="grow">3D preview <button class="btn sm ghost" id="resetView" type="button" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;margin-left:10px;vertical-align:middle" title="Back to the starting view, the wheel the right way up">Reset view</button></span><span class="pvchecks"><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="partsChk" checked> Parts</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="frontChk" checked> Front plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="handlesChk" checked> Handles</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="backChk" checked> Core plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="transBackChk" checked> Transparent</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="bpChk" checked> Back plate</label><label class="check" style="font-family:var(--f-body);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink)"><input type="checkbox" id="adChk" checked> Adapter</label></span></h2>
-        <div class="body"><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
-          <p class="note">Drag to turn the wheel any way you like, right-drag to move it, scroll or pinch to zoom. Reset view straightens it again. Translucent bodies show depth behind the plate; the lower slab is the core plate. Parts are placed in the 2D design view.</p></div>
+        <h2><span class="grow">3D preview</span><button class="btn sm ghost" id="resetView" type="button" title="Back to the starting view, the wheel the right way up">Reset view</button></h2>
+        <div class="body"><div class="vtool"><div class="vgroup" role="group" aria-label="Plates"><span class="vlabel">Plates</span><label class="chip"><input type="checkbox" id="frontChk" checked><i class="sw" style="--sw:var(--plate)"></i>Front</label><label class="chip"><input type="checkbox" id="backChk" checked><i class="sw" style="--sw:#3C434C"></i>Core</label><label class="chip"><input type="checkbox" id="bpChk" checked><i class="sw" style="--sw:#3C434C"></i>Back</label></div><div class="vgroup" role="group" aria-label="Hardware"><span class="vlabel">Hardware</span><label class="chip"><input type="checkbox" id="partsChk" checked><i class="sw" style="--sw:var(--accent)"></i>Parts</label><label class="chip"><input type="checkbox" id="handlesChk" checked><i class="sw" style="--sw:#2B3036"></i>Handles</label><label class="chip"><input type="checkbox" id="adChk" checked><i class="sw" style="--sw:#2B3036"></i>Adapter</label></div><div class="vgroup" role="group" aria-label="Display"><span class="vlabel">Display</span><label class="chip see" title="Show the core plate see-through, to look at the parts behind the front plate"><input type="checkbox" id="transBackChk"><i class="sw"></i>See-through core</label></div></div><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
+          <p class="note">Drag to turn the wheel any way you like, right-drag to move it, scroll or pinch to zoom. Reset view straightens it again. The light comes from over your shoulder, so the side you look at is always lit. Parts' bodies are translucent to show their depth behind the front plate; See-through core makes the core plate translucent too. Parts are placed in the 2D design view.</p></div>
       </section>
     </main>
     <aside class="right">
@@ -971,7 +984,7 @@ let nextId = 1;
 let selected = null;
 let issues = [], errIds = new Set(), warnIds = new Set();
 let undoStack = [], redoStack = [];
-let showKO = true, show3dParts = true, show3dFront = true, transBack3d = true, show3dHandles = true, show3dBack = true, show3dBackPlate = true, show3dAdapter = true;
+let showKO = true, show3dParts = true, show3dFront = true, transBack3d = false, show3dHandles = true, show3dBack = true, show3dBackPlate = true, show3dAdapter = true;
 
 const $ = id => document.getElementById(id);
 
@@ -2953,8 +2966,12 @@ function init3d(){
   } else controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.target.set(0,0,-12);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 0.85));
-  const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(-120, -200, 320); scene.add(sun);
-  const fill = new THREE.DirectionalLight(0xffffff, 0.25); fill.position.set(200, 150, 100); scene.add(fill);
+  // Key and fill lights ride on the camera (over your left shoulder / low right), so whichever way the wheel is
+  // turned, the side you're looking at is lit the same way. The soft sky/ground light stays put.
+  scene.add(camera);
+  const aim = new THREE.Object3D(); aim.position.set(0, 0, -1); camera.add(aim);
+  const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(-0.55, 0.75, 0.45); sun.target = aim; camera.add(sun);
+  const fill = new THREE.DirectionalLight(0xffffff, 0.25); fill.position.set(0.8, -0.35, 0.3); fill.target = aim; camera.add(fill);
   const draw = () => renderer.render(scene, camera);
   controls.addEventListener('change', draw);
   const resize = () => { const w = host.clientWidth, h = host.clientHeight; if(!w||!h) return; renderer.setSize(w,h,false); camera.aspect = w/h; camera.updateProjectionMatrix(); if (controls.handleResize) controls.handleResize(); draw(); };
