@@ -5,14 +5,14 @@
     "Shapes: { \"shape\": \"circle\", \"d\": 16 } or { \"shape\": \"rect\", \"w\": 25, \"h\": 14, \"r\": 1 } (r = corner radius, optional).",
     "name / group / label: shown in the parts list; label is the prefix for auto names (BTN1, BTN2...).",
     "hole: exactly what is cut in the front plate: the whole body for some parts, only the shaft for others (rotary, encoder). For buttons with a deco ring, make it larger than the cap: the deco sleeve fills the gap, so its wall is (hole - cap) / 2.",
-    "cap: the element you see and press: button cap, knob, lever, LED. height is only used for the 3D preview. style: button | knob | lever | led. Leave cap out for flush parts like a display. For buttons, the cap passes through the deco ring and sleeve.",
+    "cap: the element you see and press: button cap, knob, lever, LED. height is only used for the 3D preview. stl (optional, knobs): a knob model for the 3D preview, axis along +z, z = 0 on the plate's top. style: button | knob | lever | led. Leave cap out for flush parts like a display. For buttons, the cap passes through the deco ring and sleeve.",
     "pcb: the board or switch body under the plate. depth = how far it reaches behind the plate (checked against Plate spacing).",
     "pcb (or keepout) may also have \"x\" and \"y\": how far its centre sits from the part's position (the centre of the hole), in the part's own axes before rotation. For a board that is off-centre from its cut-out, e.g. the CYD display.",
     "clearance: safe space around the part. The keep-out zone = the largest of hole, cap and pcb, plus clearance on every side.",
     "keepout (optional): set an exact keep-out shape instead of the computed one. The keep-out is the only thing the fit checks use (edge margin, mounting holes, no-go areas, other parts), so the hole, cap or counterbore may reach beyond it.",
     "Every part can be rotated; set rotatable: false to lock one. allowOverNoGo: true lets a part sit over the core plate's no-go areas (it must still avoid mounting holes).",
     "display: true draws a screen in the 3D preview.",
-    "side (instead of hole/cap/pcb): a side-exit part such as a horizontal encoder. A small PCB lies on the core plate's floor and the shaft comes out sideways through the core plate's wall (a U slot is cut into the wall); nothing is cut in the front plate and the knob must sit outside the plate's outline. In the part's own axes the shaft points along +x and the part's position is the PCB's centre. pcb {w (along the shaft), h, t}, axis = shaft centre above the top of the PCB, height = from the PCB's underside to the top of the switch, shaft {d, length = from the PCB's edge to the knob}, knob {d, w}, slot = width of the U slot (default shaft d + 0.6).",
+    "side (instead of hole/cap/pcb): a side-exit part such as a horizontal encoder. A small PCB lies on the core plate's floor and the shaft comes out sideways through the core plate's wall (a U slot is cut into the wall); nothing is cut in the front plate and the knob must sit outside the plate's outline. In the part's own axes the shaft points along +x and the part's position is the PCB's centre. pcb {w (along the shaft), h, t}, axis = shaft centre above the top of the PCB, height = from the PCB's underside to the top of the switch, shaft {d, length = from the PCB's edge to the knob}, knob {d, w, stl (optional: a knob model for the 3D preview, axis along +z, the face towards the switch at its lowest z)}, slot = width of the U slot (default shaft d + 0.6).",
     "counterbore (optional): a wider blind pocket cut from the top of the plate around the hole, e.g. { \"shape\": \"circle\", \"d\": 32, \"depth\": 1 }. The hole still goes all the way through; at least 0.4 mm of plate is always left under the pocket.",
     "deco: false keeps a part out of the deco: no ring around it (the rotary switch uses this).",
     "row (optional): makes a symmetric row of identical elements, e.g. LEDs. pitch = default centre-to-centre spacing, maxPerSide = how many can be added on each side of the middle one. The part's position is the middle element; the keep-out becomes one rounded strip around the whole row."
@@ -50,7 +50,7 @@
     "rot": {
       "name": "Rotary switch 12-pos", "group": "Buttons/Rotaries", "label": "ROT",
       "hole": { "shape": "circle", "d": 30 },
-      "cap":  { "shape": "circle", "d": 28, "height": 10, "style": "knob" },
+      "cap":  { "shape": "circle", "d": 28, "height": 10, "style": "knob", "stl": "knobs/vertical_rotary_knob_medium.stl" },
       "counterbore": { "shape": "circle", "d": 32, "depth": 1 },
       "pcb":  { "shape": "rect", "w": 27.2, "h": 27.2, "r": 1, "depth": 15 },
       "keepout": { "shape": "rect", "w": 27.5, "h": 27.5 },
@@ -65,9 +65,15 @@
       "clearance": 2
     },
     "encH": {
-      "name": "Encoder, horizontal (side exit)", "group": "Encoders & switches", "label": "ENC",
+      "name": "Encoder, horizontal, big knob", "group": "Encoders & switches", "label": "ENC",
       "side": { "pcb": { "w": 16, "h": 15, "t": 1.6 }, "axis": 7, "height": 17.4,
-                "shaft": { "d": 9, "length": 8 }, "knob": { "d": 25, "w": 11 }, "slot": 9.6 },
+                "shaft": { "d": 9, "length": 8 }, "knob": { "d": 24.5, "w": 11, "stl": "knobs/horizontal_knob_big.stl" }, "slot": 9.6 },
+      "clearance": 1
+    },
+    "encHm": {
+      "name": "Encoder, horizontal, medium knob", "group": "Encoders & switches", "label": "ENC",
+      "side": { "pcb": { "w": 16, "h": 15, "t": 1.6 }, "axis": 7, "height": 17.4,
+                "shaft": { "d": 9, "length": 8 }, "knob": { "d": 22.6, "w": 11.5, "stl": "knobs/horizontal_knob_medium.stl" }, "slot": 9.6 },
       "clearance": 1
     },
     "tgl": {
