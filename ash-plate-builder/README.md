@@ -81,6 +81,7 @@ The part library. For each part it sets:
 - `hole`: exactly what's cut in the front plate. That's the whole body for some parts and only the shaft for others, like the rotary switch. For buttons with a deco ring, make it larger than the cap; the deco sleeve fills the gap.
 - `cap`: the button cap, knob, lever or LED on top, including its height
 - `pcb`: the board or switch body underneath, including its depth behind the plate
+  - optional `x` / `y` on `pcb` (or `keepout`): how far its centre sits from the centre of the hole, in the part's own axes before rotation. For a board that's off-centre from its cut-out, like the CYD display (`"x": 1.75`).
 - `clearance`: the safe space around the part. The keep-out zone is the largest of the hole, cap and PCB, plus the clearance on every side.
 - optional `keepout`, to set the keep-out shape exactly instead. The keep-out is the only thing the fit checks use (edge margin, mounting holes, no-go areas, other parts), so the hole, cap or counterbore may reach beyond it. The rotary switch uses a 27.5 × 27.5 mm keep-out.
 - optional `counterbore`, a wider blind pocket cut from the top of the plate around the hole, with its own `depth`. The hole still goes all the way through, and at least 0.4 mm of plate is left under the pocket. The rotary switch has a Ø30 hole with a Ø32 × 1 mm counterbore. Counterbores are in the STL, and in the DXF on their own `COUNTERBORE` layer; the SVG only has through-cuts.
