@@ -3325,7 +3325,7 @@ function mergeGeometries(list){
 }
 function knobGeometry(d, h){
   const key = d + '|' + h; if (knobGeoCache.has(key)) return knobGeoCache.get(key).clone();
-  const R = d/2, n = 8, s = 0.2*R, c = R*1.02, pts = [];
+  const R = d/2, n = 8, s = 0.11*R, c = R*1.04, pts = [];   // small indents: about 7% of the radius deep
   const N = 360;
   for (let i = 0; i < N; i++){
     const th = i/N * Math.PI*2; let r = R;
