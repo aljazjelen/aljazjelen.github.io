@@ -1087,13 +1087,13 @@ const plate = () => PLATES.find(p => p.id === state.plateId) || PLATES[0];
    in; everything under the top plate stays open for the cables. The front plate presses the insert down onto the
    ribs. Displays get a holder instead: a pocket open to the top, the display resting on a `ledge` mm wide rim at its
    depth below the front plate; it goes in last. `clear` = gap to the core plate's wall and posts, `pcb` = PCB thickness. */
-const INSERT_DEFAULTS = { on: true, base: 2, wall: 1.6, clear: 0.4, cell: 20, pcb: 1.6, ledge: 5, notchW: 6, notchH: 4 };
+const INSERT_DEFAULTS = { on: true, base: 2, wall: 1.6, clear: 0.4, cell: 20, pcb: 1.6, ledge: 5, seat: 1.2, notchW: 6, notchH: 4 };
 function cleanInsert(r){
   r = r && typeof r === 'object' ? r : {};
   const D = INSERT_DEFAULTS, num = (v, def) => (v === undefined || v === null || v === '' || !Number.isFinite(+v)) ? def : +v;
   return { on: r.on === undefined ? D.on : !!r.on, base: clampNum(num(r.base, D.base), 1, 6), wall: clampNum(num(r.wall, D.wall), 0.8, 4),
            clear: clampNum(num(r.clear, D.clear), 0.1, 2), cell: clampNum(num(r.cell, D.cell), 8, 60), pcb: clampNum(num(r.pcb, D.pcb), 0.8, 3),
-           ledge: clampNum(num(r.ledge, D.ledge), 1, 15), notchW: clampNum(num(r.notchW, D.notchW), 2, 20), notchH: clampNum(num(r.notchH, D.notchH), 1, 15) };
+           ledge: clampNum(num(r.ledge, D.ledge), 1, 15), seat: clampNum(num(r.seat, D.seat), 0.5, 5), notchW: clampNum(num(r.notchW, D.notchW), 2, 20), notchH: clampNum(num(r.notchH, D.notchH), 1, 15) };
 }
 // Where parts stand inside the core plate: the insert's top, or the core plate's floor (z, front plate underside = 0).
 function insertLevels(gap){
@@ -1715,6 +1715,16 @@ function edgeDist(x, y, o){
 }
 // True when the shape lies inside the outline and at least `inset` mm from every edge.
 // A side-exit part's knob: completely outside the outline, at least `gap` mm from it.
+// A side-exit part (horizontal encoder / rotary) may sit under a display, if it's low enough: {part, disp, top, limit, fits}
+// (distances below the front plate), or null when the pair isn't a display and a side-exit part.
+function sideUnderDisplay(a, b){
+  const ta = typeOf(a), tb = typeOf(b);
+  const [part, disp, tp, td] = ta.side && tb.screen ? [a, b, ta, tb] : tb.side && ta.screen ? [b, a, tb, ta] : [];
+  if (!part) return null;
+  const L = insertLevels(state.gap), top = -(L.zt + tp.side.height);
+  const limit = L.ins.on ? Math.min(td.depth, -L.zb - 0.5) + 1.6 + 0.5 : td.depth + 0.5;
+  return { part, disp, top: r2(top), limit: r2(limit), fits: top >= limit, need: r2(tp.side.height), room: r2(-L.zt - limit) };
+}
 function knobOutside(pts, o, gap){
   if (pts.some(([x, y]) => pointInPoly(x, y, o) || edgeDist(x, y, o) < gap - EPS)) return false;
   return !o.some(([x, y]) => pointInPoly(x, y, pts) || edgeDist(x, y, pts) < gap - EPS);
@@ -1794,6 +1804,11 @@ function validate(){
   for (let i=0;i<kos.length;i++) for (let j=i+1;j<kos.length;j++){
     if (overlap(kos[i][1], kos[j][1])){
       const a=kos[i][0], b=kos[j][0];
+      const und = sideUnderDisplay(a, b);
+      if (und){
+        if (!und.fits){ issues.push({sev:'err', ids:[und.part.id, und.disp.id], msg:`${und.part.label} is too tall to go under ${und.disp.label}: it needs ${fmt(und.need)} mm, there are ${fmt(und.room)} mm under the display's holder. Make the plate spacing ${fmt(und.need - und.room)} mm bigger, or move it.`}); errIds.add(a.id); errIds.add(b.id); }
+        continue;
+      }
       issues.push({sev:'err', ids:[a.id,b.id], msg:`${a.label} and ${b.label} are too close; their keep-out zones overlap.`});
       errIds.add(a.id); errIds.add(b.id);
     }
@@ -2851,23 +2866,31 @@ function mfInsert(pl, gap, parts){
     if (noGo.length) R = T(R.subtract(T(T(new CrossSection(noGo, 'Positive')).offset(ins.clear, 'Round', 2, 48))));
     // silos around every element's PCB (+0.3 mm), from the ribs up to the front plate; side-exit parts open towards the shaft.
     // Displays get a holder instead: a pocket open to the top with a `ledge` mm rim at the display's depth, put in last.
-    const inners = [], outers = [], cuts3d = [], lips = [], Hs = -zb, holders = [];
-    for (const p of parts.flatMap(elemsOf)){
-      const t = typeOf(p); if (!t) continue;
-      const body = shapeOf(t.body, p), inn = T(T(new CrossSection([shapePoly(body)], 'Positive')).offset(0.3, 'Round', 2, 32));
-      if (t.screen){ holders.push({ inn, out: T(inn.offset(ins.wall, 'Round', 2, 32)), depth: Math.min(t.depth, -zb - 0.5), c: shapeCentre(t.body, p), rot: p.rot || 0 }); continue; }
-      inners.push(inn); outers.push(T(inn.offset(ins.wall, 'Round', 2, 32)));
+    const Hs = -zb, holders = [], cells = [];
+    const all = parts.flatMap(elemsOf).map(p => [p, typeOf(p)]).filter(([, t]) => t);
+    for (const [p, t] of all) if (t.screen){
+      const inn = T(T(new CrossSection([shapePoly(shapeOf(t.body, p))], 'Positive')).offset(0.3, 'Round', 2, 32)), depth = Math.min(t.depth, -zb - 0.5);
+      holders.push({ inn, out: T(inn.offset(ins.wall, 'Round', 2, 32)), depth, z0: -depth - 1.6, c: shapeCentre(t.body, p), rot: p.rot || 0 });
+    }
+    // every other part: a silo from the ribs up to the front plate, or up to the holder's underside for a part tucked
+    // in under a display (side-exit parts only, see sideUnderDisplay). The PCB rests on a full `seat` mm ledge at the
+    // silo's bottom (button presses go straight down into the ribs); two small clips above it keep it in.
+    for (const [p, t] of all) if (!t.screen){
+      const inn = T(T(new CrossSection([shapePoly(shapeOf(t.body, p))], 'Positive')).offset(0.3, 'Round', 2, 32));
+      const under = holders.find(h => { const x = T(inn.intersect(h.inn)); return !x.isEmpty() && x.area() > 0.5; });
+      const c = { p, t, inn, out: T(inn.offset(ins.wall, 'Round', 2, 32)), top: under ? under.z0 : 0, under: !!under, cut: null, clips: [] };
       const [cx, cy] = shapeCentre(t.body, p), ext = t.body.c === 'circle' ? t.body.d/2 : Math.hypot(t.body.w, t.body.h)/2, rot = p.rot || 0;
       if (t.side){
         const w = (t.body.h || ext*2) + 0.6;
-        cuts3d.push(T(T(T(T(Manifold.cube([ext + ins.wall + 2, w, Hs + 2])).translate([0, -w/2, zb - 1])).rotate([0, 0, rot])).translate([cx, cy, 0])));
-        continue;
+        c.cut = T(T(T(T(Manifold.cube([ext + ins.wall + 2, w, Hs + 2])).translate([0, -w/2, zb - 1])).rotate([0, 0, rot])).translate([cx, cy, 0]));
+      } else {
+        const half = t.body.c === 'circle' ? t.body.d/2 + 0.3 : t.body.w/2 + 0.3, L = Math.min(6, (t.body.c === 'circle' ? t.body.d : t.body.h) * 0.6);
+        for (const sgn of [-1, 1])
+          c.clips.push(T(T(T(T(Manifold.cube([0.6, L, 0.8])).translate([sgn > 0 ? half - 0.6 : -half, -L/2, zt + ins.pcb + 0.15])).rotate([0, 0, rot])).translate([cx, cy, 0])));
       }
-      // a snap lip under the PCB and a stop ledge above it, on two opposite inner faces
-      const half = t.body.c === 'circle' ? t.body.d/2 + 0.3 : t.body.w/2 + 0.3, L = Math.min(6, (t.body.c === 'circle' ? t.body.d : t.body.h) * 0.6);
-      for (const sgn of [-1, 1]) for (const [z0, h] of [[zb, zt - zb], [zt + ins.pcb + 0.15, 0.8]])
-        lips.push(T(T(T(T(Manifold.cube([0.6, L, h])).translate([sgn > 0 ? half - 0.6 : -half, -L/2, z0])).rotate([0, 0, rot])).translate([cx, cy, 0])));
+      cells.push(c);
     }
+    const inners = cells.filter(c => !c.under).map(c => c.inn), outers = cells.filter(c => !c.under).map(c => c.out);
     const IN = inners.length ? T(CrossSection.union(inners)) : null, OUT = outers.length ? T(CrossSection.union(outers)) : null;
     // top plate: hexagon openings, solid 3 mm rim and 1 mm around every silo; open inside the silos
     const F = ins.cell, sq3 = Math.sqrt(3), b = pl.bbox, ext = Math.max(Math.abs(b.minX), Math.abs(b.maxX), Math.abs(b.minY), Math.abs(b.maxY)) + F;
@@ -2894,15 +2917,26 @@ function mfInsert(pl, gap, parts){
     if (IN) top2d = T(top2d.subtract(T(IN.offset(0.2, 'Round', 2, 32))));
     for (const h of holders) top2d = T(top2d.subtract(T(h.inn.offset(0.2, 'Round', 2, 32))));   // a bit wider than the pocket: its edge lies inside the silo wall, not on its face
     let solid = T(T(Manifold.extrude(top2d, ins.base)).translate([0, 0, -ins.base]));
-    if (OUT){
-      const silo2d = T(T(OUT.subtract(IN)).intersect(R));
-      if (!silo2d.isEmpty()){
-        let silos = T(T(Manifold.extrude(silo2d, Hs)).translate([0, 0, zb]));
-        if (cuts3d.length) silos = T(silos.subtract(T(Manifold.union(cuts3d))));
-        const parts3d = [solid, silos];
-        if (lips.length) parts3d.push(T(T(Manifold.union(lips)).intersect(T(T(Manifold.extrude(T(OUT.intersect(R)), Hs)).translate([0, 0, zb])))));
-        solid = T(Manifold.union(parts3d));
+    if (cells.length){
+      // built per height group in 2D first, so neighbouring silos merge instead of touching along an edge
+      const INall = T(CrossSection.union(cells.map(c => c.inn))), bits = [solid], cuts = cells.filter(c => c.cut).map(c => c.cut);
+      for (const top of [...new Set(cells.map(c => c.top))]){
+        const grp = cells.filter(c => c.top === top), h = top - zb;
+        if (h <= 0.5) continue;
+        const ring = T(T(T(CrossSection.union(grp.map(c => c.out))).subtract(INall)).intersect(R0));
+        if (ring.isEmpty()) continue;
+        let silo = T(T(Manifold.extrude(ring, h)).translate([0, 0, zb]));
+        if (cuts.length) silo = T(silo.subtract(T(Manifold.union(cuts))));
+        bits.push(silo);
       }
+      const seated = cells.filter(c => !c.t.side);
+      if (seated.length){   // the PCB seats: overlap 0.2 mm into the walls, so they join solidly
+        const IS = T(CrossSection.union(seated.map(c => c.inn)));
+        const seat = T(T(T(IS.offset(0.2, 'Round', 2, 32)).subtract(T(CrossSection.union(seated.map(c => T(c.inn.offset(-ins.seat, 'Round', 2, 32))))))).intersect(R0));
+        if (!seat.isEmpty()) bits.push(T(T(Manifold.extrude(seat, zt - zb)).translate([0, 0, zb])));
+        for (const c of seated) bits.push(...c.clips);
+      }
+      solid = T(Manifold.union(bits));
     }
     // display holders: walls from the ledge up to the front plate, and the ledge (`ledge` mm wide) the display rests on
     for (const h of holders){
