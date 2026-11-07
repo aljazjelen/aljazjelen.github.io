@@ -5,7 +5,7 @@
     "Shapes: { \"shape\": \"circle\", \"d\": 16 } or { \"shape\": \"rect\", \"w\": 25, \"h\": 14, \"r\": 1 } (r = corner radius, optional).",
     "name / group / label: shown in the parts list; label is the prefix for auto names (BTN1, BTN2...).",
     "hole: exactly what is cut in the front plate: the whole body for some parts, only the shaft for others (rotary, encoder). For buttons with a deco ring, make it larger than the cap: the deco sleeve fills the gap, so its wall is (hole - cap) / 2.",
-    "cap: the element you see and press: button cap, knob, lever, LED. height is only used for the 3D preview. stl (optional, knobs): a knob model for the 3D preview, axis along +z, z = 0 on the plate's top. style: button | knob | lever | led. Leave cap out for flush parts like a display. For buttons, the cap passes through the deco ring and sleeve.",
+    "cap: the element you see and press: button cap, knob, lever, LED. height is only used for the 3D preview. stl (optional, knobs): a knob model for the 3D preview, axis along +z, z = 0 on the plate's top; flip: true turns the model upside down (same height range). style: button | knob | lever | led. Leave cap out for flush parts like a display. For buttons, the cap passes through the deco ring and sleeve.",
     "pcb: the board or switch body under the plate. depth = how far it reaches behind the plate (checked against Plate spacing).",
     "pcb (or keepout) may also have \"x\" and \"y\": how far its centre sits from the part's position (the centre of the hole), in the part's own axes before rotation. For a board that is off-centre from its cut-out, e.g. the CYD display.",
     "clearance: safe space around the part. The keep-out zone = the largest of hole, cap and pcb, plus clearance on every side.",
@@ -50,7 +50,7 @@
     "rot": {
       "name": "Rotary switch 12-pos", "group": "Buttons/Rotaries", "label": "ROT",
       "hole": { "shape": "circle", "d": 30 },
-      "cap":  { "shape": "circle", "d": 28, "height": 10, "style": "knob", "stl": "knobs/vertical_rotary_knob_medium.stl" },
+      "cap":  { "shape": "circle", "d": 28, "height": 10, "style": "knob", "stl": "knobs/vertical_rotary_knob_medium.stl", "flip": true },
       "counterbore": { "shape": "circle", "d": 32, "depth": 1 },
       "pcb":  { "shape": "rect", "w": 27.2, "h": 27.2, "r": 1, "depth": 15 },
       "keepout": { "shape": "rect", "w": 27.5, "h": 27.5 },
