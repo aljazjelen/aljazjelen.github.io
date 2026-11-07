@@ -470,7 +470,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
           <div class="row">
             <label class="field" title="How tall the ribs stand on the core plate's floor. The plate spacing (or more) takes them all the way up to the front plate.">Height (mm)<input type="number" id="ribH" min="1" max="60" step="0.5"></label>
           </div>
-          <label class="check"><input type="checkbox" id="ribTun"> Cable passages through the ribs</label>
+          <label class="check" id="ribTunRow" title="Pointed tunnels through the bottom of the ribs, so wires can get from every part's pocket to the hub. Only for ribs at least 10 mm tall: lower ribs, the wires simply run over them."><input type="checkbox" id="ribTun"> Cable passages through the ribs</label>
           <p class="note" id="ribNote"></p>
         </div>
       </section>
@@ -2302,7 +2302,7 @@ function renderHeader(){
 
 function renderAll(rebuild3d = true){
   rebuildCustomPlate();
-  validate(); render2d(); renderProps(); renderIssues(); renderHeader(); renderDecoNote(); renderHandles(); renderOutline();
+  validate(); render2d(); renderProps(); renderIssues(); renderHeader(); renderDecoNote(); syncRibs(); renderHandles(); renderOutline();
   if (rebuild3d) schedule3d();
 }
 function afterChange(){ renderAll(true); persist(); }
@@ -2424,12 +2424,12 @@ function syncRibs(){
   $('ribOn').checked = r.on; $('ribTun').checked = r.tunnels;
   for (const [id, v] of [['ribCell', r.cell], ['ribWall', r.wall], ['ribH', r.height]]){ if ($(id) !== a) $(id).value = v; $(id).disabled = !r.on; }
   const full = r.height >= state.gap, tun = ribTunnels(r, state.gap);
-  $('ribTun').disabled = !r.on || r.height < r.tunnelH + 3;
+  $('ribTun').disabled = !r.on; $('ribTunRow').hidden = r.height < r.tunnelH + 3;   // only shown for ribs tall enough to need them
   $('ribNote').textContent = r.on
     ? (full ? `A hexagon web from the core plate's floor up to the front plate, so the plate is supported in the middle too.` : `A ${fmt(r.height)} mm tall hexagon web on the core plate's floor, to stiffen it.`) +
       ` Every part's keep-out (as on the 2D design) stays free, with a ${fmt(r.ring)} mm rib ring around it; so does the hub area.` +
       (tun ? ` Pointed tunnels, ${fmt(r.tunnelW)} mm wide and ${fmt(r.tunnelH)} mm high, run through the bottom of every rib, so the wires can reach the hub; they print without support.`
-           : r.height < r.tunnelH + 3 ? ' The wires run over the ribs (cable passages only apply to ribs at least ' + fmt(r.tunnelH + 3) + ' mm tall).' : ' No cable passages: the pockets are closed off from each other.')
+           : r.height < r.tunnelH + 3 ? ' The wires run over the ribs.' : ' No cable passages: the pockets are closed off from each other.')
     : 'No ribs: the core plate is a hollow tray.';
 }
 function syncInputs(){ syncDeco(); syncRibs(); $('thick').value = state.thickness; $('gap').value = state.gap; $('snapSel').value = String(state.snap); }
@@ -2471,7 +2471,7 @@ async function loadManifold(){
     const wasm = await mod.default({ locateFile: () => url('vendor/manifold.wasm') });
     wasm.setup(); MF = wasm; mfState = 'ready';
   } catch(e){ mfState = 'failed'; console.warn('manifold-3d could not load; plates are exported without chamfers.', e); }
-  renderHeader(); renderIssues(); renderDecoNote(); renderHandles(); schedule3d();
+  renderHeader(); renderIssues(); renderDecoNote(); syncRibs(); renderHandles(); schedule3d();
   if (mfState === 'ready') renderAll(true);   // exact margin line, rounded custom outline
 }
 function circlePoly(x, y, r){
