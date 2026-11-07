@@ -804,7 +804,7 @@ function buildWheel(folder, cfg, dxfText){
    round no-go zone of the hub's size. wheel.json "tray" can change every size; these are the defaults. */
 // taper: the outside slopes inward towards the bottom, angle° from vertical over the lowest `height` mm (0 = straight).
 // Only the outside: the inside stays straight, so the wall gets thinner towards the bottom.
-const TRAY_DEFAULTS = { wall: 4, floor: 5, boss: 8, pilot: 2.8, taper: { angle: 7, height: 20 }, hub: { bore: 46, pcd: 70, bolts: 6, bolt: 5.3, angle: 0 } };
+const TRAY_DEFAULTS = { wall: 4, floor: 5, boss: 8, pilot: 2.8, taper: { angle: 7, height: 20 }, hub: { bore: 46, pcd: 70, bolts: 6, bolt: 5.3, angle: 0, chamfer: 2.5 } };
 // The back plate (test): a plate under the core plate, with the core plate's bottom outline, `thickness` thick, a wide
 // chamfer on its bottom edge (`width` mm inward at `angle`° from vertical) and a round recess of `hole` mm at the hub,
 // `holeDepth` mm deep from the bottom (outside) face (0 or ≥ thickness = straight through), with a `through` mm opening
@@ -823,7 +823,7 @@ function cleanTray(t){
            boss: clampNum(numOr(t.boss, D.boss), 3, 30), pilot: clampNum(numOr(t.pilot, D.pilot), 0, 20),
            taper: t.taper === false ? null : (tp => ({ angle: clampNum(numOr(tp.angle, D.taper.angle), 0, 30), height: clampNum(numOr(tp.height, D.taper.height), 0, 100) }))(t.taper && typeof t.taper === 'object' ? t.taper : {}),
            hub: t.hub === false ? null : { bore: numOr(h.bore, H.bore), pcd: numOr(h.pcd, H.pcd), bolts: Math.max(0, Math.round(numOr(h.bolts, H.bolts))),
-                                         bolt: numOr(h.bolt, H.bolt), angle: numOr(h.angle, H.angle) } };
+                                         bolt: numOr(h.bolt, H.bolt), angle: numOr(h.angle, H.angle), chamfer: Math.max(0, numOr(h.chamfer, H.chamfer)) } };
 }
 // Handles from wheel.json: "handles": {"set": "<id>"} names a handle set from handles/ (the same CAD handles your own
 // outline uses). They're attached once the sets have loaded (attachHandleSets).
@@ -1085,14 +1085,15 @@ const plate = () => PLATES.find(p => p.id === state.plateId) || PLATES[0];
    (`wall` mm) hanging down from it to the core plate's ribs (or floor). Each PCB is pushed in from below: it rests on
    two small snap lips at the silo's bottom and stops against two ledges above it. The silos keep each part's light
    in; everything under the top plate stays open for the cables. The front plate presses the insert down onto the
-   ribs. `clear` = gap to the core plate's wall and posts, `pcb` = PCB thickness. */
-const INSERT_DEFAULTS = { on: true, base: 2, wall: 1.6, clear: 0.4, cell: 20, pcb: 1.6, notchW: 6, notchH: 4 };
+   ribs. Displays get a holder instead: a pocket open to the top, the display resting on a `ledge` mm wide rim at its
+   depth below the front plate; it goes in last. `clear` = gap to the core plate's wall and posts, `pcb` = PCB thickness. */
+const INSERT_DEFAULTS = { on: true, base: 2, wall: 1.6, clear: 0.4, cell: 20, pcb: 1.6, ledge: 5, notchW: 6, notchH: 4 };
 function cleanInsert(r){
   r = r && typeof r === 'object' ? r : {};
   const D = INSERT_DEFAULTS, num = (v, def) => (v === undefined || v === null || v === '' || !Number.isFinite(+v)) ? def : +v;
   return { on: r.on === undefined ? D.on : !!r.on, base: clampNum(num(r.base, D.base), 1, 6), wall: clampNum(num(r.wall, D.wall), 0.8, 4),
            clear: clampNum(num(r.clear, D.clear), 0.1, 2), cell: clampNum(num(r.cell, D.cell), 8, 60), pcb: clampNum(num(r.pcb, D.pcb), 0.8, 3),
-           notchW: clampNum(num(r.notchW, D.notchW), 2, 20), notchH: clampNum(num(r.notchH, D.notchH), 1, 15) };
+           ledge: clampNum(num(r.ledge, D.ledge), 1, 15), notchW: clampNum(num(r.notchW, D.notchW), 2, 20), notchH: clampNum(num(r.notchH, D.notchH), 1, 15) };
 }
 // Where parts stand inside the core plate: the insert's top, or the core plate's floor (z, front plate underside = 0).
 function insertLevels(gap){
@@ -2548,7 +2549,7 @@ function syncInsert(){
   $('insOn').checked = r.on;
   for (const [id, v] of [['insBase', r.base], ['insWall', r.wall]]){ if ($(id) !== a) $(id).value = v; $(id).disabled = !r.on; }
   $('insNote').textContent = r.on
-    ? `Printed separately and dropped in; the front plate presses it down onto the ${cleanRibs(state.ribs).on ? 'ribs' : 'floor'}. A ${fmt(r.base)} mm top plate with hexagon openings lies right under the front plate; around every part's PCB a closed silo hangs down from it (keeps each part's light in). Each PCB (${fmt(r.pcb)} mm) is pushed in from below and snaps in at the silo's bottom, ${fmt(r2(-L.zt))} mm below the front plate. Under the top plate everything is open for the cables.`
+    ? `Printed separately and dropped in; the front plate presses it down onto the ${cleanRibs(state.ribs).on ? 'ribs' : 'floor'}. A ${fmt(r.base)} mm top plate with hexagon openings lies right under the front plate; around every part's PCB a closed silo hangs down from it (keeps each part's light in). Each PCB (${fmt(r.pcb)} mm) is pushed in from below and snaps in at the silo's bottom, ${fmt(r2(-L.zt))} mm below the front plate. Displays sit in a holder instead: a pocket open to the top with a ${fmt(r.ledge)} mm ledge at the display's depth; the display goes in last, from the top. Under the top plate everything is open for the cables.`
     : 'No insert: the parts hang from the front plate.';
 }
 function syncRibs(){ syncInsert();
@@ -2769,7 +2770,9 @@ function mfTray(pl, gap, parts = [], ribs = null){
       const cuts = [T(T(Manifold.cylinder(tr.floor + 2, tr.hub.bore/2, tr.hub.bore/2, 72)).translate([hz.x, hz.y, -H - 1]))];
       for (let k = 0; k < tr.hub.bolts; k++){
         const a = (tr.hub.angle + 360*k/tr.hub.bolts) * Math.PI/180;
-        cuts.push(T(T(Manifold.cylinder(tr.floor + 2, tr.hub.bolt/2, tr.hub.bolt/2, 24)).translate([hz.x + tr.hub.pcd/2*Math.cos(a), hz.y + tr.hub.pcd/2*Math.sin(a), -H - 1])));
+        const bx = hz.x + tr.hub.pcd/2*Math.cos(a), by = hz.y + tr.hub.pcd/2*Math.sin(a), rb = tr.hub.bolt/2, ch = tr.hub.chamfer || 0;
+        cuts.push(T(T(Manifold.cylinder(tr.floor + 2, rb, rb, 24)).translate([bx, by, -H - 1])));
+        if (ch > 0) cuts.push(T(T(Manifold.cylinder(ch + 0.5, rb, rb + ch + 0.5, 32)).translate([bx, by, -gap - ch])));   // 45° chamfer at the floor's top (inside)
       }
       body = T(body.subtract(T(Manifold.union(cuts))));
     }
@@ -2839,16 +2842,20 @@ function mfInsert(pl, gap, parts){
   try {
     const outer = T(new CrossSection([pl.outline])), areas = pl.mountAreas || [];
     let R = T(outer.offset(-(tr.wall + ins.clear), 'Round', 2, 48));
-    const keepClear = [];
+    const keepClear = [], noGo = [];
     for (const h of pl.holes.filter(h => h.role === 'mount')) keepClear.push(circlePoly(h.x, h.y, tr.boss/2 + ins.clear));
-    for (const h of pl.holes.filter(h => h.role !== 'mount')) keepClear.push(shapePoly(holeKoShape(h)));
     if (areas.length) keepClear.push(...areas.map(ccw));
+    for (const h of pl.holes.filter(h => h.role !== 'mount')) noGo.push(shapePoly(holeKoShape(h)));
     if (keepClear.length) R = T(R.subtract(T(T(new CrossSection(keepClear, 'Positive')).offset(ins.clear, 'Round', 2, 48))));
-    // silos around every element's PCB (+0.3 mm), from the ribs up to the front plate; side-exit parts open towards the shaft
-    const inners = [], outers = [], cuts3d = [], lips = [], Hs = -zb;
+    const R0 = R;   // the display holder may reach over the hub (it sits high, the core board is below)
+    if (noGo.length) R = T(R.subtract(T(T(new CrossSection(noGo, 'Positive')).offset(ins.clear, 'Round', 2, 48))));
+    // silos around every element's PCB (+0.3 mm), from the ribs up to the front plate; side-exit parts open towards the shaft.
+    // Displays get a holder instead: a pocket open to the top with a `ledge` mm rim at the display's depth, put in last.
+    const inners = [], outers = [], cuts3d = [], lips = [], Hs = -zb, holders = [];
     for (const p of parts.flatMap(elemsOf)){
       const t = typeOf(p); if (!t) continue;
       const body = shapeOf(t.body, p), inn = T(T(new CrossSection([shapePoly(body)], 'Positive')).offset(0.3, 'Round', 2, 32));
+      if (t.screen){ holders.push({ inn, out: T(inn.offset(ins.wall, 'Round', 2, 32)), depth: Math.min(t.depth, -zb - 0.5), c: shapeCentre(t.body, p), rot: p.rot || 0 }); continue; }
       inners.push(inn); outers.push(T(inn.offset(ins.wall, 'Round', 2, 32)));
       const [cx, cy] = shapeCentre(t.body, p), ext = t.body.c === 'circle' ? t.body.d/2 : Math.hypot(t.body.w, t.body.h)/2, rot = p.rot || 0;
       if (t.side){
@@ -2874,9 +2881,18 @@ function mfInsert(pl, gap, parts){
     }
     let open = T(T(new CrossSection(holes, 'Positive')).intersect(T(R.offset(-3, 'Round', 2, 48))));
     if (OUT) open = T(open.subtract(T(OUT.offset(1, 'Round', 2, 32))));
+    for (const h of holders) open = T(open.subtract(T(h.out.offset(1, 'Round', 2, 32))));
     open = T(T(open.offset(-0.4, 'Round', 2, 24)).offset(0.4, 'Round', 2, 24));
     let top2d = T(R.subtract(open));
-    if (IN) top2d = T(top2d.subtract(T(IN.offset(0.2, 'Round', 2, 32))));   // a bit wider than the pocket: its edge lies inside the silo wall, not on its face
+    for (const h of holders){   // the holder's rim joins the top plate, with four 6 mm bridges across the hub opening
+      top2d = T(top2d.add(T(h.out.intersect(R0))));
+      const [hx, hy] = h.c, a = h.rot * Math.PI/180, L = 400, w = 3;
+      const bar = (dx, dy) => [[hx - dy*w, hy + dx*w], [hx + dx*L - dy*w, hy + dy*L + dx*w], [hx + dx*L + dy*w, hy + dy*L - dx*w], [hx + dy*w, hy - dx*w]];
+      const bars = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([u, v]) => ccw(bar(u*Math.cos(a) - v*Math.sin(a), u*Math.sin(a) + v*Math.cos(a))));
+      top2d = T(top2d.add(T(T(T(new CrossSection(bars, 'Positive')).intersect(R0)).subtract(h.inn))));
+    }
+    if (IN) top2d = T(top2d.subtract(T(IN.offset(0.2, 'Round', 2, 32))));
+    for (const h of holders) top2d = T(top2d.subtract(T(h.inn.offset(0.2, 'Round', 2, 32))));   // a bit wider than the pocket: its edge lies inside the silo wall, not on its face
     let solid = T(T(Manifold.extrude(top2d, ins.base)).translate([0, 0, -ins.base]));
     if (OUT){
       const silo2d = T(T(OUT.subtract(IN)).intersect(R));
@@ -2887,6 +2903,15 @@ function mfInsert(pl, gap, parts){
         if (lips.length) parts3d.push(T(T(Manifold.union(lips)).intersect(T(T(Manifold.extrude(T(OUT.intersect(R)), Hs)).translate([0, 0, zb])))));
         solid = T(Manifold.union(parts3d));
       }
+    }
+    // display holders: walls from the ledge up to the front plate, and the ledge (`ledge` mm wide) the display rests on
+    for (const h of holders){
+      const lt = 1.6, z0 = -h.depth - lt, walls = T(T(h.out.subtract(h.inn)).intersect(R0));
+      const rim = T(T(h.inn.subtract(T(h.inn.offset(-ins.ledge, 'Round', 2, 32)))).intersect(R0));
+      const bits = [solid];
+      if (!walls.isEmpty()) bits.push(T(T(Manifold.extrude(walls, -z0)).translate([0, 0, z0])));
+      if (!rim.isEmpty()) bits.push(T(T(Manifold.extrude(rim, lt + 0.01)).translate([0, 0, z0])));
+      solid = T(Manifold.union(bits));
     }
     return solid.translate([0, 0, 0]);
   } finally { for (const x of trash) x.delete(); }
