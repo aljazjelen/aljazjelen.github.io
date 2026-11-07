@@ -459,6 +459,18 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
           <p class="note" id="decoAll"></p>
         </div>
       </section>
+      <section class="card">
+        <h2>Core plate</h2>
+        <div class="body">
+          <label class="check"><input type="checkbox" id="ribOn"> Hexagon ribs inside</label>
+          <div class="row">
+            <label class="field" title="Size of one hexagon, across its flat sides.">Cell size (mm)<input type="number" id="ribCell" min="8" max="60" step="1"></label>
+            <label class="field" title="Thickness of the ribs and of the ring around every part.">Rib (mm)<input type="number" id="ribWall" min="0.8" max="6" step="0.1"></label>
+          </div>
+          <label class="check"><input type="checkbox" id="ribTun"> Cable passages through the ribs</label>
+          <p class="note" id="ribNote"></p>
+        </div>
+      </section>
       <section class="card" id="handlesCard">
         <h2>Handles</h2>
         <div class="body">
@@ -1009,6 +1021,19 @@ if (EMBED){
 function placeNearPointer(el){ if (EMBED) el.style.setProperty('--embed-y', Math.max(16, lastPointerY - 80) + 'px'); }
 const plate = () => PLATES.find(p => p.id === state.plateId) || PLATES[0];
 
+/* Ribs: a hexagon web inside the core plate, from its floor up to the front plate's underside, for stiffness.
+   Every part gets a pocket (its keep-out, as on the 2D design) with a rib `ring` mm wide around it, and so does
+   every no-go zone (the hub). cell = hexagon size across flats, wall = rib thickness. Cable passages: a pointed
+   tunnel (`tunnelW` wide, `tunnelH` high, 45° roof, so it prints without support) through the bottom of every rib
+   between two cells, so wires can run from any pocket to the hub. Saved with the layout. */
+const RIB_DEFAULTS = { on: true, cell: 20, wall: 1.6, ring: 1.6, tunnels: true, tunnelW: 8, tunnelH: 7 };
+function cleanRibs(r){
+  r = r && typeof r === 'object' ? r : {};
+  const D = RIB_DEFAULTS, num = (v, def) => (v === undefined || v === null || v === '' || !Number.isFinite(+v)) ? def : +v;
+  return { on: r.on === undefined ? D.on : !!r.on, cell: clampNum(num(r.cell, D.cell), 8, 60), wall: clampNum(num(r.wall, D.wall), 0.8, 6),
+           ring: clampNum(num(r.ring, D.ring), 0.8, 6), tunnels: r.tunnels === undefined ? D.tunnels : !!r.tunnels,
+           tunnelW: clampNum(num(r.tunnelW, D.tunnelW), 3, 20), tunnelH: clampNum(num(r.tunnelH, D.tunnelH), 3, 30) };
+}
 /* Deco: a separate printed piece that sits on top of the front plate. For now: rings around buttons. */
 // Ring: sits on the plate around the button's cap. Sleeve: same piece, goes down into the button's hole and fills
 // the gap between the cap and the hole, so its wall is (hole − cap) / 2. The hole in parts.json is exactly what's cut.
@@ -1494,7 +1519,7 @@ function autoLabel(short, list){
 }
 function makeExample(plateId){
   const pl = PLATES.find(p => p.id === plateId) || PLATES[0];
-  const s = { plateId: pl.id, thickness: pl.thickness, gap: pl.spacing, snap:1, deco: {...DECO_DEFAULTS}, parts:[] };
+  const s = { plateId: pl.id, thickness: pl.thickness, gap: pl.spacing, snap:1, deco: {...DECO_DEFAULTS}, ribs: {...RIB_DEFAULTS}, parts:[] };
   const prev = state; state = s;
   if (prev && prev.outline) s.outline = JSON.parse(JSON.stringify(prev.outline));
   for (const o of pl.example) if (o && knownType(o.type) && Number.isFinite(+o.x) && Number.isFinite(+o.y))
@@ -1515,6 +1540,7 @@ function loadState(json){
   s.thickness = clampNum(+s.thickness || 4, 2, 10);
   s.gap = clampNum(+s.gap || DEFAULT_GAP, 5, 60);
   s.deco = cleanDeco(s.deco);
+  s.ribs = cleanRibs(s.ribs);
   delete s.handles;
   s.snap = [0,0.5,1,2.5,5].includes(+s.snap) ? +s.snap : 1;
   const known = s.parts.filter(p => p && knownType(p.type));
@@ -2290,6 +2316,13 @@ function initControls(){
     mutate(() => { state.deco = cleanDeco({...state.deco, [key]: v}); });
     syncInputs();
   });
+  const ribInputs = {ribOn: 'on', ribCell: 'cell', ribWall: 'wall', ribTun: 'tunnels'};
+  for (const [id, key] of Object.entries(ribInputs)) $(id).addEventListener('change', e => {
+    const v = e.target.type === 'checkbox' ? e.target.checked : +e.target.value, upd = {[key]: v};
+    if (key === 'wall') upd.ring = v;
+    mutate(() => { state.ribs = cleanRibs({...state.ribs, ...upd}); });
+    syncInputs();
+  });
   $('gap').addEventListener('change', e => { const v = clampNum(+e.target.value||DEFAULT_GAP, 5, 60); e.target.value = v; mutate(() => { state.gap = v; }); });
   $('snapSel').addEventListener('change', e => { state.snap = +e.target.value; persist(); renderProps(); });
   $('koChk').addEventListener('change', e => { showKO = e.target.checked; render2d(); });
@@ -2380,7 +2413,17 @@ function renderDecoNote(){
   for (const [k, c] of [['buttons', n], ['encoders', ne]]){ const el = document.querySelector(`#decoSections [data-dsec="${k}"] .pg-count`); if (el) el.textContent = c; }
   $('exDeco').disabled = !!why;
 }
-function syncInputs(){ syncDeco(); $('thick').value = state.thickness; $('gap').value = state.gap; $('snapSel').value = String(state.snap); }
+function syncRibs(){
+  const r = cleanRibs(state.ribs), a = document.activeElement;
+  $('ribOn').checked = r.on; $('ribTun').checked = r.tunnels;
+  for (const [id, v] of [['ribCell', r.cell], ['ribWall', r.wall]]){ if ($(id) !== a) $(id).value = v; $(id).disabled = !r.on; }
+  $('ribTun').disabled = !r.on;
+  $('ribNote').textContent = r.on
+    ? `A hexagon web from the core plate's floor up to the front plate, so the plate is supported in the middle too. Every part sits in a pocket the size of its keep-out (as on the 2D design) with a ${fmt(r.ring)} mm rib around it; the hub area stays free.` +
+      (r.tunnels ? ` Pointed tunnels, ${fmt(r.tunnelW)} mm wide and ${fmt(r.tunnelH)} mm high, run through the bottom of every rib, so the wires can reach the hub; they print without support.` : ' No cable passages: the pockets are closed off from each other.')
+    : 'No ribs: the core plate is a hollow tray.';
+}
+function syncInputs(){ syncDeco(); syncRibs(); $('thick').value = state.thickness; $('gap').value = state.gap; $('snapSel').value = String(state.snap); }
 
 /* ---------------- 3D preview ---------------- */
 let three = null, rebuildTimer = null;
@@ -2533,7 +2576,7 @@ function taperedSolid(cs, zBot, zTop, inset, band){
     return prism.subtract(T(Manifold.union(cuts)));
   } finally { for (const x of trash) x.delete(); }
 }
-function mfTray(pl, gap){
+function mfTray(pl, gap, parts = [], ribs = null){
   const { Manifold, CrossSection } = MF, tr = pl.tray || cleanTray(), trash = [];
   const T = x => (trash.push(x), x);
   try {
@@ -2562,6 +2605,7 @@ function mfTray(pl, gap){
       if (areas.length){ const A = T(new CrossSection(areas.map(ccw), 'Positive')); p2 = T(p2.subtract(T(T(Manifold.extrude(T(A.offset(0.05, 'Round', 2, 48)), core + 1)).translate([0, 0, -core])))); }
       body = T(Manifold.union([body, p2]));
     }
+    if (ribs && ribs.on){ const web = mfRibs(pl, gap, parts, ribs, inner, areas); if (web){ trash.push(web); body = T(Manifold.union([body, web])); } }
     if (mounts.length && tr.pilot > 0){
       const pilot = m => T(T(T(Manifold.cylinder(gap + 1, tr.pilot/2, tr.pilot/2, 24)).rotate([0, 0, 1.37])).translate([m.x, m.y, -gap]));
       body = T(body.subtract(T(Manifold.union(mounts.map(pilot)))));
@@ -2576,6 +2620,53 @@ function mfTray(pl, gap){
       body = T(body.subtract(T(Manifold.union(cuts))));
     }
     return body.translate([0, 0, 0]);
+  } finally { for (const x of trash) x.delete(); }
+}
+// The rib web (see RIB_DEFAULTS), from the floor's top (z = -gap) to the front plate (z = 0), or null.
+function mfRibs(pl, gap, parts, rb, inner, areas){
+  const { Manifold, CrossSection } = MF, trash = [];
+  const T = x => (trash.push(x), x);
+  try {
+    const F = rb.cell, sq3 = Math.sqrt(3), b = pl.bbox, ext = Math.max(Math.abs(b.minX), Math.abs(b.maxX), Math.abs(b.minY), Math.abs(b.maxY)) + F;
+    // hexagon holes on a lattice anchored at the hub (0, 0), so the web is symmetric; pointy-top cells, rows F·√3/2 apart
+    const hr = (F - rb.wall) / sq3, holes = [];
+    for (let j = -Math.ceil(ext / (F*sq3/2)); j <= Math.ceil(ext / (F*sq3/2)); j++){
+      const y = j * F*sq3/2, sh = (j & 1) ? F/2 : 0;
+      for (let i = -Math.ceil(ext / F) - 1; i <= Math.ceil(ext / F) + 1; i++){
+        const x = i*F + sh, q = [];
+        for (let k = 0; k < 6; k++){ const a = (30 + 60*k) * Math.PI/180; q.push([x + hr*Math.cos(a), y + hr*Math.sin(a)]); }
+        holes.push(q);
+      }
+    }
+    const box = T(new CrossSection([[[-ext, -ext], [ext, -ext], [ext, ext], [-ext, ext]]]));
+    let web = T(box.subtract(T(new CrossSection(holes, 'Positive'))));
+    // pockets: every part's keep-out and every no-go zone, each with a ring around it
+    const pk = [...parts.map(p => shapePoly(koShape(p))), ...pl.holes.filter(h => h.role !== 'mount').map(h => shapePoly(holeKoShape(h)))];
+    if (pk.length){
+      const P = T(new CrossSection(pk, 'Positive')), ring = T(P.offset(rb.ring, 'Round', 2, 48));
+      web = T(T(web.add(ring)).subtract(P));
+    }
+    // the screw posts join the web (so a rib never just touches a post along a line)
+    const mounts = pl.holes.filter(h => h.role === 'mount'), tr = pl.tray || cleanTray();
+    if (mounts.length) web = T(web.add(T(new CrossSection(mounts.map(m => circlePoly(m.x, m.y, tr.boss/2)), 'Positive'))));
+    web = T(web.intersect(T(inner.offset(0.3, 'Round', 2, 48))));   // 0.3 mm into the wall: overlapping, not just touching
+    if (areas.length) web = T(web.subtract(T(T(new CrossSection(areas.map(ccw), 'Positive')).offset(0.05, 'Round', 2, 48))));
+    web = T(T(web.offset(-0.45, 'Round', 2, 24)).offset(0.45, 'Round', 2, 24));   // drop slivers too thin to print
+    if (web.isEmpty()) return null;
+    let ribs = T(T(Manifold.extrude(web, gap + 0.5)).translate([0, 0, -gap - 0.5]));
+    if (rb.tunnels && rb.tunnelH < gap){
+      // through the middle of every rib between two neighbouring cells: lines through the cell centres, 3 directions
+      const w = rb.tunnelW, roof = w/2, side = Math.max(0, rb.tunnelH - roof), L = 2*ext + 2*F, step = F*sq3/2, cuts = [];
+      const house = T(new CrossSection([[[-w/2, -1], [w/2, -1], [w/2, side], [0, side + roof], [-w/2, side]]]));
+      const bar = T(T(T(Manifold.extrude(house, L)).translate([0, 0, -L/2])).rotate([90, 0, 0]));   // along y, roof up
+      for (const th of [0, 60, 120]){
+        const a = th * Math.PI/180, nx = -Math.sin(a), ny = Math.cos(a);
+        for (let k = -Math.ceil(ext / step) - 1; k <= Math.ceil(ext / step) + 1; k++)
+          cuts.push(T(T(bar.rotate([0, 0, th - 90])).translate([k*step*nx, k*step*ny, -gap])));
+      }
+      ribs = T(ribs.subtract(T(Manifold.union(cuts))));
+    }
+    return ribs.translate([0, 0, 0]);
   } finally { for (const x of trash) x.delete(); }
 }
 // The back plate, right under the core plate (its top touches the core plate's bottom at z = -(spacing + floor)).
@@ -2623,11 +2714,12 @@ function backPlateGeometry(){
   return geo;
 }
 const trayCache = { key: null, geo: null };
-function trayGeometry(){
-  const pl = plate(), key = JSON.stringify([pl.key || pl.id, state.gap, mfState]);
-  if (trayCache.key === key) return trayCache.geo;
+function trayGeometry(allowStale){
+  const pl = plate(), rb = cleanRibs(state.ribs);
+  const key = JSON.stringify([pl.key || pl.id, state.gap, mfState, rb, rb.on ? state.parts.map(p => [p.type, p.x, p.y, p.rot, p.dims, p.row]) : 0]);
+  if (trayCache.key === key || (allowStale && trayCache.key !== null)) return trayCache.geo;
   let geo = null;
-  try { if (MF){ const m = mfTray(pl, state.gap); geo = mfToGeometry(m); m.delete(); } } catch(e){ console.warn('Core plate could not be built.', e); }
+  try { if (MF){ const m = mfTray(pl, state.gap, state.parts, rb); geo = mfToGeometry(m); m.delete(); } } catch(e){ console.warn('Core plate could not be built.', e); }
   if (trayCache.geo) trayCache.geo.dispose();
   trayCache.key = key; trayCache.geo = geo;
   return geo;
@@ -3040,7 +3132,7 @@ function rebuild3d(){
     else ph.absarc(m.x, m.y, m.d/2, 0, Math.PI*2, true);
     backShape.holes.push(ph);
   }
-  const tgeo = trayGeometry();
+  const tgeo = trayGeometry(!!(drag || rotDrag));
   const backMat = o => transBack3d ? mat(SHELL_COLOR, {transparent:true, opacity:Math.min(1, o*1.6), depthWrite:false, side:THREE.DoubleSide, roughness:0.8}) : mat(SHELL_COLOR, {side:THREE.DoubleSide, roughness:0.8});
   if (!show3dBack){}
   else if (tgeo) g.add(new THREE.Mesh(tgeo.clone(), backMat(0.32)));
