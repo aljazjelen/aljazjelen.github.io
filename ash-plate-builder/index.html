@@ -873,7 +873,7 @@ async function loadWheels(){
 
 /* Part library. Loaded from parts.json next to this page (its "_help" explains every field).
    DEFAULT_PARTS is a built-in copy of that file, used when parts.json can't be loaded (e.g. the page is opened as a local file). */
-const DEFAULT_PARTS = /*PARTS_JSON*/{"_help":["Part library for the ASH Front Plate Builder. All sizes in mm.","Each entry under 'parts' is one part type; its key (e.g. 'btn16') is stored in saved layouts, so don't rename keys that are in use.","Shapes: { \"shape\": \"circle\", \"d\": 16 } or { \"shape\": \"rect\", \"w\": 25, \"h\": 14, \"r\": 1 } (r = corner radius, optional).","name / group / label: shown in the parts list; label is the prefix for auto names (BTN1, BTN2...).","hole: exactly what is cut in the front plate: the whole body for some parts, only the shaft for others (rotary, encoder). For buttons with a deco ring, make it larger than the cap: the deco sleeve fills the gap, so its wall is (hole - cap) / 2.","cap: the element you see and press: button cap, knob, lever, LED. height is only used for the 3D preview. style: button | knob | lever | led. Leave cap out for flush parts like a display. For buttons, the cap passes through the deco ring and sleeve.","pcb: the board or switch body under the plate. depth = how far it reaches behind the plate (checked against Plate spacing).","pcb (or keepout) may also have \"x\" and \"y\": how far its centre sits from the part's position (the centre of the hole), in the part's own axes before rotation. For a board that is off-centre from its cut-out, e.g. the CYD display.","clearance: safe space around the part. The keep-out zone = the largest of hole, cap and pcb, plus clearance on every side.","keepout (optional): set an exact keep-out shape instead of the computed one. The keep-out is the only thing the fit checks use (edge margin, mounting holes, no-go areas, other parts), so the hole, cap or counterbore may reach beyond it.","Every part can be rotated; set rotatable: false to lock one. allowOverNoGo: true lets a part sit over the core plate's no-go areas (it must still avoid mounting holes).","display: true draws a screen in the 3D preview.","counterbore (optional): a wider blind pocket cut from the top of the plate around the hole, e.g. { \"shape\": \"circle\", \"d\": 32, \"depth\": 1 }. The hole still goes all the way through; at least 0.4 mm of plate is always left under the pocket.","deco: false keeps a part out of the deco: no ring around it (the rotary switch uses this).","row (optional): makes a symmetric row of identical elements, e.g. LEDs. pitch = default centre-to-centre spacing, maxPerSide = how many can be added on each side of the middle one. The part's position is the middle element; the keep-out becomes one rounded strip around the whole row."],"version":1,"parts":{"btn7":{"name":"Push button 7 mm","group":"Buttons/Rotaries","label":"BTN","hole":{"shape":"circle","d":10},"cap":{"shape":"circle","d":9,"height":4,"style":"button"},"pcb":{"shape":"circle","d":9,"depth":15},"clearance":1.5},"btn12":{"name":"Push button 12 mm","group":"Buttons/Rotaries","label":"BTN","hole":{"shape":"circle","d":15},"cap":{"shape":"circle","d":14,"height":5,"style":"button"},"pcb":{"shape":"rect","w":20,"h":20,"r":1,"depth":15},"clearance":0},"btn16":{"name":"Push button 16 mm","group":"Buttons/Rotaries","label":"BTN","hole":{"shape":"circle","d":19},"cap":{"shape":"circle","d":18,"height":6,"style":"button"},"pcb":{"shape":"circle","d":17,"depth":15},"clearance":2},"btn15sq":{"name":"Square button 15 mm","group":"Buttons/Rotaries","label":"BTN","hole":{"shape":"rect","w":16,"h":16,"r":1},"cap":{"shape":"rect","w":15,"h":15,"height":5,"style":"button"},"pcb":{"shape":"rect","w":20,"h":20,"r":1,"depth":15},"clearance":0},"rot":{"name":"Rotary switch 12-pos","group":"Buttons/Rotaries","label":"ROT","hole":{"shape":"circle","d":30},"cap":{"shape":"circle","d":28,"height":10,"style":"knob"},"counterbore":{"shape":"circle","d":32,"depth":1},"pcb":{"shape":"rect","w":27.2,"h":27.2,"r":1,"depth":15},"keepout":{"shape":"rect","w":27.5,"h":27.5},"clearance":0,"deco":false},"enc":{"name":"Encoder EC11","group":"Encoders & switches","label":"ENC","hole":{"shape":"circle","d":7.2},"cap":{"shape":"circle","d":20,"height":8,"style":"knob"},"pcb":{"shape":"rect","w":12,"h":13,"depth":15},"clearance":2},"tgl":{"name":"Toggle switch M6","group":"Encoders & switches","label":"TGL","hole":{"shape":"circle","d":6.2},"cap":{"shape":"circle","d":3,"height":11,"style":"lever"},"pcb":{"shape":"rect","w":8,"h":13,"depth":15},"clearance":3},"led5":{"name":"Single LED 5 mm","group":"Indicators","label":"LED","hole":{"shape":"circle","d":5.1},"cap":{"shape":"circle","d":5,"height":4,"style":"led"},"pcb":{"shape":"circle","d":5,"depth":15},"clearance":1.5},"led3":{"name":"Single LED 3 mm","group":"Indicators","label":"LED","hole":{"shape":"circle","d":3.1},"cap":{"shape":"circle","d":3,"height":3,"style":"led"},"pcb":{"shape":"circle","d":3,"depth":15},"clearance":1},"led5row":{"name":"Multiple LED 5 mm","group":"Indicators","label":"LEDS","hole":{"shape":"circle","d":5.1},"cap":{"shape":"circle","d":5,"height":4,"style":"led"},"pcb":{"shape":"circle","d":5,"depth":15},"clearance":1.5,"row":{"pitch":8,"maxPerSide":5}},"oled":{"name":"OLED 0.96″ window","group":"Displays","label":"OLED","hole":{"shape":"rect","w":25,"h":14,"r":1},"pcb":{"shape":"rect","w":27,"h":28,"depth":8},"clearance":1.5,"allowOverNoGo":true,"display":true},"cyd28":{"name":"CYD 2.8″ display (ESP32-2432S028)","group":"Displays","label":"CYD","hole":{"shape":"rect","w":59.5,"h":45,"r":0.5},"pcb":{"shape":"rect","w":86,"h":50,"x":1.75,"depth":12},"clearance":1.5,"allowOverNoGo":true,"display":true},"vocore43":{"name":"VoCore 4.3″ display","group":"Displays","label":"DISP","hole":{"shape":"rect","w":93.6,"h":56.2,"r":0.5},"pcb":{"shape":"rect","w":104.3,"h":61.3,"depth":10},"clearance":1.5,"allowOverNoGo":true,"display":true}}}/*END_PARTS_JSON*/;
+const DEFAULT_PARTS = /*PARTS_JSON*/{"_help":["Part library for the ASH Front Plate Builder. All sizes in mm.","Each entry under 'parts' is one part type; its key (e.g. 'btn16') is stored in saved layouts, so don't rename keys that are in use.","Shapes: { \"shape\": \"circle\", \"d\": 16 } or { \"shape\": \"rect\", \"w\": 25, \"h\": 14, \"r\": 1 } (r = corner radius, optional).","name / group / label: shown in the parts list; label is the prefix for auto names (BTN1, BTN2...).","hole: exactly what is cut in the front plate: the whole body for some parts, only the shaft for others (rotary, encoder). For buttons with a deco ring, make it larger than the cap: the deco sleeve fills the gap, so its wall is (hole - cap) / 2.","cap: the element you see and press: button cap, knob, lever, LED. height is only used for the 3D preview. style: button | knob | lever | led. Leave cap out for flush parts like a display. For buttons, the cap passes through the deco ring and sleeve.","pcb: the board or switch body under the plate. depth = how far it reaches behind the plate (checked against Plate spacing).","pcb (or keepout) may also have \"x\" and \"y\": how far its centre sits from the part's position (the centre of the hole), in the part's own axes before rotation. For a board that is off-centre from its cut-out, e.g. the CYD display.","clearance: safe space around the part. The keep-out zone = the largest of hole, cap and pcb, plus clearance on every side.","keepout (optional): set an exact keep-out shape instead of the computed one. The keep-out is the only thing the fit checks use (edge margin, mounting holes, no-go areas, other parts), so the hole, cap or counterbore may reach beyond it.","Every part can be rotated; set rotatable: false to lock one. allowOverNoGo: true lets a part sit over the core plate's no-go areas (it must still avoid mounting holes).","display: true draws a screen in the 3D preview.","side (instead of hole/cap/pcb): a side-exit part such as a horizontal encoder. A small PCB lies on the core plate's floor and the shaft comes out sideways through the core plate's wall (a U slot is cut into the wall); nothing is cut in the front plate and the knob must sit outside the plate's outline. In the part's own axes the shaft points along +x and the part's position is the PCB's centre. pcb {w (along the shaft), h, t}, axis = shaft centre above the top of the PCB, height = from the PCB's underside to the top of the switch, shaft {d, length = from the PCB's edge to the knob}, knob {d, w}, slot = width of the U slot (default shaft d + 0.6).","counterbore (optional): a wider blind pocket cut from the top of the plate around the hole, e.g. { \"shape\": \"circle\", \"d\": 32, \"depth\": 1 }. The hole still goes all the way through; at least 0.4 mm of plate is always left under the pocket.","deco: false keeps a part out of the deco: no ring around it (the rotary switch uses this).","row (optional): makes a symmetric row of identical elements, e.g. LEDs. pitch = default centre-to-centre spacing, maxPerSide = how many can be added on each side of the middle one. The part's position is the middle element; the keep-out becomes one rounded strip around the whole row."],"version":1,"parts":{"btn7":{"name":"Push button 7 mm","group":"Buttons/Rotaries","label":"BTN","hole":{"shape":"circle","d":10},"cap":{"shape":"circle","d":9,"height":4,"style":"button"},"pcb":{"shape":"circle","d":9,"depth":15},"clearance":1.5},"btn12":{"name":"Push button 12 mm","group":"Buttons/Rotaries","label":"BTN","hole":{"shape":"circle","d":15},"cap":{"shape":"circle","d":14,"height":5,"style":"button"},"pcb":{"shape":"rect","w":20,"h":20,"r":1,"depth":15},"clearance":0},"btn16":{"name":"Push button 16 mm","group":"Buttons/Rotaries","label":"BTN","hole":{"shape":"circle","d":19},"cap":{"shape":"circle","d":18,"height":6,"style":"button"},"pcb":{"shape":"circle","d":17,"depth":15},"clearance":2},"btn15sq":{"name":"Square button 15 mm","group":"Buttons/Rotaries","label":"BTN","hole":{"shape":"rect","w":16,"h":16,"r":1},"cap":{"shape":"rect","w":15,"h":15,"height":5,"style":"button"},"pcb":{"shape":"rect","w":20,"h":20,"r":1,"depth":15},"clearance":0},"rot":{"name":"Rotary switch 12-pos","group":"Buttons/Rotaries","label":"ROT","hole":{"shape":"circle","d":30},"cap":{"shape":"circle","d":28,"height":10,"style":"knob"},"counterbore":{"shape":"circle","d":32,"depth":1},"pcb":{"shape":"rect","w":27.2,"h":27.2,"r":1,"depth":15},"keepout":{"shape":"rect","w":27.5,"h":27.5},"clearance":0,"deco":false},"enc":{"name":"Encoder EC11","group":"Encoders & switches","label":"ENC","hole":{"shape":"circle","d":7.2},"cap":{"shape":"circle","d":20,"height":8,"style":"knob"},"pcb":{"shape":"rect","w":12,"h":13,"depth":15},"clearance":2},"encH":{"name":"Encoder, horizontal (side exit)","group":"Encoders & switches","label":"ENC","side":{"pcb":{"w":16,"h":15,"t":1.6},"axis":7,"height":17.4,"shaft":{"d":9,"length":7},"knob":{"d":33,"w":14.6},"slot":9.6},"clearance":1},"tgl":{"name":"Toggle switch M6","group":"Encoders & switches","label":"TGL","hole":{"shape":"circle","d":6.2},"cap":{"shape":"circle","d":3,"height":11,"style":"lever"},"pcb":{"shape":"rect","w":8,"h":13,"depth":15},"clearance":3},"led5":{"name":"Single LED 5 mm","group":"Indicators","label":"LED","hole":{"shape":"circle","d":5.1},"cap":{"shape":"circle","d":5,"height":4,"style":"led"},"pcb":{"shape":"circle","d":5,"depth":15},"clearance":1.5},"led3":{"name":"Single LED 3 mm","group":"Indicators","label":"LED","hole":{"shape":"circle","d":3.1},"cap":{"shape":"circle","d":3,"height":3,"style":"led"},"pcb":{"shape":"circle","d":3,"depth":15},"clearance":1},"led5row":{"name":"Multiple LED 5 mm","group":"Indicators","label":"LEDS","hole":{"shape":"circle","d":5.1},"cap":{"shape":"circle","d":5,"height":4,"style":"led"},"pcb":{"shape":"circle","d":5,"depth":15},"clearance":1.5,"row":{"pitch":8,"maxPerSide":5}},"oled":{"name":"OLED 0.96″ window","group":"Displays","label":"OLED","hole":{"shape":"rect","w":25,"h":14,"r":1},"pcb":{"shape":"rect","w":27,"h":28,"depth":8},"clearance":1.5,"allowOverNoGo":true,"display":true},"cyd28":{"name":"CYD 2.8″ display (ESP32-2432S028)","group":"Displays","label":"CYD","hole":{"shape":"rect","w":59.5,"h":45,"r":0.5},"pcb":{"shape":"rect","w":86,"h":50,"x":1.75,"depth":12},"clearance":1.5,"allowOverNoGo":true,"display":true},"vocore43":{"name":"VoCore 4.3″ display","group":"Displays","label":"DISP","hole":{"shape":"rect","w":93.6,"h":56.2,"r":0.5},"pcb":{"shape":"rect","w":104.3,"h":61.3,"depth":10},"clearance":1.5,"allowOverNoGo":true,"display":true}}}/*END_PARTS_JSON*/;
 let TYPES = {};
 let partsSource = 'built-in';
 const partWarnings = [];
@@ -920,6 +920,7 @@ function buildTypes(cfg, source){
   for (const [key, e] of Object.entries(parts)){
     try {
       if (!/^[A-Za-z0-9_-]+$/.test(key)) throw new Error('the key may only use letters, digits, - and _');
+      if (e.side){ out[key] = buildSidePart(key, e); continue; }
       const hole = normShape(e.hole, 'hole');
       const pcbShape = e.pcb ? normShape(e.pcb, 'pcb') : hole;
       const depth = e.pcb && e.pcb.depth != null ? +e.pcb.depth : 10;
@@ -955,6 +956,28 @@ function buildTypes(cfg, source){
     } catch(err){ partWarnings.push(`${source}: "${key}" skipped, ${err.message}.`); }
   }
   return out;
+}
+/* Side-exit parts (horizontal encoder / rotary switch): a small PCB inside the core plate with the shaft lying
+   flat and coming out through the core plate's side wall, the knob outside the plate's outline. Nothing is cut in
+   the front plate. In the part's own axes the shaft points along +x; the part's position is the PCB's centre.
+   side.pcb {w (along the shaft), h, t}: board size and thickness; it sits on the core plate's floor.
+   side.axis: shaft centre above the top of the PCB. side.height: from the PCB's underside to the top of the switch.
+   side.shaft {d, length}: shaft/bushing diameter and how far it reaches past the PCB's edge (where the knob starts).
+   side.knob {d, w}: knob diameter and width. side.slot: width of the U slot cut down into the wall for the shaft. */
+function buildSidePart(key, e){
+  const sd = e.side, n = (v, what) => { const x = +v; if (!(x > 0)) throw new Error(`side.${what} must be above 0`); return x; };
+  const pcb = sd.pcb || {}, sh = sd.shaft || {}, kn = sd.knob || {};
+  const P = { w: n(pcb.w, 'pcb.w'), h: n(pcb.h, 'pcb.h'), t: n(pcb.t ?? 1.6, 'pcb.t') };
+  const side = { pcbT: P.t, axis: n(sd.axis, 'axis'), height: n(sd.height ?? (P.t + +sd.axis + 6), 'height'),
+    shaftD: n(sh.d, 'shaft.d'), shaftL: n(sh.length, 'shaft.length'), knobD: n(kn.d, 'knob.d'), knobW: n(kn.w, 'knob.w'),
+    slot: n(sd.slot ?? (+sh.d + 0.6), 'slot'), pcbW: P.w, pcbH: P.h };
+  side.knob = {c:'rect', w: side.knobW, h: side.knobD, r: 1, ox: r2(P.w/2 + side.shaftL + side.knobW/2)};
+  side.shaft = {c:'rect', w: side.shaftL, h: side.shaftD, ox: r2(P.w/2 + side.shaftL/2)};
+  const body = {c:'rect', w: P.w, h: P.h};
+  const clearance = e.clearance != null ? +e.clearance : 1;
+  return { group: String(e.group || 'Other'), name: String(e.name || key), short: String(e.label || key.toUpperCase()),
+    cut: null, ko: deriveKeepout([body], clearance), depth: side.height, body, cap: null, clearance, explicitKo: false,
+    screen: false, rotatable: true, ignoresNoGo: false, row: null, noDeco: true, counterbore: null, side };
 }
 /* Custom parts: built into the app, not parts.json. Each placed custom part keeps its own sizes in part.dims. */
 const CUSTOM = {
@@ -1519,7 +1542,7 @@ function outlineStart(kind){
   mutate(() => { o.pts = o.sym ? rightHalf(full) : full; if (kind !== 'rect' && kind !== 'round') o.radius = 0; syncAnchors(o); });
 }
 // Parts that get a ring: buttons, i.e. parts whose cap style is "button" with a round cap.
-const isButton = p => { const t = typeOf(p); return !!(!t.noDeco && t.cap && t.cap.kind === 'cap' && t.cap.c === 'circle' && t.cut.c === 'circle'); };
+const isButton = p => { const t = typeOf(p); return !!(!t.noDeco && t.cap && t.cap.kind === 'cap' && t.cap.c === 'circle' && t.cut && t.cut.c === 'circle'); };
 // Parts that get an encoder ring: parts with a round knob, unless parts.json says deco: false (the rotary switch).
 const isEncoder = p => { const t = typeOf(p); return !!(!t.noDeco && t.cap && t.cap.kind === 'knob' && t.cap.c === 'circle'); };
 const SLEEVE_MIN_WALL = 0.3;   // mm: below this the gap between cap and hole is too thin for a sleeve
@@ -1624,9 +1647,9 @@ function shapeCentre(spec, p){
 }
 const holeKoShape = h => h.poly ? {k:'p', pts:h.koPoly} : {k:'c', x:h.x, y:h.y, r:h.ko/2};
 // What you see from the front: the cap (button cap, knob, lever, LED); parts without a cap show their cut-out.
-const capShape = p => { const t = typeOf(p); return shapeOf(t.cap || t.cut, p); };
+const capShape = p => { const t = typeOf(p); return shapeOf(t.side ? t.side.knob : (t.cap || t.cut), p); };
 const koShape  = p => shapeOf(typeOf(p).ko, p);
-const cutShape = p => shapeOf(typeOf(p).cut, p);
+const cutShape = p => { const t = typeOf(p); return t.cut ? shapeOf(t.cut, p) : null; };
 // The physical elements of a part: itself, or for a row part every element of the row (same id, own position).
 function elemsOf(p){
   const t = typeOf(p);
@@ -1635,8 +1658,8 @@ function elemsOf(p){
   for (let k = -t.rowN; k <= t.rowN; k++) out.push({...p, x: p.x + k*t.rowPitch*c, y: p.y + k*t.rowPitch*s});
   return out;
 }
-const capShapes = p => elemsOf(p).map(capShape);
-const cutShapes = p => elemsOf(p).map(plateCutShape);
+const capShapes = p => typeOf(p).side ? [shapeOf(typeOf(p).side.shaft, p), capShape(p)] : elemsOf(p).map(capShape);
+const cutShapes = p => elemsOf(p).map(plateCutShape).filter(Boolean);
 // Counterbores: [{sh, depth}] for every element of a part that has one in parts.json.
 const counterbores = p => { const cb = typeOf(p).counterbore; return cb ? elemsOf(p).map(e => ({sh: shapeOf(cb, e), depth: cb.depth})) : []; };
 
@@ -1646,6 +1669,11 @@ function edgeDist(x, y, o){
   return d;
 }
 // True when the shape lies inside the outline and at least `inset` mm from every edge.
+// A side-exit part's knob: completely outside the outline, at least `gap` mm from it.
+function knobOutside(pts, o, gap){
+  if (pts.some(([x, y]) => pointInPoly(x, y, o) || edgeDist(x, y, o) < gap - EPS)) return false;
+  return !o.some(([x, y]) => pointInPoly(x, y, pts) || edgeDist(x, y, pts) < gap - EPS);
+}
 function insideZone(sh, pl){
   const o = pl.outline, ins = pl.inset;
   if (sh.k === 'c') return pointInPoly(sh.x, sh.y, o) && edgeDist(sh.x, sh.y, o) >= sh.r + ins - EPS;
@@ -1702,10 +1730,19 @@ function validate(){
   const mounts = pl.holes.map(h => ({role:h.role, n: h.role==='mount' ? ++nm : ++nk, sh:holeKoShape(h)}));
   for (const [p, sh] of kos){
     const t = typeOf(p);
-    if (!insideZone(sh, pl)){ issues.push({sev:'err', ids:[p.id], msg:`${p.label} crosses the ${pl.inset} mm edge margin.`}); errIds.add(p.id); }
+    if (t.side){   // a side-exit PCB only has to fit inside the core plate's wall: its shaft goes through the wall
+      const wall = (pl.tray || cleanTray()).wall;
+      if (!insideZone(shapeOf(t.body, p), {outline: pl.outline, inset: wall + 0.3})){ issues.push({sev:'err', ids:[p.id], msg:`${p.label}: the PCB must fit inside the core plate's ${fmt(wall)} mm wall.`}); errIds.add(p.id); }
+    }
+    else if (!insideZone(sh, pl)){ issues.push({sev:'err', ids:[p.id], msg:`${p.label} crosses the ${pl.inset} mm edge margin.`}); errIds.add(p.id); }
     for (const m of mounts) if ((m.role === 'mount' || !t.ignoresNoGo) && overlap(sh, m.sh)){
       issues.push({sev:'err', ids:[p.id], msg: m.role==='mount' ? `${p.label} overlaps mounting hole ${m.n}.` : `${p.label} reaches into no-go area ${m.n} (handle bolt or hub).`});
       errIds.add(p.id);
+    }
+    if (t.side){
+      const kn = capShape(p);
+      if (!knobOutside(kn.pts, pl.outline, 1)){ issues.push({sev:'err', ids:[p.id], msg:`${p.label}: the knob must sit outside the plate (it's ${fmt(t.side.shaftL)} mm past the PCB). Move the part so its PCB is just inside the edge and the knob is in the open, e.g. in a notch.`}); errIds.add(p.id); }
+      for (const m of mounts) if (overlap(kn, m.sh)){ issues.push({sev:'err', ids:[p.id], msg:`${p.label}: the knob hits ${m.role === 'mount' ? 'mounting hole ' + m.n : 'no-go area ' + m.n}.`}); errIds.add(p.id); }
     }
     if (t.depth > state.gap){ issues.push({sev:'warn', ids:[p.id], msg:`${p.label} needs ${t.depth} mm behind the plate; the plates are ${fmt(state.gap)} mm apart.`}); warnIds.add(p.id); }
   }
@@ -1725,8 +1762,9 @@ const errorCount = () => issues.filter(i=>i.sev==='err').length;
 function isFree(probe, x, y, rot, ignoreId){
   const pl = plate();
   const part = {type: probe.type, dims: probe.dims, row: probe.row, x, y, rot};
-  const sh = koShape(part);
-  if (!insideZone(sh, pl)) return false;
+  const sh = koShape(part), tp = typeOf(part);
+  if (tp.side){ if (!insideZone(shapeOf(tp.body, part), {outline: pl.outline, inset: (pl.tray || cleanTray()).wall + 0.3}) || !knobOutside(capShape(part).pts, pl.outline, 1)) return false; }
+  else if (!insideZone(sh, pl)) return false;
   for (const h of pl.holes) if ((h.role === 'mount' || !typeOf(part).ignoresNoGo) && overlap(sh, holeKoShape(h))) return false;
   for (const q of state.parts) if (q.id !== ignoreId && overlap(sh, koShape(q))) return false;
   return true;
@@ -2098,6 +2136,12 @@ function iconSvg(t){
     return `<svg viewBox="0 0 34 34" aria-hidden="true"><rect x="${17 - (P + k/2)*sc}" y="${17 - h/2}" width="${(2*P + k)*sc}" height="${h}" rx="${h/2}" fill="none" stroke="var(--accent)" stroke-width="1" stroke-dasharray="2 1.5"/>` +
       [-1, 0, 1].map(i => `<circle cx="${17 + i*P*sc}" cy="17" r="${f.d/2*sc}" fill="var(--ink)"/>`).join('') + `</svg>`;
   }
+  if (t.side){   // PCB on the left, shaft and knob to the right
+    const S = t.side, L = S.pcbW + S.shaftL + S.knobW, k = 30/Math.max(32, L, S.knobD), x0 = 17 - L/2*k;
+    return `<svg viewBox="0 0 34 34" aria-hidden="true"><rect x="${x0}" y="${17 - S.pcbH/2*k}" width="${S.pcbW*k}" height="${S.pcbH*k}" fill="none" stroke="var(--accent)" stroke-width="1" stroke-dasharray="2 1.5"/>` +
+      `<rect x="${x0 + S.pcbW*k}" y="${17 - S.shaftD/2*k}" width="${S.shaftL*k}" height="${S.shaftD*k}" fill="var(--ink)" opacity=".6"/>` +
+      `<rect x="${x0 + (S.pcbW + S.shaftL)*k}" y="${17 - S.knobD/2*k}" width="${S.knobW*k}" height="${S.knobD*k}" rx="1" fill="var(--ink)"/></svg>`;
+  }
   const sc = 30/Math.max(32, t.ko.d || Math.max(t.ko.w,t.ko.h));
   const f = t.cap || t.cut;   // the cap, as on the plate
   const cut = f.c==='circle' ? `<circle cx="17" cy="17" r="${f.d/2*sc}" fill="var(--ink)"/>` : `<rect x="${17-f.w/2*sc}" y="${17-f.h/2*sc}" width="${f.w*sc}" height="${f.h*sc}" fill="var(--ink)"/>`;
@@ -2119,7 +2163,7 @@ function renderPalette(){
   for (const [k,t] of Object.entries(TYPES)) (groups[t.group] ||= []).push([k,t]);
   // One collapsible section per group; only one is open at a time (remembered per viewer).
   const sections = Object.entries(groups).map(([g, items]) => [g, items.map(([k, t]) =>
-    `<button class="pitem" data-type="${k}" title="Add ${t.name}">${iconSvg(t)}<span><b>${t.name}</b><i>${t.row ? `cut ${dimText(t.cut)} each · 1 to ${2*t.row.maxPerSide + 1} in a row` : `cut ${dimText(t.cut)} · keep-out ${dimText(t.ko)}`}</i></span></button>`)]);
+    `<button class="pitem" data-type="${k}" title="Add ${t.name}">${iconSvg(t)}<span><b>${t.name}</b><i>${t.row ? `cut ${dimText(t.cut)} each · 1 to ${2*t.row.maxPerSide + 1} in a row` : t.side ? `side exit · PCB ${dimText(t.body)} · knob Ø${fmt(t.side.knobD)}` : `cut ${dimText(t.cut)} · keep-out ${dimText(t.ko)}`}</i></span></button>`)]);
   sections.push(['Custom', Object.entries(CUSTOM).map(([k, c]) =>
     `<button class="pitem" data-type="${k}" title="Add a ${c.name.toLowerCase()} with your own sizes">${iconSvg(typeOf({type:k}))}<span><b>${c.name}</b><i>your own cut-out and keep-out</i></span></button>`)]);
   let open = null;
@@ -2205,7 +2249,8 @@ function renderProps(){
     ${t.row ? rowFields(p, t) : ''}
     ${t.custom ? customFields(p) : `<dl class="kv">
       <dt>Part</dt><dd>${esc(t.name)}</dd>
-      <dt>Hole</dt><dd>${dimText(t.cut)} mm</dd>
+      ${t.side ? `<dt>Exit</dt><dd>sideways through the core plate wall: U slot ${fmt(t.side.slot)} mm wide, shaft ${fmt(t.side.shaftD)} mm at ${fmt(r2(t.side.pcbT + t.side.axis))} mm above the floor</dd>
+      <dt>Knob</dt><dd>Ø${fmt(t.side.knobD)} × ${fmt(t.side.knobW)} mm, ${fmt(t.side.shaftL)} mm past the PCB; must sit outside the plate</dd>` : `<dt>Hole</dt><dd>${dimText(t.cut)} mm</dd>`}
       ${t.counterbore ? `<dt>Counterbore</dt><dd>${dimText(t.counterbore)} mm, ${fmt(Math.min(t.counterbore.depth, state.thickness - 0.4))} deep from the top</dd>` : ''}
       <dt>Cap</dt><dd>${t.cap ? `${dimText(t.cap)} mm, ${fmt(t.cap.height)} high` : 'none'}</dd>
       <dt>PCB</dt><dd>${dimText(t.body)} mm, ${fmt(t.depth)} deep</dd>
@@ -2574,10 +2619,13 @@ function mfBase(pl, t){
 function mfPlate(){
   const pl = plate(), t = state.thickness, base = mfBase(pl, t), { Manifold, CrossSection } = MF;
   if (!state.parts.length) return base.translate([0, 0, 0]);
-  const cs = new CrossSection(state.parts.flatMap(p => cutShapes(p).map(shapePoly)), 'Positive');
-  const cut = Manifold.extrude(cs, t + 2).translate([0, 0, -1]);
-  let res = base.subtract(cut);
-  cs.delete(); cut.delete();
+  const polys = state.parts.flatMap(p => cutShapes(p).map(shapePoly));   // side-exit parts cut nothing here
+  let res = base.translate([0, 0, 0]);
+  if (polys.length){
+    const cs = new CrossSection(polys, 'Positive'), cut = Manifold.extrude(cs, t + 2).translate([0, 0, -1]);
+    const r2_ = res.subtract(cut); res.delete(); res = r2_;
+    cs.delete(); cut.delete();
+  }
   // counterbores: blind pockets from the top, always leaving at least 0.4 mm of plate underneath
   for (const { sh, depth } of state.parts.flatMap(counterbores)){
     const d = Math.min(depth, t - 0.4), c = new CrossSection([shapePoly(sh)], 'Positive');
@@ -2644,6 +2692,16 @@ function mfTray(pl, gap, parts = [], ribs = null){
       body = T(Manifold.union([body, p2]));
     }
     if (ribs && ribs.on){ const web = mfRibs(pl, gap, parts, ribs, inner, areas); if (web){ trash.push(web); body = T(Manifold.union([body, web])); } }
+    // side-exit parts: a U slot down into the wall (and anything else in the way) for the shaft, open to the top
+    const slots = [];
+    for (const p of parts){
+      const S = typeOf(p) && typeOf(p).side; if (!S) continue;
+      const z = -gap + S.pcbT + S.axis, r = S.slot/2, x0 = S.pcbW/2 - 0.5, L = S.shaftL + 1;
+      const box = T(T(Manifold.cube([L, S.slot, 0 - z + 1])).translate([x0, -r, z]));
+      const cyl = T(T(T(Manifold.cylinder(L, r, r, 40)).rotate([0, 90, 0])).translate([x0, 0, z]));
+      slots.push(T(T(T(Manifold.union([box, cyl])).rotate([0, 0, p.rot || 0])).translate([p.x, p.y, 0])));
+    }
+    if (slots.length) body = T(body.subtract(T(Manifold.union(slots))));
     if (mounts.length && tr.pilot > 0){
       const pilot = m => T(T(T(Manifold.cylinder(gap + 1, tr.pilot/2, tr.pilot/2, 24)).rotate([0, 0, 1.37])).translate([m.x, m.y, -gap]));
       body = T(body.subtract(T(Manifold.union(mounts.map(pilot)))));
@@ -2762,7 +2820,7 @@ function backPlateGeometry(){
 const trayCache = { key: null, geo: null };
 function trayGeometry(allowStale){
   const pl = plate(), rb = cleanRibs(state.ribs);
-  const key = JSON.stringify([pl.key || pl.id, state.gap, mfState, rb, rb.on ? state.parts.map(p => [p.type, p.x, p.y, p.rot, p.dims, p.row]) : 0]);
+  const key = JSON.stringify([pl.key || pl.id, state.gap, mfState, rb, rb.on ? state.parts.map(p => [p.type, p.x, p.y, p.rot, p.dims, p.row]) : state.parts.filter(p => typeOf(p) && typeOf(p).side).map(p => [p.type, p.x, p.y, p.rot])]);
   if (trayCache.key === key || (allowStale && trayCache.key !== null)) return trayCache.geo;
   let geo = null;
   try { if (MF){ const m = mfTray(pl, state.gap, state.parts, rb); geo = mfToGeometry(m); m.delete(); } } catch(e){ console.warn('Core plate could not be built.', e); }
@@ -2894,6 +2952,7 @@ function decoBridges(ds){
   const blockers = [];
   for (const q of state.parts.flatMap(elemsOf)){
     const tq = typeOf(q), cs = cutShape(q);
+    if (!cs) continue;
     blockers.push({id: q.id, label: q.label, sh: cs.k === 'c' ? {...cs, r: cs.r + 0.5} : cs});
     if (tq.cap && tq.cap.c === 'circle') blockers.push({id: q.id, label: q.label, sh: {k:'c', x:q.x, y:q.y, r: tq.cap.d/2 + 0.5}});
   }
@@ -2991,6 +3050,7 @@ function mfDeco(){
     for (const p of state.parts.flatMap(elemsOf)){
       if (ringed.has(p.id)) continue;
       const tp = typeOf(p);
+      if (!tp.cut) continue;
       open.push(shapePoly(cutShape(p)));
       if (tp.cap && tp.cap.c === 'circle') open.push(circlePoly(p.x, p.y, tp.cap.d/2));
     }
@@ -3239,6 +3299,18 @@ for (const v of TAB_ORDER){
     $(VIEWS[next][0]).focus(); setView(next);
   });
 }
+// A side-exit part in 3D: PCB on the core plate's floor, switch body, shaft through the wall, knob outside.
+function sidePart3d(p, S, gap, mat, L){
+  const a = (p.rot || 0) * Math.PI/180, c = Math.cos(a), s = Math.sin(a);
+  const at = (lx, ly, z, m) => { m.position.set(p.x + lx*c - ly*s, p.y + lx*s + ly*c, z); m.rotation.z = a; return L(m, 'core'); };
+  const zf = -gap, zAxis = zf + S.pcbT + S.axis;
+  at(0, 0, zf + S.pcbT/2, new THREE.Mesh(new THREE.BoxGeometry(S.pcbW, S.pcbH, S.pcbT), mat('#1F5B3A', {roughness: 0.6})));
+  const bw = Math.min(S.pcbW * 0.55, 9), bh = Math.max(S.height - S.pcbT, S.axis + 3);
+  at(S.pcbW/2 - bw/2, 0, zf + S.pcbT + bh/2, new THREE.Mesh(new THREE.BoxGeometry(bw, Math.min(S.pcbH - 2, 13), bh), mat('#4A4F55', {roughness: 0.5, metalness: 0.2})));
+  const cyl = (r, len, col, o) => { const g = new THREE.CylinderGeometry(r, r, len, 32); g.rotateZ(Math.PI/2); return new THREE.Mesh(g, mat(col, o)); };
+  at(S.pcbW/2 + S.shaftL/2, 0, zAxis, cyl(S.shaftD/2, S.shaftL, '#8A9096', {metalness: 0.5, roughness: 0.4}));
+  at(S.knob.ox, 0, zAxis, cyl(S.knobD/2, S.knobW, '#1C2024', {roughness: 0.55}));
+}
 function disposeGroup(g){ g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); }
 /* Exploded view: every piece moves along the wheel's axis by its layer's offset (mm), in assembly order.
    The pieces keep their offset in userData; toggling only animates the positions, nothing is rebuilt. */
@@ -3304,6 +3376,7 @@ function rebuild3d(){
       const bad = errIds.has(p.id);
       const bodyMat = mat(bad ? css('--err') : acc, {transparent:true, opacity:0.35, depthWrite:false});
       let body = null;
+      if (tp.side){ sidePart3d(p, tp.side, gap, mat, L); continue; }
       if (tp.depth <= 0) {}
       else if (tp.body.c === 'circle'){ body = new THREE.Mesh(new THREE.CylinderGeometry(tp.body.d/2, tp.body.d/2, tp.depth, 28), bodyMat); body.rotation.x = Math.PI/2; }
       else { body = new THREE.Mesh(new THREE.BoxGeometry(tp.body.w, tp.body.h, tp.depth), bodyMat); body.rotation.z = p.rot*Math.PI/180; }
@@ -3396,7 +3469,7 @@ function svgText(){
 function bomCsv(){
   const rows = [['label','part','x_mm','y_mm','rotation_deg','cutout_mm','keepout_mm','depth_mm']];
   const sorted = [...state.parts].sort((a,b) => a.label.localeCompare(b.label, undefined, {numeric:true}));
-  for (const p of sorted){ const t = typeOf(p); rows.push([p.label, t.count ? `${t.name} (${t.count} in a row, ${fmt(t.rowPitch)} mm apart)` : t.name, fmt(p.x), fmt(p.y), fmt(p.rot), (t.count ? `${t.count} × ` : '') + dimText(t.cut), dimText(t.ko), t.depth]); }
+  for (const p of sorted){ const t = typeOf(p); rows.push([p.label, t.count ? `${t.name} (${t.count} in a row, ${fmt(t.rowPitch)} mm apart)` : t.name, fmt(p.x), fmt(p.y), fmt(p.rot), (t.count ? `${t.count} × ` : '') + (t.cut ? dimText(t.cut) : 'side exit'), dimText(t.ko), t.depth]); }
   rows.push([]); rows.push(['part','quantity']);
   // rows count every element, so the quantity of "Multiple LED 5 mm" is the number of LEDs
   const q = {}; for (const p of state.parts){ const t = typeOf(p), k = t.custom ? `${t.name} ${dimText(t.cut)}` : t.name; q[k] = (q[k]||0) + (t.count || 1); }

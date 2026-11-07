@@ -12,6 +12,7 @@
     "keepout (optional): set an exact keep-out shape instead of the computed one. The keep-out is the only thing the fit checks use (edge margin, mounting holes, no-go areas, other parts), so the hole, cap or counterbore may reach beyond it.",
     "Every part can be rotated; set rotatable: false to lock one. allowOverNoGo: true lets a part sit over the core plate's no-go areas (it must still avoid mounting holes).",
     "display: true draws a screen in the 3D preview.",
+    "side (instead of hole/cap/pcb): a side-exit part such as a horizontal encoder. A small PCB lies on the core plate's floor and the shaft comes out sideways through the core plate's wall (a U slot is cut into the wall); nothing is cut in the front plate and the knob must sit outside the plate's outline. In the part's own axes the shaft points along +x and the part's position is the PCB's centre. pcb {w (along the shaft), h, t}, axis = shaft centre above the top of the PCB, height = from the PCB's underside to the top of the switch, shaft {d, length = from the PCB's edge to the knob}, knob {d, w}, slot = width of the U slot (default shaft d + 0.6).",
     "counterbore (optional): a wider blind pocket cut from the top of the plate around the hole, e.g. { \"shape\": \"circle\", \"d\": 32, \"depth\": 1 }. The hole still goes all the way through; at least 0.4 mm of plate is always left under the pocket.",
     "deco: false keeps a part out of the deco: no ring around it (the rotary switch uses this).",
     "row (optional): makes a symmetric row of identical elements, e.g. LEDs. pitch = default centre-to-centre spacing, maxPerSide = how many can be added on each side of the middle one. The part's position is the middle element; the keep-out becomes one rounded strip around the whole row."
@@ -62,6 +63,12 @@
       "cap":  { "shape": "circle", "d": 20, "height": 8, "style": "knob" },
       "pcb":  { "shape": "rect", "w": 12, "h": 13, "depth": 15 },
       "clearance": 2
+    },
+    "encH": {
+      "name": "Encoder, horizontal (side exit)", "group": "Encoders & switches", "label": "ENC",
+      "side": { "pcb": { "w": 16, "h": 15, "t": 1.6 }, "axis": 7, "height": 17.4,
+                "shaft": { "d": 9, "length": 7 }, "knob": { "d": 33, "w": 14.6 }, "slot": 9.6 },
+      "clearance": 1
     },
     "tgl": {
       "name": "Toggle switch M6", "group": "Encoders & switches", "label": "TGL",
