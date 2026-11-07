@@ -477,9 +477,9 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
           </div>
           <label class="check" id="ribTunRow" title="Pointed tunnels through the bottom of the ribs, so wires can get from every part's pocket to the hub. Only for ribs at least 10 mm tall: lower ribs, the wires simply run over them."><input type="checkbox" id="ribTun"> Cable passages through the ribs</label>
           <p class="note" id="ribNote"></p>
-          <label class="check" title="A separate printed piece that drops into the core plate and carries the parts: a hexagon base with a closed silo around every part's PCB."><input type="checkbox" id="insOn"> Insert for the parts</label>
+          <label class="check" title="A separate printed piece that drops into the core plate and carries the parts: a hexagon top plate under the front plate with a closed silo around every part's PCB hanging down from it."><input type="checkbox" id="insOn"> Insert for the parts</label>
           <div class="row">
-            <label class="field" title="Thickness of the insert's base plate.">Base (mm)<input type="number" id="insBase" min="1" max="6" step="0.2"></label>
+            <label class="field" title="Thickness of the insert's top plate (under the front plate).">Top plate (mm)<input type="number" id="insBase" min="1" max="6" step="0.2"></label>
             <label class="field" title="Wall thickness of the silos around the parts.">Silo wall (mm)<input type="number" id="insWall" min="0.8" max="4" step="0.1"></label>
           </div>
           <p class="note" id="insNote"></p>
@@ -1080,11 +1080,12 @@ const plate = () => PLATES.find(p => p.id === state.plateId) || PLATES[0];
    every no-go zone (the hub). cell = hexagon size across flats, wall = rib thickness. Cable passages: a pointed
    tunnel (`tunnelW` wide, `tunnelH` high, 45° roof, so it prints without support) through the bottom of every rib
    between two cells, so wires can run from any pocket to the hub. Saved with the layout. */
-/* Insert: a separate printed piece that drops into the core plate and carries the parts. A base plate (`base` mm,
-   hexagon openings between the parts, solid under them) on the core plate's floor (or on top of its ribs), and
-   around every part's PCB a closed "silo" (`wall` mm) up to the front plate's underside: it holds the PCB (two small
-   snap lips just above it) and keeps each part's light in. Each silo has a low cable notch towards the hub. The
-   front plate presses the insert down. `clear` = gap to the core plate's wall and posts, `pcb` = PCB thickness. */
+/* Insert: a separate printed piece that drops into the core plate and carries the parts. A top plate (`base` mm,
+   hexagon openings between the parts) right under the front plate, and around every part's PCB a closed "silo"
+   (`wall` mm) hanging down from it to the core plate's ribs (or floor). Each PCB is pushed in from below: it rests on
+   two small snap lips at the silo's bottom and stops against two ledges above it. The silos keep each part's light
+   in; everything under the top plate stays open for the cables. The front plate presses the insert down onto the
+   ribs. `clear` = gap to the core plate's wall and posts, `pcb` = PCB thickness. */
 const INSERT_DEFAULTS = { on: true, base: 2, wall: 1.6, clear: 0.4, cell: 20, pcb: 1.6, notchW: 6, notchH: 4 };
 function cleanInsert(r){
   r = r && typeof r === 'object' ? r : {};
@@ -1097,7 +1098,7 @@ function cleanInsert(r){
 function insertLevels(gap){
   const ins = cleanInsert(state.insert), rb = cleanRibs(state.ribs);
   const zb = -gap + (rb.on ? Math.min(rb.height, gap) : 0);
-  return ins.on ? { zb, zt: zb + ins.base, ins } : { zb: -gap, zt: -gap, ins };
+  return ins.on ? { zb, zt: zb + 1, ins } : { zb: -gap, zt: -gap, ins };   // zt: PCB underside, on 1 mm snap lips
 }
 const RIB_DEFAULTS = { on: true, cell: 20, wall: 1.6, ring: 1.6, height: 5, tunnels: true, tunnelW: 8, tunnelH: 7 };
 // Cable tunnels only make sense when the ribs are clearly taller than a tunnel; lower ribs, the wires go over them.
@@ -2547,7 +2548,7 @@ function syncInsert(){
   $('insOn').checked = r.on;
   for (const [id, v] of [['insBase', r.base], ['insWall', r.wall]]){ if ($(id) !== a) $(id).value = v; $(id).disabled = !r.on; }
   $('insNote').textContent = r.on
-    ? `Printed separately and dropped in; the front plate presses it down. Its ${fmt(r.base)} mm base sits ${cleanRibs(state.ribs).on ? 'on the ribs' : 'on the floor'} with hexagon openings between the parts. Around every part's PCB a closed silo reaches up to the front plate (keeps each part's light in), with two small snap lips just above a ${fmt(r.pcb)} mm PCB and a ${fmt(r.notchW)} × ${fmt(r.notchH)} mm cable notch towards the hub. The PCBs stand ${fmt(r2(-L.zt))} mm below the front plate.`
+    ? `Printed separately and dropped in; the front plate presses it down onto the ${cleanRibs(state.ribs).on ? 'ribs' : 'floor'}. A ${fmt(r.base)} mm top plate with hexagon openings lies right under the front plate; around every part's PCB a closed silo hangs down from it (keeps each part's light in). Each PCB (${fmt(r.pcb)} mm) is pushed in from below and snaps in at the silo's bottom, ${fmt(r2(-L.zt))} mm below the front plate. Under the top plate everything is open for the cables.`
     : 'No insert: the parts hang from the front plate.';
 }
 function syncRibs(){ syncInsert();
@@ -2833,8 +2834,8 @@ function mfRibs(pl, gap, parts, rb, inner, areas){
 // The insert (see INSERT_DEFAULTS), or null.
 function mfInsert(pl, gap, parts){
   const { Manifold, CrossSection } = MF, trash = [], T = x => (trash.push(x), x);
-  const { zb, zt, ins } = insertLevels(gap), tr = pl.tray || cleanTray(), H = -zt;
-  if (!ins.on || H <= 1) return null;
+  const { zb, zt, ins } = insertLevels(gap), tr = pl.tray || cleanTray();
+  if (!ins.on || -zb <= ins.base + 2) return null;
   try {
     const outer = T(new CrossSection([pl.outline])), areas = pl.mountAreas || [];
     let R = T(outer.offset(-(tr.wall + ins.clear), 'Round', 2, 48));
@@ -2843,33 +2844,25 @@ function mfInsert(pl, gap, parts){
     for (const h of pl.holes.filter(h => h.role !== 'mount')) keepClear.push(shapePoly(holeKoShape(h)));
     if (areas.length) keepClear.push(...areas.map(ccw));
     if (keepClear.length) R = T(R.subtract(T(T(new CrossSection(keepClear, 'Positive')).offset(ins.clear, 'Round', 2, 48))));
-    // silos: around every element's PCB (+0.3 mm), wall `ins.wall`; side-exit parts are open towards their shaft
-    const inners = [], outers = [], cuts3d = [], lips = [];
-    const hub = (() => { const hz = pl.holes.find(h => h.role !== 'mount' && !h.poly); return hz ? [hz.x, hz.y] : [0, 0]; })();
+    // silos around every element's PCB (+0.3 mm), from the ribs up to the front plate; side-exit parts open towards the shaft
+    const inners = [], outers = [], cuts3d = [], lips = [], Hs = -zb;
     for (const p of parts.flatMap(elemsOf)){
       const t = typeOf(p); if (!t) continue;
       const body = shapeOf(t.body, p), inn = T(T(new CrossSection([shapePoly(body)], 'Positive')).offset(0.3, 'Round', 2, 32));
       inners.push(inn); outers.push(T(inn.offset(ins.wall, 'Round', 2, 32)));
-      const [cx, cy] = shapeCentre(t.body, p), ext = t.body.c === 'circle' ? t.body.d/2 : Math.hypot(t.body.w, t.body.h)/2;
-      const rot = (p.rot || 0);
-      if (t.side){   // no wall on the shaft side
-        const b = T(T(T(Manifold.cube([ext + ins.wall + 2, (t.body.h || ext*2) + 0.6, H + 2])).translate([0, -((t.body.h || ext*2) + 0.6)/2, zt - 1])).rotate([0, 0, rot]));
-        cuts3d.push(T(b.translate([cx, cy, 0])));
-      } else {   // the cable notch, towards the hub
-        const a = Math.atan2(hub[1] - cy, hub[0] - cx) * 180/Math.PI;
-        const b = T(T(T(Manifold.cube([ext + ins.wall + 2, ins.notchW, ins.pcb + ins.notchH + 0.01])).translate([0, -ins.notchW/2, zt - 0.01])).rotate([0, 0, a]));
-        cuts3d.push(T(b.translate([cx, cy, 0])));
+      const [cx, cy] = shapeCentre(t.body, p), ext = t.body.c === 'circle' ? t.body.d/2 : Math.hypot(t.body.w, t.body.h)/2, rot = p.rot || 0;
+      if (t.side){
+        const w = (t.body.h || ext*2) + 0.6;
+        cuts3d.push(T(T(T(T(Manifold.cube([ext + ins.wall + 2, w, Hs + 2])).translate([0, -w/2, zb - 1])).rotate([0, 0, rot])).translate([cx, cy, 0])));
+        continue;
       }
-      // snap lips: two small ledges on opposite inner faces, just above the PCB
-      const lipZ = zt + ins.pcb + 0.2, half = t.body.c === 'circle' ? t.body.d/2 + 0.3 : t.body.w/2 + 0.3;
-      if (!t.side) for (const sgn of [-1, 1]){
-        const L = Math.min(6, (t.body.c === 'circle' ? t.body.d : t.body.h) * 0.6);
-        const lip = T(T(T(Manifold.cube([0.6, L, 1])).translate([sgn > 0 ? half - 0.6 : -half, -L/2, lipZ])).rotate([0, 0, rot]));
-        lips.push(T(lip.translate([cx, cy, 0])));
-      }
+      // a snap lip under the PCB and a stop ledge above it, on two opposite inner faces
+      const half = t.body.c === 'circle' ? t.body.d/2 + 0.3 : t.body.w/2 + 0.3, L = Math.min(6, (t.body.c === 'circle' ? t.body.d : t.body.h) * 0.6);
+      for (const sgn of [-1, 1]) for (const [z0, h] of [[zb, zt - zb], [zt + ins.pcb + 0.15, 0.8]])
+        lips.push(T(T(T(T(Manifold.cube([0.6, L, h])).translate([sgn > 0 ? half - 0.6 : -half, -L/2, z0])).rotate([0, 0, rot])).translate([cx, cy, 0])));
     }
     const IN = inners.length ? T(CrossSection.union(inners)) : null, OUT = outers.length ? T(CrossSection.union(outers)) : null;
-    // base: solid at the edge (3 mm) and under the silos, hexagon openings everywhere else
+    // top plate: hexagon openings, solid 3 mm rim and 1 mm around every silo; open inside the silos
     const F = ins.cell, sq3 = Math.sqrt(3), b = pl.bbox, ext = Math.max(Math.abs(b.minX), Math.abs(b.maxX), Math.abs(b.minY), Math.abs(b.maxY)) + F;
     const hr = (F - 2*ins.wall) / sq3, holes = [];
     for (let j = -Math.ceil(ext / (F*sq3/2)); j <= Math.ceil(ext / (F*sq3/2)); j++){
@@ -2882,14 +2875,17 @@ function mfInsert(pl, gap, parts){
     let open = T(T(new CrossSection(holes, 'Positive')).intersect(T(R.offset(-3, 'Round', 2, 48))));
     if (OUT) open = T(open.subtract(T(OUT.offset(1, 'Round', 2, 32))));
     open = T(T(open.offset(-0.4, 'Round', 2, 24)).offset(0.4, 'Round', 2, 24));
-    let base2d = T(R.subtract(open));
-    let solid = T(T(Manifold.extrude(base2d, ins.base)).translate([0, 0, zb]));
+    let top2d = T(R.subtract(open));
+    if (IN) top2d = T(top2d.subtract(T(IN.offset(0.2, 'Round', 2, 32))));   // a bit wider than the pocket: its edge lies inside the silo wall, not on its face
+    let solid = T(T(Manifold.extrude(top2d, ins.base)).translate([0, 0, -ins.base]));
     if (OUT){
       const silo2d = T(T(OUT.subtract(IN)).intersect(R));
       if (!silo2d.isEmpty()){
-        let silos = T(T(Manifold.extrude(silo2d, H + 0.01)).translate([0, 0, zt - 0.01]));
+        let silos = T(T(Manifold.extrude(silo2d, Hs)).translate([0, 0, zb]));
         if (cuts3d.length) silos = T(silos.subtract(T(Manifold.union(cuts3d))));
-        solid = T(Manifold.union([solid, silos, ...(lips.length ? [T(T(Manifold.union(lips)).intersect(T(T(Manifold.extrude(T(OUT.intersect(R)), H)).translate([0, 0, zt]))))] : [])]));
+        const parts3d = [solid, silos];
+        if (lips.length) parts3d.push(T(T(Manifold.union(lips)).intersect(T(T(Manifold.extrude(T(OUT.intersect(R)), Hs)).translate([0, 0, zb])))));
+        solid = T(Manifold.union(parts3d));
       }
     }
     return solid.translate([0, 0, 0]);
