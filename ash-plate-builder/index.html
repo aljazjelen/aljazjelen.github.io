@@ -255,6 +255,8 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 .chip:has(input:checked){color:var(--ink);background:var(--accent-soft);border-color:var(--accent)}
 .chip:has(input:checked) .sw{background:var(--sw);border-color:var(--accent)}
 .chip.see .sw{border-color:var(--muted);background:linear-gradient(135deg,var(--muted) 50%,transparent 50%);opacity:.6}
+.chip.expl .sw{background:linear-gradient(var(--muted),var(--muted)) 0 0/100% 3px no-repeat,linear-gradient(var(--muted),var(--muted)) 0 100%/100% 3px no-repeat;border-color:var(--muted)}
+.chip.expl:has(input:checked) .sw{background:linear-gradient(var(--accent),var(--accent)) 0 0/100% 3px no-repeat,linear-gradient(var(--accent),var(--accent)) 0 100%/100% 3px no-repeat;border-color:var(--accent);opacity:1}
 .chip.tex .sw{background:repeating-linear-gradient(45deg,var(--muted) 0 2px,transparent 2px 4px)}
 .chip.tex:has(input:checked) .sw{background:repeating-linear-gradient(45deg,var(--accent) 0 2px,transparent 2px 4px)}
 .chip.see:has(input:checked) .sw{border-color:var(--accent);background:linear-gradient(135deg,var(--accent) 50%,transparent 50%);opacity:1;box-shadow:none}
@@ -389,7 +391,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
     <main class="viewer-col">
       <section class="card viewer">
         <h2><span class="grow">3D preview</span><button class="btn sm ghost" id="resetView" type="button" title="Back to the starting view, the wheel the right way up">Reset view</button></h2>
-        <div class="body"><div class="vtool"><div class="vgroup" role="group" aria-label="Plates"><span class="vlabel">Plates</span><label class="chip"><input type="checkbox" id="frontChk" checked><i class="sw" style="--sw:#30373D"></i>Front</label><label class="chip"><input type="checkbox" id="backChk" checked><i class="sw" style="--sw:#272D32"></i>Core</label><label class="chip"><input type="checkbox" id="bpChk" checked><i class="sw" style="--sw:#272D32"></i>Back</label></div><div class="vgroup" role="group" aria-label="Hardware"><span class="vlabel">Hardware</span><label class="chip"><input type="checkbox" id="partsChk" checked><i class="sw" style="--sw:var(--accent)"></i>Parts</label><label class="chip"><input type="checkbox" id="handlesChk" checked><i class="sw" style="--sw:#252A2F"></i>Handles</label><label class="chip"><input type="checkbox" id="adChk" checked><i class="sw" style="--sw:#252A2F"></i>Adapter</label></div><div class="vgroup" role="group" aria-label="Display"><span class="vlabel">Display</span><label class="chip see tex" title="Preview finishes: carbon fibre on the front plate, suede on the grips. Only the look in the 3D preview; the exported files don't change."><input type="checkbox" id="texChk" checked><i class="sw"></i>Textures</label><label class="chip see" title="Show the core plate see-through, to look at the parts behind the front plate"><input type="checkbox" id="transBackChk"><i class="sw"></i>See-through core</label></div></div><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
+        <div class="body"><div class="vtool"><div class="vgroup" role="group" aria-label="Plates"><span class="vlabel">Plates</span><label class="chip"><input type="checkbox" id="frontChk" checked><i class="sw" style="--sw:#30373D"></i>Front</label><label class="chip"><input type="checkbox" id="backChk" checked><i class="sw" style="--sw:#272D32"></i>Core</label><label class="chip"><input type="checkbox" id="bpChk" checked><i class="sw" style="--sw:#272D32"></i>Back</label></div><div class="vgroup" role="group" aria-label="Hardware"><span class="vlabel">Hardware</span><label class="chip"><input type="checkbox" id="partsChk" checked><i class="sw" style="--sw:var(--accent)"></i>Parts</label><label class="chip"><input type="checkbox" id="handlesChk" checked><i class="sw" style="--sw:#252A2F"></i>Handles</label><label class="chip"><input type="checkbox" id="adChk" checked><i class="sw" style="--sw:#252A2F"></i>Adapter</label></div><div class="vgroup" role="group" aria-label="Display"><span class="vlabel">Display</span><label class="chip see expl" title="Pull the wheel apart along its axis, in assembly order: adapter, back plate, core plate, handles and displays, front plate, deco, buttons and knobs."><input type="checkbox" id="explChk"><i class="sw"></i>Exploded</label><label class="chip see tex" title="Preview finishes: carbon fibre on the front plate, suede on the grips. Only the look in the 3D preview; the exported files don't change."><input type="checkbox" id="texChk" checked><i class="sw"></i>Textures</label><label class="chip see" title="Show the core plate see-through, to look at the parts behind the front plate"><input type="checkbox" id="transBackChk"><i class="sw"></i>See-through core</label></div></div><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
           <p class="note">Drag to turn the wheel any way you like, right-drag to move it, scroll or pinch to zoom. Reset view straightens it again. The light comes from over your shoulder, so the side you look at is always lit. Parts' bodies are translucent to show their depth behind the front plate; See-through core makes the core plate translucent too. Parts are placed in the 2D design view.</p></div>
       </section>
     </main>
@@ -1017,7 +1019,7 @@ let nextId = 1;
 let selected = null;
 let issues = [], errIds = new Set(), warnIds = new Set();
 let undoStack = [], redoStack = [];
-let showKO = true, show3dParts = true, show3dFront = true, transBack3d = false, finish3d = true, show3dHandles = true, show3dBack = true, show3dBackPlate = true, show3dAdapter = true;
+let showKO = true, show3dParts = true, show3dFront = true, transBack3d = false, finish3d = true, explode3d = false, show3dHandles = true, show3dBack = true, show3dBackPlate = true, show3dAdapter = true;
 
 const $ = id => document.getElementById(id);
 
@@ -2363,6 +2365,7 @@ function initControls(){
   $('backChk').addEventListener('change', e => { show3dBack = e.target.checked; $('transBackChk').disabled = !show3dBack; schedule3d(); });
   $('transBackChk').addEventListener('change', e => { transBack3d = e.target.checked; schedule3d(); });
   $('texChk').addEventListener('change', e => { finish3d = e.target.checked; schedule3d(); });
+  $('explChk').addEventListener('change', e => { explode3d = e.target.checked; animateExplode(); });
   $('resetView').addEventListener('click', () => resetView());
   $('bpChk').addEventListener('change', e => { show3dBackPlate = e.target.checked; schedule3d(); });
   $('adChk').addEventListener('change', e => { show3dAdapter = e.target.checked; schedule3d(); });
@@ -3237,6 +3240,23 @@ for (const v of TAB_ORDER){
   });
 }
 function disposeGroup(g){ g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); }
+/* Exploded view: every piece moves along the wheel's axis by its layer's offset (mm), in assembly order.
+   The pieces keep their offset in userData; toggling only animates the positions, nothing is rebuilt. */
+const EXPLODE = { adapter: -80, back: -40, core: 0, handles: 28, under: 28, front: 55, deco: 85, parts: 125 };   // under: displays, mounted from behind
+function applyExplode(k){
+  if (!three || !three.group) return;
+  for (const o of three.group.children) if (o.userData.ex) o.position.z = o.userData.z0 + o.userData.ex * k;
+}
+function animateExplode(){
+  if (!three) return;
+  const from = three.explodeK || 0, to = explode3d ? 1 : 0, t0 = performance.now(), ms = 450;
+  const step = now => {
+    const u = Math.min(1, (now - t0) / ms), e = u < 0.5 ? 2*u*u : 1 - Math.pow(-2*u + 2, 2) / 2;   // ease in-out
+    three.explodeK = from + (to - from) * e; applyExplode(three.explodeK); three.draw();
+    if (u < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 function rebuild3d(){
   if (!three) return;
   const { scene } = three;
@@ -3248,13 +3268,14 @@ function rebuild3d(){
   const mat = (c, o={}) => new THREE.MeshStandardMaterial({color:new THREE.Color(c), roughness:0.75, metalness:0.05, ...o});
   let geo;
   try { geo = frontPlateGeometry(); } catch(e){ geo = null; }
-  if (geo && show3dFront) g.add(new THREE.Mesh(finish3d ? boxUV(geo, carbonTextures(FRONT_COLOR).mm) : geo, finish3d ? finishMaterial('carbon', FRONT_COLOR) : mat(FRONT_COLOR)));
+  const L = (m, layer) => { m.userData.ex = EXPLODE[layer] || 0; g.add(m); return m; };
+  if (geo && show3dFront) L(new THREE.Mesh(finish3d ? boxUV(geo, carbonTextures(FRONT_COLOR).mm) : geo, finish3d ? finishMaterial('carbon', FRONT_COLOR) : mat(FRONT_COLOR)), 'front');
   const dgeo = decoGeometry(!!(drag || rotDrag));
-  if (dgeo && show3dFront) g.add(new THREE.Mesh(dgeo, mat(GRIP_COLOR, {roughness: 0.6})));   // deco rings: the handles' colour
+  if (dgeo && show3dFront) L(new THREE.Mesh(dgeo, mat(GRIP_COLOR, {roughness: 0.6})), 'deco');   // deco rings: the handles' colour
   const hgeos = handleGeometries(!!(drag || rotDrag));
   if (hgeos && show3dHandles) for (const q of hgeos){
     const grip = finish3d && pl.handles && pl.handles.set.grip;   // suede on the grip models (not on plain handle cores)
-    g.add(new THREE.Mesh(grip ? boxUV(q.geo.clone(), suedeTextures(q.color).mm) : q.geo.clone(), grip ? finishMaterial('suede', q.color) : mat(q.color, {roughness: q.rough ?? 0.6, metalness: q.metal ?? 0.05})));
+    L(new THREE.Mesh(grip ? boxUV(q.geo.clone(), suedeTextures(q.color).mm) : q.geo.clone(), grip ? finishMaterial('suede', q.color) : mat(q.color, {roughness: q.rough ?? 0.6, metalness: q.metal ?? 0.05})), 'handles');
   }
   const backShape = outlineShape(pl.outline);
   for (const m of pl.holes){
@@ -3266,12 +3287,12 @@ function rebuild3d(){
   const tgeo = trayGeometry(!!(drag || rotDrag));
   const backMat = o => transBack3d ? mat(SHELL_COLOR, {transparent:true, opacity:Math.min(1, o*1.6), depthWrite:false, side:THREE.DoubleSide, roughness:0.8}) : mat(SHELL_COLOR, {side:THREE.DoubleSide, roughness:0.8});
   if (!show3dBack){}
-  else if (tgeo) g.add(new THREE.Mesh(tgeo.clone(), backMat(0.32)));
+  else if (tgeo) L(new THREE.Mesh(tgeo.clone(), backMat(0.32)), 'core');
   else { const back = new THREE.Mesh(new THREE.ExtrudeGeometry(backShape, {depth:3, bevelEnabled:false, curveSegments:40}), backMat(0.28)); back.position.z = -gap - 3; g.add(back); }
   const ageo = show3dAdapter ? adapterGeometry() : null;
-  if (ageo) for (const [x, y, z] of adapterSpots(pl, gap)){ const m = new THREE.Mesh(ageo.clone(), mat(GRIP_COLOR, {roughness: 0.6, metalness: 0.1})); m.position.set(x, y, z); g.add(m); }
+  if (ageo) for (const [x, y, z] of adapterSpots(pl, gap)){ const m = new THREE.Mesh(ageo.clone(), mat(GRIP_COLOR, {roughness: 0.6, metalness: 0.1})); m.position.set(x, y, z); L(m, 'adapter'); }
   const bgeo = show3dBackPlate ? backPlateGeometry() : null;
-  if (bgeo) g.add(new THREE.Mesh(bgeo.clone(), mat(SHELL_COLOR, {roughness: 0.8, side: THREE.DoubleSide})));
+  if (bgeo) L(new THREE.Mesh(bgeo.clone(), mat(SHELL_COLOR, {roughness: 0.8, side: THREE.DoubleSide})), 'back');
   if (!tgeo && show3dBack) for (const m of pl.holes.filter(h => h.role === 'mount')){
     const so = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, gap, 20), mat(css('--zone'), {transparent:true, opacity:0.55}));
     so.rotation.x = Math.PI/2; so.position.set(m.x, m.y, -gap/2); g.add(so);
@@ -3286,22 +3307,24 @@ function rebuild3d(){
       if (tp.depth <= 0) {}
       else if (tp.body.c === 'circle'){ body = new THREE.Mesh(new THREE.CylinderGeometry(tp.body.d/2, tp.body.d/2, tp.depth, 28), bodyMat); body.rotation.x = Math.PI/2; }
       else { body = new THREE.Mesh(new THREE.BoxGeometry(tp.body.w, tp.body.h, tp.depth), bodyMat); body.rotation.z = p.rot*Math.PI/180; }
-      if (body){ const [bx, by] = shapeCentre(tp.body, p); body.position.set(bx, by, -tp.depth/2); g.add(body); }
+      if (body){ const [bx, by] = shapeCentre(tp.body, p); body.position.set(bx, by, -tp.depth/2); L(body, tp.screen ? 'under' : 'parts'); }
       if (tp.cap){
         const col = tp.cap.kind==='led' ? '#E8432E' : tp.cap.kind==='lever' ? '#B9C0C7' : tp.cap.kind==='knob' ? '#1C2024' : css('--accent');   // button caps: accent blue
         const capMat = mat(col, tp.cap.kind==='led'?{emissive:new THREE.Color('#7A1408')}:{});
         let cap;
         if (tp.cap.c === 'rect'){ cap = new THREE.Mesh(new THREE.BoxGeometry(tp.cap.w, tp.cap.h, tp.cap.height), capMat); cap.rotation.z = p.rot*Math.PI/180; }
         else { cap = new THREE.Mesh(new THREE.CylinderGeometry(tp.cap.d/2*(tp.cap.kind==='knob'?0.94:1), tp.cap.d/2, tp.cap.height, 32), capMat); cap.rotation.x = Math.PI/2; }
-        cap.position.set(p.x, p.y, t + tp.cap.height/2); g.add(cap);
+        cap.position.set(p.x, p.y, t + tp.cap.height/2); L(cap, 'parts');
       }
       if (tp.screen){
         const sc = new THREE.Mesh(new THREE.PlaneGeometry(tp.cut.w+1, tp.cut.h+1), mat('#0B1A2A', {emissive:new THREE.Color('#0D3A5C')}));
-        sc.position.set(p.x, p.y, -0.6); sc.rotation.z = p.rot*Math.PI/180; g.add(sc);
+        sc.position.set(p.x, p.y, -0.6); sc.rotation.z = p.rot*Math.PI/180; L(sc, 'under');
       }
     }
   }
+  for (const o of g.children) o.userData.z0 = o.position.z;
   scene.add(g); three.group = g;
+  applyExplode(three.explodeK || 0);
   three.S = S;
   if (three.framedFor !== (pl.key || pl.id)){
     three.framedFor = pl.key || pl.id;
