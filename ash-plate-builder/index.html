@@ -255,6 +255,8 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
 .chip:has(input:checked){color:var(--ink);background:var(--accent-soft);border-color:var(--accent)}
 .chip:has(input:checked) .sw{background:var(--sw);border-color:var(--accent)}
 .chip.see .sw{border-color:var(--muted);background:linear-gradient(135deg,var(--muted) 50%,transparent 50%);opacity:.6}
+.chip.tex .sw{background:repeating-linear-gradient(45deg,var(--muted) 0 2px,transparent 2px 4px)}
+.chip.tex:has(input:checked) .sw{background:repeating-linear-gradient(45deg,var(--accent) 0 2px,transparent 2px 4px)}
 .chip.see:has(input:checked) .sw{border-color:var(--accent);background:linear-gradient(135deg,var(--accent) 50%,transparent 50%);opacity:1;box-shadow:none}
 .chip:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
 .chip:has(input:disabled){opacity:.45;cursor:not-allowed}
@@ -387,7 +389,7 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
     <main class="viewer-col">
       <section class="card viewer">
         <h2><span class="grow">3D preview</span><button class="btn sm ghost" id="resetView" type="button" title="Back to the starting view, the wheel the right way up">Reset view</button></h2>
-        <div class="body"><div class="vtool"><div class="vgroup" role="group" aria-label="Plates"><span class="vlabel">Plates</span><label class="chip"><input type="checkbox" id="frontChk" checked><i class="sw" style="--sw:#30373D"></i>Front</label><label class="chip"><input type="checkbox" id="backChk" checked><i class="sw" style="--sw:#272D32"></i>Core</label><label class="chip"><input type="checkbox" id="bpChk" checked><i class="sw" style="--sw:#272D32"></i>Back</label></div><div class="vgroup" role="group" aria-label="Hardware"><span class="vlabel">Hardware</span><label class="chip"><input type="checkbox" id="partsChk" checked><i class="sw" style="--sw:var(--accent)"></i>Parts</label><label class="chip"><input type="checkbox" id="handlesChk" checked><i class="sw" style="--sw:#252A2F"></i>Handles</label><label class="chip"><input type="checkbox" id="adChk" checked><i class="sw" style="--sw:#252A2F"></i>Adapter</label></div><div class="vgroup" role="group" aria-label="Display"><span class="vlabel">Display</span><label class="chip see" title="Show the core plate see-through, to look at the parts behind the front plate"><input type="checkbox" id="transBackChk"><i class="sw"></i>See-through core</label></div></div><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
+        <div class="body"><div class="vtool"><div class="vgroup" role="group" aria-label="Plates"><span class="vlabel">Plates</span><label class="chip"><input type="checkbox" id="frontChk" checked><i class="sw" style="--sw:#30373D"></i>Front</label><label class="chip"><input type="checkbox" id="backChk" checked><i class="sw" style="--sw:#272D32"></i>Core</label><label class="chip"><input type="checkbox" id="bpChk" checked><i class="sw" style="--sw:#272D32"></i>Back</label></div><div class="vgroup" role="group" aria-label="Hardware"><span class="vlabel">Hardware</span><label class="chip"><input type="checkbox" id="partsChk" checked><i class="sw" style="--sw:var(--accent)"></i>Parts</label><label class="chip"><input type="checkbox" id="handlesChk" checked><i class="sw" style="--sw:#252A2F"></i>Handles</label><label class="chip"><input type="checkbox" id="adChk" checked><i class="sw" style="--sw:#252A2F"></i>Adapter</label></div><div class="vgroup" role="group" aria-label="Display"><span class="vlabel">Display</span><label class="chip see tex" title="Preview finishes: carbon fibre on the front plate, suede on the grips. Only the look in the 3D preview; the exported files don't change."><input type="checkbox" id="texChk" checked><i class="sw"></i>Textures</label><label class="chip see" title="Show the core plate see-through, to look at the parts behind the front plate"><input type="checkbox" id="transBackChk"><i class="sw"></i>See-through core</label></div></div><div id="view3d"><div class="fallback" id="fallback3d">Loading 3D preview…</div></div>
           <p class="note">Drag to turn the wheel any way you like, right-drag to move it, scroll or pinch to zoom. Reset view straightens it again. The light comes from over your shoulder, so the side you look at is always lit. Parts' bodies are translucent to show their depth behind the front plate; See-through core makes the core plate translucent too. Parts are placed in the 2D design view.</p></div>
       </section>
     </main>
@@ -999,7 +1001,7 @@ let nextId = 1;
 let selected = null;
 let issues = [], errIds = new Set(), warnIds = new Set();
 let undoStack = [], redoStack = [];
-let showKO = true, show3dParts = true, show3dFront = true, transBack3d = false, show3dHandles = true, show3dBack = true, show3dBackPlate = true, show3dAdapter = true;
+let showKO = true, show3dParts = true, show3dFront = true, transBack3d = false, finish3d = true, show3dHandles = true, show3dBack = true, show3dBackPlate = true, show3dAdapter = true;
 
 const $ = id => document.getElementById(id);
 
@@ -2337,6 +2339,7 @@ function initControls(){
   $('handlesChk').addEventListener('change', e => { show3dHandles = e.target.checked; schedule3d(); });
   $('backChk').addEventListener('change', e => { show3dBack = e.target.checked; $('transBackChk').disabled = !show3dBack; schedule3d(); });
   $('transBackChk').addEventListener('change', e => { transBack3d = e.target.checked; schedule3d(); });
+  $('texChk').addEventListener('change', e => { finish3d = e.target.checked; schedule3d(); });
   $('resetView').addEventListener('click', () => resetView());
   $('bpChk').addEventListener('change', e => { show3dBackPlate = e.target.checked; schedule3d(); });
   $('adChk').addEventListener('change', e => { show3dAdapter = e.target.checked; schedule3d(); });
@@ -3051,6 +3054,88 @@ function frontPlateGeometry(){
   }
   return plateGeometry();
 }
+/* Preview finishes. The textures are drawn by the app itself (no image files to host) and are only the look of
+   the 3D preview; nothing exported changes. The meshes come without texture coordinates, so boxUV() lays the
+   texture on each triangle from the side it faces most (plates: straight onto the front; grips: from 3 sides). */
+const TEX = { aniso: 1, cache: new Map() };
+function canvasTexture(size, draw){
+  const c = document.createElement('canvas'); c.width = c.height = size; draw(c.getContext('2d'), size);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = TEX.aniso; return t;
+}
+const shadeHex = (hex, f) => { const c = new THREE.Color(hex); return '#' + new THREE.Color(Math.min(1, c.r*f), Math.min(1, c.g*f), Math.min(1, c.b*f)).getHexString(); };
+// 2×2 twill carbon in the given colour: 8 tows per tile. Colour map + bump map (tows high in the middle).
+function carbonTextures(base){
+  const key = 'carbon' + base; if (TEX.cache.has(key)) return TEX.cache.get(key);
+  const N = 8, S = 512, w = S / N;
+  const tow = (ctx, i, j, horiz, lo, hi, fibre) => {
+    const x = i*w, y = j*w, g = horiz ? ctx.createLinearGradient(0, y, 0, y + w) : ctx.createLinearGradient(x, 0, x + w, 0);
+    g.addColorStop(0, lo); g.addColorStop(0.5, hi); g.addColorStop(1, lo);
+    ctx.fillStyle = g; ctx.fillRect(x, y, w, w);
+    if (fibre){ ctx.strokeStyle = fibre; ctx.lineWidth = 1; ctx.beginPath();
+      for (let k = 3; k < w; k += 3 + (k % 2)){ if (horiz){ ctx.moveTo(x, y + k); ctx.lineTo(x + w, y + k); } else { ctx.moveTo(x + k, y); ctx.lineTo(x + k, y + w); } }
+      ctx.stroke(); }
+  };
+  const over = (i, j) => ((i + j) % 4) < 2;   // twill: each tow goes over two, under two, shifted by one per row
+  const map = canvasTexture(S, ctx => { for (let i = 0; i < N; i++) for (let j = 0; j < N; j++){ const h = over(i, j);
+    tow(ctx, i, j, h, shadeHex(base, 0.55), shadeHex(base, h ? 1.18 : 0.88), 'rgba(0,0,0,0.12)'); } });
+  const bump = canvasTexture(S, ctx => { for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) tow(ctx, i, j, over(i, j), '#202020', '#e0e0e0', null); });
+  const r = { map, bump, mm: 16 };   // one tile = 16 mm (2 mm tows)
+  TEX.cache.set(key, r); return r;
+}
+// Suede / Alcantara: fine blotchy noise in the given colour, with a soft bump.
+function suedeTextures(base){
+  const key = 'suede' + base; if (TEX.cache.has(key)) return TEX.cache.get(key);
+  const S = 256, noise = new Float32Array(S*S);
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < noise.length; i++) noise[i] = rnd();
+  for (let pass = 0; pass < 2; pass++){   // wrap-around box blur: soft blotches, no seams when tiled
+    const o = new Float32Array(S*S);
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++){ let a = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) a += noise[((y+dy+S)%S)*S + (x+dx+S)%S]; o[y*S+x] = a/9; }
+    noise.set(o);
+  }
+  const c = new THREE.Color(base), img = (ctx, f) => { const d = ctx.createImageData(S, S); for (let i = 0; i < S*S; i++){ const v = f(noise[i], i); d.data.set([v[0], v[1], v[2], 255], i*4); } ctx.putImageData(d, 0, 0); };
+  const map = canvasTexture(S, ctx => img(ctx, n => { const k = 0.82 + 0.36*n + 0.06*(rnd() - 0.5); return [c.r*255*k, c.g*255*k, c.b*255*k]; }));
+  const bump = canvasTexture(S, ctx => img(ctx, n => { const v = 255*(0.25 + 0.5*n + 0.25*rnd()); return [v, v, v]; }));
+  const r = { map, bump, mm: 14 };
+  TEX.cache.set(key, r); return r;
+}
+// Texture coordinates for a non-indexed geometry: each triangle projected along the axis it faces most.
+function boxUV(geo, mm){
+  const p = geo.attributes.position.array, n = p.length / 3, uv = new Float32Array(n * 2);
+  for (let t = 0; t < n; t += 3){
+    const i = t*3, ax = p[i+3]-p[i], ay = p[i+4]-p[i+1], az = p[i+5]-p[i+2], bx = p[i+6]-p[i], by = p[i+7]-p[i+1], bz = p[i+8]-p[i+2];
+    const nx = Math.abs(ay*bz - az*by), ny = Math.abs(az*bx - ax*bz), nz = Math.abs(ax*by - ay*bx);
+    for (let k = 0; k < 3; k++){
+      const x = p[i+k*3], y = p[i+k*3+1], z = p[i+k*3+2];
+      const [u, v] = nz >= nx && nz >= ny ? [x, y] : nx >= ny ? [y, z] : [x, z];
+      uv[(t+k)*2] = u / mm; uv[(t+k)*2+1] = v / mm;
+    }
+  }
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  return geo;
+}
+// A soft studio around the wheel for reflections: light from above and from the viewer's side, dark below.
+function studioEnvironment(renderer){
+  const es = new THREE.Scene(), geo = new THREE.SphereGeometry(100, 48, 24), col = [], pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++){ const z = pos.getZ(i) / 100, y = pos.getY(i) / 100;
+    const v = 0.10 + 0.55*Math.max(0, z) + 0.25*Math.max(0, -y)*Math.max(0, z + 0.3); col.push(v, v, v*1.04); }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  es.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ side: THREE.BackSide, vertexColors: true })));
+  const box = (w, h, x, y, z, v) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(v, v, v), side: THREE.DoubleSide })); m.position.set(x, y, z); m.lookAt(0, 0, 0); es.add(m); };
+  box(90, 40, -30, -40, 70, 1.6);   // softbox above, a bit in front and to the left (like the key light)
+  box(40, 60, 70, -50, 20, 0.8);    // strip to the right
+  const pm = new THREE.PMREMGenerator(renderer), rt = pm.fromScene(es, 0.02);
+  pm.dispose(); es.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+  return rt.texture;
+}
+function finishMaterial(kind, color, o = {}){
+  const env = three && three.env;
+  if (kind === 'carbon'){ const t = carbonTextures(color); return new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: t.map, bumpMap: t.bump, bumpScale: 0.35,
+    roughness: 0.42, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.06, envMap: env, envMapIntensity: 0.9, ...o }); }
+  const t = suedeTextures(color);
+  return new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: t.map, bumpMap: t.bump, bumpScale: 0.25, roughness: 1, metalness: 0,
+    sheen: new THREE.Color(shadeHex(color, 2.4)), envMap: env, envMapIntensity: 0.15, ...o });
+}
 function init3d(){
   const host = $('view3d');
   if (!window.THREE || !THREE.OrbitControls){ $('fallback3d').textContent = 'The 3D preview could not load. Editing and export still work.'; return; }
@@ -3086,7 +3171,10 @@ function init3d(){
   controls.addEventListener('change', draw);
   const resize = () => { const w = host.clientWidth, h = host.clientHeight; if(!w||!h) return; renderer.setSize(w,h,false); camera.aspect = w/h; camera.updateProjectionMatrix(); if (controls.handleResize) controls.handleResize(); draw(); };
   new ResizeObserver(resize).observe(host);
-  three = { renderer, scene, camera, controls, draw, resize, group:null, framedFor:null };
+  let env = null;
+  try { env = studioEnvironment(renderer); } catch(e){ console.warn('No reflections in the 3D preview.', e); }
+  TEX.aniso = renderer.capabilities.getMaxAnisotropy ? renderer.capabilities.getMaxAnisotropy() : 1;
+  three = { renderer, scene, camera, controls, draw, resize, env, group:null, framedFor:null };
   rebuild3d();
 }
 // The starting view: from the front, a bit to the right and above, with the wheel's top up.
@@ -3137,11 +3225,14 @@ function rebuild3d(){
   const mat = (c, o={}) => new THREE.MeshStandardMaterial({color:new THREE.Color(c), roughness:0.75, metalness:0.05, ...o});
   let geo;
   try { geo = frontPlateGeometry(); } catch(e){ geo = null; }
-  if (geo && show3dFront) g.add(new THREE.Mesh(geo, mat(FRONT_COLOR)));
+  if (geo && show3dFront) g.add(new THREE.Mesh(finish3d ? boxUV(geo, carbonTextures(FRONT_COLOR).mm) : geo, finish3d ? finishMaterial('carbon', FRONT_COLOR) : mat(FRONT_COLOR)));
   const dgeo = decoGeometry(!!(drag || rotDrag));
   if (dgeo && show3dFront) g.add(new THREE.Mesh(dgeo, mat(GRIP_COLOR, {roughness: 0.6})));   // deco rings: the handles' colour
   const hgeos = handleGeometries(!!(drag || rotDrag));
-  if (hgeos && show3dHandles) for (const q of hgeos) g.add(new THREE.Mesh(q.geo.clone(), mat(q.color, {roughness: q.rough ?? 0.6, metalness: q.metal ?? 0.05})));
+  if (hgeos && show3dHandles) for (const q of hgeos){
+    const grip = finish3d && pl.handles && pl.handles.set.grip;   // suede on the grip models (not on plain handle cores)
+    g.add(new THREE.Mesh(grip ? boxUV(q.geo.clone(), suedeTextures(q.color).mm) : q.geo.clone(), grip ? finishMaterial('suede', q.color) : mat(q.color, {roughness: q.rough ?? 0.6, metalness: q.metal ?? 0.05})));
+  }
   const backShape = outlineShape(pl.outline);
   for (const m of pl.holes){
     const ph = new THREE.Path();
