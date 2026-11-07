@@ -467,6 +467,9 @@ kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border
             <label class="field" title="Size of one hexagon, across its flat sides.">Cell size (mm)<input type="number" id="ribCell" min="8" max="60" step="1"></label>
             <label class="field" title="Thickness of the ribs and of the ring around every part.">Rib (mm)<input type="number" id="ribWall" min="0.8" max="6" step="0.1"></label>
           </div>
+          <div class="row">
+            <label class="field" title="How tall the ribs stand on the core plate's floor. The plate spacing (or more) takes them all the way up to the front plate.">Height (mm)<input type="number" id="ribH" min="1" max="60" step="0.5"></label>
+          </div>
           <label class="check"><input type="checkbox" id="ribTun"> Cable passages through the ribs</label>
           <p class="note" id="ribNote"></p>
         </div>
@@ -1021,17 +1024,20 @@ if (EMBED){
 function placeNearPointer(el){ if (EMBED) el.style.setProperty('--embed-y', Math.max(16, lastPointerY - 80) + 'px'); }
 const plate = () => PLATES.find(p => p.id === state.plateId) || PLATES[0];
 
-/* Ribs: a hexagon web inside the core plate, from its floor up to the front plate's underside, for stiffness.
+/* Ribs: a hexagon web inside the core plate, standing `height` mm on its floor (up to the plate spacing = all the
+   way to the front plate's underside), for stiffness.
    Every part gets a pocket (its keep-out, as on the 2D design) with a rib `ring` mm wide around it, and so does
    every no-go zone (the hub). cell = hexagon size across flats, wall = rib thickness. Cable passages: a pointed
    tunnel (`tunnelW` wide, `tunnelH` high, 45° roof, so it prints without support) through the bottom of every rib
    between two cells, so wires can run from any pocket to the hub. Saved with the layout. */
-const RIB_DEFAULTS = { on: true, cell: 20, wall: 1.6, ring: 1.6, tunnels: true, tunnelW: 8, tunnelH: 7 };
+const RIB_DEFAULTS = { on: true, cell: 20, wall: 1.6, ring: 1.6, height: 5, tunnels: true, tunnelW: 8, tunnelH: 7 };
+// Cable tunnels only make sense when the ribs are clearly taller than a tunnel; lower ribs, the wires go over them.
+const ribTunnels = (r, gap) => r.tunnels && Math.min(r.height, gap) >= r.tunnelH + 3;
 function cleanRibs(r){
   r = r && typeof r === 'object' ? r : {};
   const D = RIB_DEFAULTS, num = (v, def) => (v === undefined || v === null || v === '' || !Number.isFinite(+v)) ? def : +v;
   return { on: r.on === undefined ? D.on : !!r.on, cell: clampNum(num(r.cell, D.cell), 8, 60), wall: clampNum(num(r.wall, D.wall), 0.8, 6),
-           ring: clampNum(num(r.ring, D.ring), 0.8, 6), tunnels: r.tunnels === undefined ? D.tunnels : !!r.tunnels,
+           ring: clampNum(num(r.ring, D.ring), 0.8, 6), height: clampNum(num(r.height, D.height), 1, 60), tunnels: r.tunnels === undefined ? D.tunnels : !!r.tunnels,
            tunnelW: clampNum(num(r.tunnelW, D.tunnelW), 3, 20), tunnelH: clampNum(num(r.tunnelH, D.tunnelH), 3, 30) };
 }
 /* Deco: a separate printed piece that sits on top of the front plate. For now: rings around buttons. */
@@ -2316,7 +2322,7 @@ function initControls(){
     mutate(() => { state.deco = cleanDeco({...state.deco, [key]: v}); });
     syncInputs();
   });
-  const ribInputs = {ribOn: 'on', ribCell: 'cell', ribWall: 'wall', ribTun: 'tunnels'};
+  const ribInputs = {ribOn: 'on', ribCell: 'cell', ribWall: 'wall', ribH: 'height', ribTun: 'tunnels'};
   for (const [id, key] of Object.entries(ribInputs)) $(id).addEventListener('change', e => {
     const v = e.target.type === 'checkbox' ? e.target.checked : +e.target.value, upd = {[key]: v};
     if (key === 'wall') upd.ring = v;
@@ -2416,11 +2422,14 @@ function renderDecoNote(){
 function syncRibs(){
   const r = cleanRibs(state.ribs), a = document.activeElement;
   $('ribOn').checked = r.on; $('ribTun').checked = r.tunnels;
-  for (const [id, v] of [['ribCell', r.cell], ['ribWall', r.wall]]){ if ($(id) !== a) $(id).value = v; $(id).disabled = !r.on; }
-  $('ribTun').disabled = !r.on;
+  for (const [id, v] of [['ribCell', r.cell], ['ribWall', r.wall], ['ribH', r.height]]){ if ($(id) !== a) $(id).value = v; $(id).disabled = !r.on; }
+  const full = r.height >= state.gap, tun = ribTunnels(r, state.gap);
+  $('ribTun').disabled = !r.on || r.height < r.tunnelH + 3;
   $('ribNote').textContent = r.on
-    ? `A hexagon web from the core plate's floor up to the front plate, so the plate is supported in the middle too. Every part sits in a pocket the size of its keep-out (as on the 2D design) with a ${fmt(r.ring)} mm rib around it; the hub area stays free.` +
-      (r.tunnels ? ` Pointed tunnels, ${fmt(r.tunnelW)} mm wide and ${fmt(r.tunnelH)} mm high, run through the bottom of every rib, so the wires can reach the hub; they print without support.` : ' No cable passages: the pockets are closed off from each other.')
+    ? (full ? `A hexagon web from the core plate's floor up to the front plate, so the plate is supported in the middle too.` : `A ${fmt(r.height)} mm tall hexagon web on the core plate's floor, to stiffen it.`) +
+      ` Every part's keep-out (as on the 2D design) stays free, with a ${fmt(r.ring)} mm rib ring around it; so does the hub area.` +
+      (tun ? ` Pointed tunnels, ${fmt(r.tunnelW)} mm wide and ${fmt(r.tunnelH)} mm high, run through the bottom of every rib, so the wires can reach the hub; they print without support.`
+           : r.height < r.tunnelH + 3 ? ' The wires run over the ribs (cable passages only apply to ribs at least ' + fmt(r.tunnelH + 3) + ' mm tall).' : ' No cable passages: the pockets are closed off from each other.')
     : 'No ribs: the core plate is a hollow tray.';
 }
 function syncInputs(){ syncDeco(); syncRibs(); $('thick').value = state.thickness; $('gap').value = state.gap; $('snapSel').value = String(state.snap); }
@@ -2622,7 +2631,7 @@ function mfTray(pl, gap, parts = [], ribs = null){
     return body.translate([0, 0, 0]);
   } finally { for (const x of trash) x.delete(); }
 }
-// The rib web (see RIB_DEFAULTS), from the floor's top (z = -gap) to the front plate (z = 0), or null.
+// The rib web (see RIB_DEFAULTS), standing on the floor's top (z = -gap), at most up to the front plate (z = 0), or null.
 function mfRibs(pl, gap, parts, rb, inner, areas){
   const { Manifold, CrossSection } = MF, trash = [];
   const T = x => (trash.push(x), x);
@@ -2653,8 +2662,9 @@ function mfRibs(pl, gap, parts, rb, inner, areas){
     if (areas.length) web = T(web.subtract(T(T(new CrossSection(areas.map(ccw), 'Positive')).offset(0.05, 'Round', 2, 48))));
     web = T(T(web.offset(-0.45, 'Round', 2, 24)).offset(0.45, 'Round', 2, 24));   // drop slivers too thin to print
     if (web.isEmpty()) return null;
-    let ribs = T(T(Manifold.extrude(web, gap + 0.5)).translate([0, 0, -gap - 0.5]));
-    if (rb.tunnels && rb.tunnelH < gap){
+    const h = Math.min(rb.height, gap);
+    let ribs = T(T(Manifold.extrude(web, h + 0.5)).translate([0, 0, -gap - 0.5]));
+    if (ribTunnels(rb, gap)){
       // through the middle of every rib between two neighbouring cells: lines through the cell centres, 3 directions
       const w = rb.tunnelW, roof = w/2, side = Math.max(0, rb.tunnelH - roof), L = 2*ext + 2*F, step = F*sq3/2, cuts = [];
       const house = T(new CrossSection([[[-w/2, -1], [w/2, -1], [w/2, side], [0, side + roof], [-w/2, side]]]));
