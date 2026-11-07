@@ -2890,7 +2890,7 @@ function mfInsert(pl, gap, parts){
       }
       cells.push(c);
     }
-    const inners = cells.filter(c => !c.under).map(c => c.inn), outers = cells.filter(c => !c.under).map(c => c.out);
+    const inners = cells.map(c => c.inn), outers = cells.map(c => c.out);
     const IN = inners.length ? T(CrossSection.union(inners)) : null, OUT = outers.length ? T(CrossSection.union(outers)) : null;
     // top plate: hexagon openings, solid 3 mm rim and 1 mm around every silo; open inside the silos
     const F = ins.cell, sq3 = Math.sqrt(3), b = pl.bbox, ext = Math.max(Math.abs(b.minX), Math.abs(b.maxX), Math.abs(b.minY), Math.abs(b.maxY)) + F;
@@ -2920,11 +2920,15 @@ function mfInsert(pl, gap, parts){
     if (cells.length){
       // built per height group in 2D first, so neighbouring silos merge instead of touching along an edge
       const INall = T(CrossSection.union(cells.map(c => c.inn))), bits = [solid], cuts = cells.filter(c => c.cut).map(c => c.cut);
-      for (const top of [...new Set(cells.map(c => c.top))]){
-        const grp = cells.filter(c => c.top === top), h = top - zb;
-        if (h <= 0.5) continue;
-        const ring = T(T(T(CrossSection.union(grp.map(c => c.out))).subtract(INall)).intersect(R0));
-        if (ring.isEmpty()) continue;
+      // walls reach the front plate, except where a display's holder is above them: there they end under the holder
+      const ringAll = T(T(T(CrossSection.union(cells.map(c => c.out))).subtract(INall)).intersect(R0));
+      const zones = holders.map(h => ({ zone: T(h.out.offset(0.2, 'Round', 2, 32)), top: h.z0 }));
+      let free = ringAll;
+      for (const z of zones) free = T(free.subtract(z.zone));
+      const pieces = [{ ring: free, top: 0 }, ...zones.map(z => ({ ring: T(ringAll.intersect(z.zone)), top: z.top }))];
+      for (const { ring, top } of pieces){
+        const h = top - zb;
+        if (ring.isEmpty() || h <= 0.5) continue;
         let silo = T(T(Manifold.extrude(ring, h)).translate([0, 0, zb]));
         if (cuts.length) silo = T(silo.subtract(T(Manifold.union(cuts))));
         bits.push(silo);
