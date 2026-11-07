@@ -3217,7 +3217,7 @@ function studioEnvironment(renderer){
 function finishMaterial(kind, color, o = {}){
   const env = three && three.env;
   if (kind === 'carbon'){ const t = carbonTextures(color); return new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: t.map, bumpMap: t.bump, bumpScale: 0.35,
-    roughness: 0.42, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.06, envMap: env, envMapIntensity: 0.9, ...o }); }
+    roughness: 0.5, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.12, envMap: env, envMapIntensity: 0.45, ...o }); }
   const t = suedeTextures(color);
   return new THREE.MeshPhysicalMaterial({ color: 0xffffff, map: t.map, bumpMap: t.bump, bumpScale: 0.25, roughness: 1, metalness: 0,
     sheen: new THREE.Color(shadeHex(color, 1.3)), envMap: env, envMapIntensity: 0.08, ...o });
@@ -3309,7 +3309,39 @@ function sidePart3d(p, S, gap, mat, L){
   at(S.pcbW/2 - bw/2, 0, zf + S.pcbT + bh/2, new THREE.Mesh(new THREE.BoxGeometry(bw, Math.min(S.pcbH - 2, 13), bh), mat('#4A4F55', {roughness: 0.5, metalness: 0.2})));
   const cyl = (r, len, col, o) => { const g = new THREE.CylinderGeometry(r, r, len, 32); g.rotateZ(Math.PI/2); return new THREE.Mesh(g, mat(col, o)); };
   at(S.pcbW/2 + S.shaftL/2, 0, zAxis, cyl(S.shaftD/2, S.shaftL, '#8A9096', {metalness: 0.5, roughness: 0.4}));
-  at(S.knob.ox, 0, zAxis, cyl(S.knobD/2, S.knobW, '#1C2024', {roughness: 0.55}));
+  const kg = knobGeometry(S.knobD, S.knobW); kg.rotateY(Math.PI/2); kg.translate(-S.knobW/2, 0, 0);   // axis along the shaft
+  at(S.knob.ox, 0, zAxis, new THREE.Mesh(kg, mat('#272C32', {roughness: 0.55})));
+}
+/* A nicer knob for the 3D preview (encoders, rotary switches, horizontal encoders): a disc of diameter d with
+   8 round grip scallops cut into the rim and soft edges. Built along +z from 0 to h. */
+const knobGeoCache = new Map();
+// Positions + normals of several non-indexed geometries in one.
+function mergeGeometries(list){
+  const n = list.reduce((a, g) => a + g.attributes.position.count, 0), pos = new Float32Array(n*3), nor = new Float32Array(n*3);
+  let o = 0;
+  for (const g of list){ if (!g.attributes.normal) g.computeVertexNormals(); pos.set(g.attributes.position.array, o*3); nor.set(g.attributes.normal.array, o*3); o += g.attributes.position.count; }
+  const m = new THREE.BufferGeometry(); m.setAttribute('position', new THREE.BufferAttribute(pos, 3)); m.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  return m;
+}
+function knobGeometry(d, h){
+  const key = d + '|' + h; if (knobGeoCache.has(key)) return knobGeoCache.get(key).clone();
+  const R = d/2, n = 8, s = 0.2*R, c = R*1.02, pts = [];
+  const N = 360;
+  for (let i = 0; i < N; i++){
+    const th = i/N * Math.PI*2; let r = R;
+    for (let k = 0; k < n; k++){   // the scallop circle on this ray: radius s around C at distance c, angle phi
+      const phi = (k + 0.5) * Math.PI*2/n, dphi = Math.atan2(Math.sin(th - phi), Math.cos(th - phi));
+      const b = c*Math.cos(dphi), disc = b*b - (c*c - s*s);
+      if (disc > 0) r = Math.min(r, b - Math.sqrt(disc));
+    }
+    pts.push(new THREE.Vector2(r*Math.cos(th), r*Math.sin(th)));
+  }
+  // the grip body, plus a slightly smaller round cap on top (a step instead of a bevel: bevels fold up in the scallops)
+  const top = Math.min(0.8, h/6), body = new THREE.ExtrudeGeometry(new THREE.Shape(pts), { depth: h - top, bevelEnabled: false, curveSegments: 1 });
+  const capR = (c - s) * 0.97, cap = new THREE.CylinderGeometry(capR, capR, top, 64); cap.rotateX(Math.PI/2); cap.translate(0, 0, h - top/2);
+  const geo = mergeGeometries([body.toNonIndexed ? (body.index ? body.toNonIndexed() : body) : body, cap.toNonIndexed()]);
+  knobGeoCache.set(key, geo);
+  return geo.clone();
 }
 function disposeGroup(g){ g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); }
 /* Exploded view: every piece moves along the wheel's axis by its layer's offset (mm), in assembly order.
@@ -3382,12 +3414,13 @@ function rebuild3d(){
       else { body = new THREE.Mesh(new THREE.BoxGeometry(tp.body.w, tp.body.h, tp.depth), bodyMat); body.rotation.z = p.rot*Math.PI/180; }
       if (body){ const [bx, by] = shapeCentre(tp.body, p); body.position.set(bx, by, -tp.depth/2); L(body, tp.screen ? 'under' : 'parts'); }
       if (tp.cap){
-        const col = tp.cap.kind==='led' ? '#E8432E' : tp.cap.kind==='lever' ? '#B9C0C7' : tp.cap.kind==='knob' ? '#1C2024' : css('--accent');   // button caps: accent blue
+        const col = tp.cap.kind==='led' ? '#E8432E' : tp.cap.kind==='lever' ? '#B9C0C7' : tp.cap.kind==='knob' ? '#272C32' : css('--accent');   // button caps: accent blue
         const capMat = mat(col, tp.cap.kind==='led'?{emissive:new THREE.Color('#7A1408')}:{});
         let cap;
         if (tp.cap.c === 'rect'){ cap = new THREE.Mesh(new THREE.BoxGeometry(tp.cap.w, tp.cap.h, tp.cap.height), capMat); cap.rotation.z = p.rot*Math.PI/180; }
-        else { cap = new THREE.Mesh(new THREE.CylinderGeometry(tp.cap.d/2*(tp.cap.kind==='knob'?0.94:1), tp.cap.d/2, tp.cap.height, 32), capMat); cap.rotation.x = Math.PI/2; }
-        cap.position.set(p.x, p.y, t + tp.cap.height/2); L(cap, 'parts');
+        else if (tp.cap.kind === 'knob'){ cap = new THREE.Mesh(knobGeometry(tp.cap.d, tp.cap.height), capMat); cap.rotation.z = (p.rot || 0)*Math.PI/180; }
+        else { cap = new THREE.Mesh(new THREE.CylinderGeometry(tp.cap.d/2, tp.cap.d/2, tp.cap.height, 32), capMat); cap.rotation.x = Math.PI/2; }
+        cap.position.set(p.x, p.y, tp.cap.kind === 'knob' && tp.cap.c !== 'rect' ? t : t + tp.cap.height/2); L(cap, 'parts');
       }
       if (tp.screen){
         const sc = new THREE.Mesh(new THREE.PlaneGeometry(tp.cut.w+1, tp.cut.h+1), mat('#0B1A2A', {emissive:new THREE.Color('#0D3A5C')}));
